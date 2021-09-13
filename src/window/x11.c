@@ -8,6 +8,8 @@
 #	include <xcb/randr.h>
 #	include <xcb/xcb_ewmh.h>
 
+#	include "xproto.h"
+
 #	include <lt/io.h>
 
 static lt_keycode_t lt_lookup_key(lt_window_t* win, xcb_keycode_t keycode, u16 state);
@@ -23,6 +25,8 @@ int lt_output_count = 0;
 lt_output_t* lt_outputs = NULL;
 
 b8 lt_window_init(lt_arena_t* arena) {
+	lt_xproto_init();
+
 	lt_display = XOpenDisplay(NULL);
 	if (!lt_display)
 		return 0;

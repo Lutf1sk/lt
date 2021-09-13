@@ -27,7 +27,8 @@ OBJS = \
 	src/vk/volk.o \
 	src/window/win32.o \
 	src/window/window.o \
-	src/window/x11.o
+	src/window/x11.o \
+	src/window/xproto.o
 
 CC = gcc
 LNK = gcc
