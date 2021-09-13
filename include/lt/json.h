@@ -11,6 +11,7 @@ enum lt_json_stype {
 	LT_JSON_STRING,
 	LT_JSON_NUMBER,
 	LT_JSON_BOOL,
+	LT_JSON_NULL,
 } lt_json_stype_t;
 
 typedef

@@ -32,6 +32,7 @@ static
 lstr_t consume_string(parse_ctx_t* cx) {
 	++cx->it; // "
 	char* start_it = &cx->data[cx->it];
+	// TODO: This loop does not handle \\" correctly.
 	while (cx->it < cx->len && (cx->data[cx->it] != '"' && cx->data[cx->it - 1] != '\\')) {
 		++cx->it;
 	}
@@ -122,6 +123,17 @@ lt_json_t* json_parse_value(parse_ctx_t* cx) {
 		return new;
 	}
 
+	case 'n': {
+		lstr_t expect = CLSTR("null");
+		if (cx->it + expect.len > cx->len || !lt_lstr_eq(expect, LSTR(&cx->data[cx->it], expect.len)))
+			return NULL;
+		cx->it += expect.len;
+		lt_json_t* new = lt_arena_reserve(cx->arena, sizeof(lt_json_t));
+		*new = json_make(LT_JSON_NULL);
+		new->str_val = expect;
+		return new;
+	}
+
 	default:
 		if (lt_is_digit(c)) {
 			lt_json_t* new = lt_arena_reserve(cx->arena, sizeof(lt_json_t));
@@ -132,6 +144,7 @@ lt_json_t* json_parse_value(parse_ctx_t* cx) {
 		break;
 	}
 
+	//lt_ferrf("Unexpected character '%c' (%p)\n", c, (void*)(usz)c);
 	return NULL;
 }
 
@@ -144,6 +157,7 @@ lt_json_t* json_parse_entry(parse_ctx_t* cx) {
 	skip_whitespace(cx);
 
 	lt_json_t* val = json_parse_value(cx);
+
 	val->key = key;
 	return val;
 }
@@ -163,8 +177,10 @@ lt_json_t* json_parse_object(parse_ctx_t* cx) {
 		current = &new->next;
 
 		skip_whitespace(cx);
-		if (cx->data[cx->it] == ',')
+		if (cx->data[cx->it] == ',') {
 			++cx->it;
+			skip_whitespace(cx);
+		}
 	}
 
 	++cx->it; // }
@@ -217,7 +233,7 @@ void json_print_recursive(lt_json_t* json, int indent) {
 		lt_printls(CLSTR("}\n"));
 	}	break;
 
-	case LT_JSON_STRING: case LT_JSON_NUMBER: case LT_JSON_BOOL: {
+	case LT_JSON_STRING: case LT_JSON_NUMBER: case LT_JSON_BOOL: case LT_JSON_NULL: {
 		lt_printf("%S\n", json->str_val);
 	}	break;
 	}
