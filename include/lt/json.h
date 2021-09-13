@@ -39,5 +39,6 @@ lt_json_t* lt_json_find_child(lt_json_t* json, lstr_t key);
 u64 lt_json_uint_val(lt_json_t* json);
 i64 lt_json_int_val(lt_json_t* json);
 f64 lt_json_float_val(lt_json_t* json);
+b8 lt_json_bool_val(lt_json_t* json);
 
 #endif
