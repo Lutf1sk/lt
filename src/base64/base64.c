@@ -68,7 +68,8 @@ usz lt_base64_decode(lstr_t str, char* out) {
 
 	for (usz i = 0; i < pass4_count; i += 4) {
 		u8* data = (u8*)&str.str[i];
-		char c1 = base64_dec_tab[data[0]], c2 = base64_dec_tab[data[1]], c3 = base64_dec_tab[data[2]], c4 = base64_dec_tab[data[3]];
+		char c1 = base64_dec_tab[data[0]], c2 = base64_dec_tab[data[1]],
+				c3 = base64_dec_tab[data[2]], c4 = base64_dec_tab[data[3]];
 
 		*oit++ = (c1 << 2) | (c2 >> 4);
 		*oit++ = (c2 << 4) | (c3 >> 2);
@@ -81,7 +82,8 @@ usz lt_base64_decode(lstr_t str, char* out) {
 		*oit++ = (c1 << 2) | (c2 >> 4);
 	}
 	else if (pad == 1) {
-		char c1 = base64_dec_tab[pad_data[0]], c2 = base64_dec_tab[pad_data[1]], c3 = base64_dec_tab[pad_data[2]];
+		char c1 = base64_dec_tab[pad_data[0]], c2 = base64_dec_tab[pad_data[1]],
+				c3 = base64_dec_tab[pad_data[2]];
 		*oit++ = (c1 << 2) | (c2 >> 4);
 		*oit++ = (c2 << 4) | (c3 >> 2);
 	}
