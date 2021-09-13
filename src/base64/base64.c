@@ -60,7 +60,7 @@ usz lt_base64_decode(lstr_t str, char* out) {
 	while (pad < 3 && str.str[str.len - pad - 1] == '=')
 		++pad;
 
-	if (pad == 1 || pad > 2)
+	if (pad > 2)
 		return 0;
 
 	usz pass4_count = (str.len - pad) & ~0b11;
