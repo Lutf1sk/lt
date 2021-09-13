@@ -200,47 +200,47 @@ lt_json_t* lt_json_parse(lt_arena_t* arena, char* data, usz len) {
 }
 
 static
-void print_indent(int indent) {
+void print_indent(lt_file_t* file, int indent) {
 	for (int i = 0; i < indent; ++i)
-		lt_printc('\t');
+		lt_file_printc(file, '\t');
 }
 
 static
-void json_print_recursive(lt_json_t* json, int indent) {
+void json_print_recursive(lt_file_t* file, lt_json_t* json, int indent) {
 	switch (json->stype) {
 	case LT_JSON_ARRAY: {
-		lt_printls(CLSTR("[\n"));
+		lt_file_printls(file, CLSTR("[\n"));
 		lt_json_t* it = json->child;
 		while (it) {
-			print_indent(indent + 1);
-			json_print_recursive(it, indent + 1);
+			print_indent(file, indent + 1);
+			json_print_recursive(file, it, indent + 1);
 			it = it->next;
 		}
-		print_indent(indent);
-		lt_printls(CLSTR("]\n"));
+		print_indent(file, indent);
+		lt_file_printls(file, CLSTR("]\n"));
 	}	break;
 
 	case LT_JSON_OBJECT: {
-		lt_printls(CLSTR("{\n"));
+		lt_file_printls(file, CLSTR("{\n"));
 		lt_json_t* it = json->child;
 		while (it) {
-			print_indent(indent + 1);
-			lt_printf("%S: ", it->key);
-			json_print_recursive(it, indent + 1);
+			print_indent(file, indent + 1);
+			lt_file_printf(file, "%S: ", it->key);
+			json_print_recursive(file, it, indent + 1);
 			it = it->next;
 		}
-		print_indent(indent);
-		lt_printls(CLSTR("}\n"));
+		print_indent(file, indent);
+		lt_file_printls(file, CLSTR("}\n"));
 	}	break;
 
 	case LT_JSON_STRING: case LT_JSON_NUMBER: case LT_JSON_BOOL: case LT_JSON_NULL: {
-		lt_printf("%S\n", json->str_val);
+		lt_file_printf(file, "%S\n", json->str_val);
 	}	break;
 	}
 }
 
-void lt_json_print(lt_json_t* json) {
-	json_print_recursive(json, 0);
+void lt_json_print(lt_file_t* file, lt_json_t* json) {
+	json_print_recursive(file, json, 0);
 }
 
 lt_json_t* lt_json_find_child(lt_json_t* json, lstr_t key) {

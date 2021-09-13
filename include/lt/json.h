@@ -32,7 +32,7 @@ struct lt_json {
 
 lt_json_t* lt_json_parse(lt_arena_t* arena, char* data, usz len);
 
-void lt_json_print(lt_json_t* json);
+void lt_json_print(lt_file_t* file, lt_json_t* json);
 
 lt_json_t* lt_json_find_child(lt_json_t* json, lstr_t key);
 
