@@ -10,7 +10,7 @@
 #	include <unistd.h>
 
 static
-int lt_access_to_posix(lt_file_access_t access) {
+int lt_mode_to_posix(lt_file_mode_t access) {
 	switch (access) {
 	case LT_FILE_R: return O_RDONLY;
 	case LT_FILE_W: return O_WRONLY | O_TRUNC | O_CREAT;
@@ -19,16 +19,30 @@ int lt_access_to_posix(lt_file_access_t access) {
 		return 0;
 	}
 }
+
+static
+int lt_perms_to_posix(lt_file_perms_t perms) {
+	switch (perms) {
+	case LT_FILE_PERMIT_X: return S_IXUSR;
+	default:
+		return 0;
+	}
+}
+
 #elif defined(LT_WINDOWS)
 #	define WIN32_LEAN_AND_MEAN 1
 #	include <windows.h>
 
 #endif
 
-lt_file_t* lt_file_open(lt_arena_t* arena, char* path, lt_file_access_t access_mode) {
+lt_file_t* lt_file_open(lt_arena_t* arena, char* path, lt_file_mode_t mode, lt_file_perms_t perms) {
 #if defined(LT_UNIX)
 
-	int fd = open(path, lt_access_to_posix(access_mode));
+	mode_t posix_mode = lt_perms_to_posix(perms);
+	if (mode == LT_FILE_W)
+		posix_mode |= S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
+
+	int fd = open(path, lt_mode_to_posix(mode), posix_mode);
 	if (fd == -1)
 		return NULL;
 

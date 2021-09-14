@@ -15,13 +15,18 @@ extern lt_file_t* lt_stdin;
 
 // file.c
 typedef
-enum lt_file_access {
+enum lt_file_mode {
 	LT_FILE_R,
 	LT_FILE_W,
 	LT_FILE_RW,
-} lt_file_access_t;
+} lt_file_mode_t;
 
-lt_file_t* lt_file_open(lt_arena_t* arena, char* path, lt_file_access_t access);
+typedef
+enum lt_file_perms {
+	LT_FILE_PERMIT_X,
+} lt_file_perms_t;
+
+lt_file_t* lt_file_open(lt_arena_t* arena, char* path, lt_file_mode_t access, lt_file_perms_t perms);
 
 void lt_file_close(lt_file_t* file);
 
