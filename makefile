@@ -9,6 +9,7 @@ OBJS = \
 	src/io/str.o \
 	src/json/json.o \
 	src/linalg/matrix.o \
+	src/linalg/vec.o \
 	src/lt/assert.o \
 	src/lt/backtrace.o \
 	src/lt/dynl.o \
