@@ -1,4 +1,5 @@
 #include <lt/io.h>
+#include <lt/lt.h>
 
 #if defined(LT_UNIX)
 #	include <execinfo.h>
@@ -33,7 +34,7 @@ void lt_backtrace(void(*callback)(char*)) {
 	free(symbol_names);
 
 #elif defined(LT_WINDOWS)
-	werr("Backtracing is not implemented for windows yet\n");
+	lt_werr(CLSTR("Backtracing is not implemented for windows yet\n"));
 #endif
 }
 

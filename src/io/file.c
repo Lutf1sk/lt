@@ -64,11 +64,11 @@ lt_file_t* lt_file_open(lt_arena_t* arena, char* path, lt_file_mode_t mode, lt_f
 
 #elif defined(LT_WINDOWS)
 	HANDLE h = INVALID_HANDLE_VALUE;
-	if (access_mode == LT_FILE_W)
+	if (mode == LT_FILE_W)
 		h = CreateFile(path, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
-	else if (access_mode == LT_FILE_R)
+	else if (mode == LT_FILE_R)
 		h = CreateFile(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, NULL);
-	else if (access_mode == LT_FILE_RW)
+	else if (mode == LT_FILE_RW)
 		lt_werr(CLSTR("LT_FILE_RW has not been implemented for windows\n"));
 
 	if (h == INVALID_HANDLE_VALUE)

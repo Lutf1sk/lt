@@ -1,3 +1,7 @@
+#include "window_def.h"
+
+#ifdef LT_X11
+
 #include "xproto.h"
 
 #include <lt/lt.h>
@@ -5,6 +9,7 @@
 #define XPFN_DEF(ret, name, args) ret (*lt_xproto_##name)args = NULL
 
 // XCB
+
 XPFN_DEF(const xcb_setup_t*, xcb_get_setup, (xcb_connection_t*));
 
 XPFN_DEF(xcb_void_cookie_t, xcb_map_window, (xcb_connection_t*, xcb_window_t));
@@ -160,4 +165,6 @@ void lt_xproto_init(void) {
 		XPFN_LOAD(XSetEventQueueOwner);
 	}
 }
+
+#endif
 

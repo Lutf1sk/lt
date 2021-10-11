@@ -6,8 +6,6 @@
 #	include <sys/socket.h>
 #	include <netdb.h>
 #	include <unistd.h>
-#elif defined(LT_WINDOWS)
-#endif
 
 typedef
 struct lt_socket {
@@ -29,7 +27,12 @@ int lt_socktype_to_unix(lt_socktype_t type) {
 	}
 }
 
+#elif defined(LT_WINDOWS)
+
+#endif
+
 b8 lt_sockaddr_resolve(char* addr, char* port, lt_socktype_t type, lt_sockaddr_t* out_addr_) {
+#if defined(LT_UNIX)
 	lt_sockaddr_impl_t* out_addr = (lt_sockaddr_impl_t*)out_addr_;
 
 	struct addrinfo hints;
@@ -47,9 +50,11 @@ b8 lt_sockaddr_resolve(char* addr, char* port, lt_socktype_t type, lt_sockaddr_t
 	out_addr->addr = *resolved->ai_addr;
 	freeaddrinfo(resolved);
 	return 1;
+#endif
 }
 
 lt_socket_t* lt_socket_create(lt_arena_t* arena, lt_socktype_t type) {
+#if defined(LT_UNIX)
 	int fd = socket(AF_INET, lt_socktype_to_unix(type), 0);
 	if (fd < 0)
 		return NULL;
@@ -57,18 +62,24 @@ lt_socket_t* lt_socket_create(lt_arena_t* arena, lt_socktype_t type) {
 	lt_socket_t* sock = lt_arena_reserve(arena, sizeof(lt_socket_t));
 	sock->fd = fd;
 	return sock;
+#endif
 }
 
 void lt_socket_destroy(lt_socket_t* sock) {
+#if defined(LT_UNIX)
 	close(sock->fd);
+#endif
 }
 
 b8 lt_socket_connect(lt_socket_t* sock, lt_sockaddr_t* addr_) {
+#if defined(LT_UNIX)
 	lt_sockaddr_impl_t* addr = (lt_sockaddr_impl_t*)addr_;
 	return connect(sock->fd, &addr->addr, addr->addr_len) >= 0;
+#endif
 }
 
 b8 lt_socket_server(lt_socket_t* sock, u16 port) {
+#if defined(LT_UNIX)
 	int reuse_addr = 1;
 	if (setsockopt(sock->fd, SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(int)) < 0)
 		return 0;
@@ -83,9 +94,11 @@ b8 lt_socket_server(lt_socket_t* sock, u16 port) {
 	if (listen(sock->fd, 10) < 0)
 		return 0;
 	return 1;
+#endif
 }
 
 lt_socket_t* lt_socket_accept(lt_arena_t* arena, lt_socket_t* sock) {
+#if defined(LT_UNIX)
 	struct sockaddr_in new_addr;
 	usz new_size = sizeof(new_addr);
 	int new_fd = accept(sock->fd, (struct sockaddr*)&new_addr, (socklen_t*)&new_size);
@@ -95,14 +108,19 @@ lt_socket_t* lt_socket_accept(lt_arena_t* arena, lt_socket_t* sock) {
 	lt_socket_t* new_sock = lt_arena_reserve(arena, sizeof(lt_socket_t));
 	new_sock->fd = new_fd;
 	return new_sock;
+#endif
 }
 
 isz lt_socket_send(lt_socket_t* sock, void* data, usz size) {
+#if defined(LT_UNIX)
 	return send(sock->fd, data, size, MSG_NOSIGNAL);
+#endif
 }
 
 isz lt_socket_recv(lt_socket_t* sock, void* data, usz size) {
+#if defined(LT_UNIX)
 	return recv(sock->fd, data, size, 0);
+#endif
 }
 
 

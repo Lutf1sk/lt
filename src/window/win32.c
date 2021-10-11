@@ -265,7 +265,7 @@ void lt_window_get_size(lt_window_t* win, int* w, int* h) {
 	RECT rect;
 	GetWindowRect(win->hwnd, &rect);
 	*w = rect.right - rect.left;
-	*h = rect.bottom - rect.height;
+	*h = rect.bottom - rect.top;
 }
 
 
