@@ -86,7 +86,7 @@ VkBool32 lt_vk_debug_messenger_callback(
 	const VkDebugUtilsMessengerCallbackDataEXT* callback_data,
 	void* user_data)
 {
-	lt_printf("VLD: %s\n", callback_data->pMessage);
+	lt_printf("VLD: %s\n\n", callback_data->pMessage);
 	return VK_FALSE;
 }
 
