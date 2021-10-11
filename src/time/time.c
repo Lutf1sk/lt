@@ -3,6 +3,7 @@
 
 #if defined(LT_UNIX)
 #	include <sys/time.h>
+#	include <time.h>
 #elif defined(LT_WINDOWS)
 #	define WIN32_LEAN_AND_MEAN
 #	include <Windows.h>
@@ -36,20 +37,20 @@ int gettimeofday(struct timeval* tp, struct timezone* tzp) {
 #endif
 
 u64 lt_hfreq_time_sec(void) {
-	struct timeval tm;
-	gettimeofday(&tm, NULL);
-	return tm.tv_sec;
+	struct timespec ts;
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+	return ts.tv_sec;
 }
 
 u64 lt_hfreq_time_msec(void) {
-	struct timeval tm;
-	gettimeofday(&tm, NULL);
-	return tm.tv_sec * 1000 + tm.tv_usec * 1000;
+	struct timespec ts;
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+	return (u64)ts.tv_sec * 1000 + (u64)ts.tv_nsec / 1000000;
 }
 
 u64 lt_hfreq_time_usec(void) {
-	struct timeval tm;
-	gettimeofday(&tm, NULL);
-	return tm.tv_sec * 1000000 + tm.tv_usec;
+	struct timespec ts;
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+	return (u64)ts.tv_sec * 1000000 + (u64)ts.tv_nsec / 1000;
 }
 
