@@ -68,6 +68,20 @@ isz lt_file_vprintf(lt_file_t* file, char* fmt, va_list args) {
 			written += lt_file_printiq(file, val);
 		}	break;
 
+		case 'h': {
+			u64 val;
+			c = *++it;
+			switch (c) {
+			case 'b': val = va_arg(args, int); break;
+			case 'w': val = va_arg(args, int); break;
+			case 'd': val = va_arg(args, u32); break;
+			case 'q': val = va_arg(args, u64); break;
+			case 'z': val = va_arg(args, usz); break;
+			default: val = 0; break;
+			}
+			written += lt_file_printuq_hex(file, val);
+		}	break;
+
 		case 'p':
 			written += lt_file_printuq_hex(file, va_arg(args, usz));
 			break;
@@ -153,6 +167,20 @@ isz lt_str_vprintf(char* str, char* fmt, va_list args) {
 			default: val = 0; break;
 			}
 			out_it += lt_str_printiq(out_it, val);
+		}	break;
+
+		case 'h': {
+			u64 val;
+			c = *++it;
+			switch (c) {
+			case 'b': val = va_arg(args, int); break;
+			case 'w': val = va_arg(args, int); break;
+			case 'd': val = va_arg(args, u32); break;
+			case 'q': val = va_arg(args, u64); break;
+			case 'z': val = va_arg(args, usz); break;
+			default: val = 0; break;
+			}
+			out_it += lt_str_printuq_hex(out_it, val);
 		}	break;
 
 		case 'p':
