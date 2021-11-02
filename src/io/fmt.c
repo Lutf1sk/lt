@@ -86,6 +86,17 @@ isz lt_file_vprintf(lt_file_t* file, char* fmt, va_list args) {
 			written += lt_file_printuq_hex(file, va_arg(args, usz));
 			break;
 
+		case 'f': {
+			f64 val;
+			c = *++it;
+			switch (c) {
+			case 'd': val = va_arg(args, double); break;
+			case 'q': val = va_arg(args, f64); break;
+			default: val = 0.0f; break;
+			}
+			written += lt_file_printfq(file, val);
+		}	break;
+
 		default: {
 			char buf[2] = "% ";
 			buf[1] = c;
@@ -186,6 +197,17 @@ isz lt_str_vprintf(char* str, char* fmt, va_list args) {
 		case 'p':
 			out_it += lt_str_printuq_hex(out_it, va_arg(args, usz));
 			break;
+
+		case 'f': {
+			f64 val;
+			c = *++it;
+			switch (c) {
+			case 'd': val = va_arg(args, double); break;
+			case 'q': val = va_arg(args, f64); break;
+			default: val = 0.0f; break;
+			}
+			out_it += lt_str_printfq(out_it, val);
+		}	break;
 
 		default: {
 			char buf[2] = "% ";

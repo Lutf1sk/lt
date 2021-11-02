@@ -38,6 +38,7 @@ usz lt_file_size(lt_file_t* file);
 isz lt_file_printuq_hex(lt_file_t* file, usz n);
 isz lt_file_printuq(lt_file_t* file, u64 n);
 isz lt_file_printiq(lt_file_t* file, i64 n);
+isz lt_file_printfq(lt_file_t* file, f64 n);
 
 isz lt_file_printc(lt_file_t* file, char c);
 isz lt_file_printls(lt_file_t* file, lstr_t str);
@@ -56,6 +57,7 @@ isz lt_printf(char* fmt, ...);
 isz lt_str_printuq_hex(char* str, usz n);
 isz lt_str_printuq(char* str, u64 n);
 isz lt_str_printiq(char* str, i64 n);
+isz lt_str_printfq(char* str, f64 n);
 
 isz lt_str_printf(char* str, char* fmt, ...);
 

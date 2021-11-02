@@ -3,18 +3,18 @@
 
 isz lt_str_printuq_hex(char* str, usz n) {
 	char buf[32];
-	char* it = buf + sizeof(buf);
+	char* it = buf + sizeof(buf) - 1;
 
 	for (;;) {
-		usz rem = n % 16;
+		usz rem = n & 0xF;
 		*(it--) = rem >= 10 ? (rem - 10) + 'A' : rem + '0';
-		n /= 16;
+		n >>= 4;
 		if (n == 0)
 			break;
 	}
 
-	isz len = (buf + sizeof(buf)) - (it);
-	memcpy(str, it + 1, len);
+	isz len = (buf + sizeof(buf)) - it;
+	memcpy(str, it, len);
 	return len;
 }
 
@@ -30,7 +30,7 @@ isz lt_str_printuq(char* str, u64 n) {
 	}
 	++it;
 
-	isz len = (buf + sizeof(buf)) - (it);
+	isz len = (buf + sizeof(buf)) - it;
 	memcpy(str, it, len);
 
 	return len;
@@ -42,6 +42,25 @@ isz lt_str_printiq(char* str, i64 n) {
 		n = -n;
 	}
 	return lt_str_printuq(str, n) + 1;
+}
+
+isz lt_str_printfq(char* str, f64 n) {
+	char buf[32];
+	char* it = buf + sizeof(buf) - 1;
+
+	if (n < 0) {
+		*(it++) = '-';
+		n = -n;
+	}
+
+// 	for (;;) {
+// 		*(it++) = '0';
+// 	}
+
+	isz len = (buf + sizeof(buf)) - it;
+	memcpy(str, it, len);
+
+	return len;
 }
 
 #include <stdarg.h>

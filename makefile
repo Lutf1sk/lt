@@ -24,6 +24,7 @@ OBJS = \
 	src/thread/spinlock.o \
 	src/thread/thread.o \
 	src/time/time.o \
+	src/utf8/utf8.o \
 	src/vk/vk.o \
 	src/vk/volk.o \
 	src/window/win32.o \

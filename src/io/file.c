@@ -130,9 +130,9 @@ isz lt_file_printuq_hex(lt_file_t* file, usz n) {
 	char* it = buf + sizeof(buf);
 
 	for (;;) {
-		usz rem = n % 16;
+		usz rem = n & 0xF;
 		*(it--) = rem >= 10 ? (rem - 10) + 'A' : rem + '0';
-		n /= 16;
+		n >>= 4;
 		if (n == 0)
 			break;
 	}
@@ -166,6 +166,25 @@ isz lt_file_printiq(lt_file_t* file, i64 n) {
 		n = -n;
 	}
 	return lt_file_printuq(file, n) + 1;
+}
+
+isz lt_file_printfq(lt_file_t* file, f64 n) {
+	char buf[32];
+	char* it = buf + sizeof(buf) - 1;
+
+	if (n < 0) {
+		*(it++) = '-';
+		n = -n;
+	}
+
+// 	for (;;) {
+// 		*(it++) = '0';
+// 	}
+
+	isz len = (buf + sizeof(buf)) - it;
+	lt_file_write(file, it, len);
+
+	return len;
 }
 
 usz lt_file_size(lt_file_t* file) {
