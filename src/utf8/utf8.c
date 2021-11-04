@@ -55,7 +55,7 @@ usz lt_utf8_decode(u32* out, char* str) {
 		return 1;
 }
 
-usz lt_utf8_decode_len(u8 v) {
+usz lt_utf8_decode_len(char v) {
 	if ((v & 0xF0) == 0xF0)
 		return 4;
 	else if ((v & 0xE0) == 0xE0)
