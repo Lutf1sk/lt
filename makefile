@@ -20,6 +20,7 @@ OBJS = \
 	src/mem/vmem.o \
 	src/net/socket.o \
 	src/str/str.o \
+	src/term/term.o \
 	src/thread/mutex.o \
 	src/thread/spinlock.o \
 	src/thread/thread.o \
