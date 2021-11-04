@@ -3,26 +3,6 @@
 
 #include <lt/lt.h>
 
-static LT_INLINE
-b8 lt_is_digit(char c) {
-	return c >= '0' && c <= '9';
-}
-
-static LT_INLINE
-b8 lt_is_alpha(char c) {
-	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
-}
-
-static LT_INLINE
-b8 lt_is_upper(char c) {
-	return (c >= 'A' && c <= 'Z');
-}
-
-static LT_INLINE
-b8 lt_is_lower(char c) {
-	return (c >= 'a' && c <= 'z');
-}
-
 extern int memcmp(const void* ptr1, const void* ptr2, size_t size);
 
 static LT_INLINE

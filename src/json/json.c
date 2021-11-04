@@ -2,6 +2,7 @@
 #include <lt/mem.h>
 #include <lt/str.h>
 #include <lt/io.h>
+#include <lt/ctype.h>
 
 typedef
 struct parse_ctx {
@@ -12,18 +13,8 @@ struct parse_ctx {
 } parse_ctx_t;
 
 static
-b8 is_whitespace(char c) {
-	switch (c) {
-	case '\r': case '\n': case ' ': case '\t':
-		return 1;
-	default:
-		return 0;
-	}
-}
-
-static
 void skip_whitespace(parse_ctx_t* cx) {
-	while (cx->it < cx->len && is_whitespace(cx->data[cx->it])) {
+	while (cx->it < cx->len && lt_is_space(cx->data[cx->it])) {
 		++cx->it;
 	}
 }
