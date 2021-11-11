@@ -18,4 +18,7 @@ typedef struct lt_window lt_window_t;
 typedef struct lt_thread lt_thread_t;
 typedef struct lt_mutex lt_mutex_t;
 
+// arg.h
+typedef struct lt_arg lt_arg_t;
+
 #endif

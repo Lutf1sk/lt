@@ -1,6 +1,7 @@
 LIB = bin/lt.a
 
 OBJS = \
+	src/arg/arg.o \
 	src/base64/base64.o \
 	src/io/cli.o \
 	src/io/file.o \
