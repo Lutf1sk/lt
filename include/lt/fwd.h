@@ -21,4 +21,7 @@ typedef struct lt_mutex lt_mutex_t;
 // arg.h
 typedef struct lt_arg lt_arg_t;
 
+// conf.h
+typedef struct lt_conf lt_conf_t;
+
 #endif

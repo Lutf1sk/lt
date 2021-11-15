@@ -3,6 +3,7 @@ LIB = bin/lt.a
 OBJS = \
 	src/arg/arg.o \
 	src/base64/base64.o \
+	src/conf/conf.o \
 	src/io/cli.o \
 	src/io/file.o \
 	src/io/fmt.o \
