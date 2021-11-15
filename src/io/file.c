@@ -83,6 +83,18 @@ lt_file_t* lt_file_open(lt_arena_t* arena, char* path, lt_file_mode_t mode, lt_f
 	return file;
 }
 
+b8 lt_file_read_entire(lt_arena_t* arena, char* path, lstr_t* out) {
+	lt_file_t* file = lt_file_open(arena, path, LT_FILE_R, 0);
+	if (!file)
+		return 0;
+	usz size = lt_file_size(file);
+	char* data = lt_arena_reserve(arena, size);
+	isz res = lt_file_read(file, data, size);
+	lt_file_close(file);
+	*out = LSTR(data, res);
+	return res != -1;
+}
+
 void lt_file_close(lt_file_t* file) {
 #if defined(LT_UNIX)
 	close(file->fd);
