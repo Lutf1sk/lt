@@ -173,11 +173,13 @@ isz lt_file_printuq(lt_file_t* file, u64 n) {
 }
 
 isz lt_file_printiq(lt_file_t* file, i64 n) {
+	isz sign = 0;
 	if (n < 0) {
 		lt_file_printc(file, '-');
 		n = -n;
+		sign = 1;
 	}
-	return lt_file_printuq(file, n) + 1;
+	return lt_file_printuq(file, n) + sign;
 }
 
 isz lt_file_printfq(lt_file_t* file, f64 n) {

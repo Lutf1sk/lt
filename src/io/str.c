@@ -37,11 +37,13 @@ isz lt_str_printuq(char* str, u64 n) {
 }
 
 isz lt_str_printiq(char* str, i64 n) {
+	isz sign = 0;
 	if (n < 0) {
 		*(str++) = '-';
 		n = -n;
+		sign = 1;
 	}
-	return lt_str_printuq(str, n) + 1;
+	return lt_str_printuq(str, n) + sign;
 }
 
 isz lt_str_printfq(char* str, f64 n) {
