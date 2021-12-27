@@ -35,6 +35,7 @@ XPFN_DEF(xcb_void_cookie_t, xcb_send_event, (xcb_connection_t*, u8, xcb_window_t
 XPFN_DEF(u32, xcb_generate_id, (xcb_connection_t*));
 
 XPFN_DEF(xcb_generic_event_t*, xcb_poll_for_event, (xcb_connection_t*));
+XPFN_DEF(xcb_generic_event_t*, xcb_wait_for_event, (xcb_connection_t*));
 
 // XCB-EWMH
 
@@ -54,6 +55,12 @@ XPFN_DEF(int, xcb_randr_get_screen_resources_current_outputs_length,
 		(const xcb_randr_get_screen_resources_current_reply_t*));
 
 XPFN_DEF(xcb_randr_output_t*, xcb_randr_get_screen_resources_current_outputs,
+		(const xcb_randr_get_screen_resources_current_reply_t*));
+
+XPFN_DEF(int, xcb_randr_get_screen_resources_current_modes_length,
+		(const xcb_randr_get_screen_resources_current_reply_t*));
+
+XPFN_DEF(xcb_randr_mode_info_t*, xcb_randr_get_screen_resources_current_modes,
 		(const xcb_randr_get_screen_resources_current_reply_t*));
 
 XPFN_DEF(xcb_randr_get_output_info_cookie_t, xcb_randr_get_output_info, (xcb_connection_t*, xcb_randr_output_t, xcb_timestamp_t));
@@ -114,6 +121,7 @@ void lt_xproto_init(void) {
 		XPFN_LOAD(xcb_send_event);
 		XPFN_LOAD(xcb_generate_id);
 		XPFN_LOAD(xcb_poll_for_event);
+		XPFN_LOAD(xcb_wait_for_event);
 	}
 
 	{
@@ -134,6 +142,8 @@ void lt_xproto_init(void) {
 		XPFN_LOAD(xcb_randr_get_screen_resources_current_reply);
 		XPFN_LOAD(xcb_randr_get_screen_resources_current_outputs_length);
 		XPFN_LOAD(xcb_randr_get_screen_resources_current_outputs);
+		XPFN_LOAD(xcb_randr_get_screen_resources_current_modes_length);
+		XPFN_LOAD(xcb_randr_get_screen_resources_current_modes);
 		XPFN_LOAD(xcb_randr_get_output_info);
 		XPFN_LOAD(xcb_randr_get_output_info_reply);
 		XPFN_LOAD(xcb_randr_get_crtc_info);

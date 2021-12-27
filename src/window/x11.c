@@ -24,6 +24,23 @@ u32 lt_screen_index = 0;
 int lt_output_count = 0;
 lt_output_t* lt_outputs = NULL;
 
+static
+double mode_rate(xcb_randr_mode_info_t* mode) {
+	double vtotal = mode->vtotal;
+	if (mode->mode_flags & XCB_RANDR_MODE_FLAG_DOUBLE_SCAN)
+		vtotal *= 2;
+
+	if (mode->mode_flags & XCB_RANDR_MODE_FLAG_INTERLACE)
+		vtotal /= 2;
+
+	if (!mode->htotal || !vtotal) {
+		lt_printf("ASDF\n");
+		return 0;
+	}
+
+	return (double)mode->dot_clock / ((double)mode->htotal * vtotal);
+}
+
 b8 lt_window_init(lt_arena_t* arena) {
 	lt_xproto_init();
 
@@ -75,6 +92,9 @@ b8 lt_window_init(lt_arena_t* arena) {
 
 	int crtc_count = 0;
 
+	int mode_count = xcb_randr_get_screen_resources_current_modes_length(scrres_reply);
+	xcb_randr_mode_info_t* modes = xcb_randr_get_screen_resources_current_modes(scrres_reply);
+
 	lt_outputs = lt_arena_reserve(arena, output_count * sizeof(lt_output_t));
 
 	for (int i = 0; i < output_count; ++i) {
@@ -100,12 +120,21 @@ b8 lt_window_init(lt_arena_t* arena) {
 		char* alloc_out_name = lt_arena_reserve(arena, out_name_len);
 		memcpy(alloc_out_name, out_name, out_name_len);
 
+		usz mode_index = 0;
+
+		for (usz i = 0; i < mode_count; ++i) {
+			if (crtcinf_reply->mode == modes[i].id) {
+				mode_index = i;
+				break;
+			}
+		}
+
 		lt_outputs[crtc_count].x = crtcinf_reply->x;
 		lt_outputs[crtc_count].y = crtcinf_reply->y;
 		lt_outputs[crtc_count].w = crtcinf_reply->width;
 		lt_outputs[crtc_count].h = crtcinf_reply->height;
 		lt_outputs[crtc_count].name = LSTR(alloc_out_name, out_name_len);
-		lt_outputs[crtc_count].rate = 0;
+		lt_outputs[crtc_count].rate = mode_rate(&modes[mode_index]);
 		++crtc_count;
 
 		free(crtcinf_reply);
@@ -207,60 +236,78 @@ void lt_window_destroy(lt_window_t* win) {
 	xcb_destroy_window(lt_conn, win->window);
 }
 
-void lt_window_poll_events(lt_window_t* win) {
-	memcpy(win->old_key_press_map, win->key_press_map, sizeof(win->key_press_map));
+static
+void handle_event(lt_window_t* win, xcb_generic_event_t* gev) {
 	xcb_window_t window = win->window;
 
+	switch (gev->response_type & ~0x80) {
+	case XCB_DESTROY_NOTIFY: {
+		xcb_destroy_notify_event_t* ev = (xcb_destroy_notify_event_t*)gev;
+		if (ev->window == window)
+			win->closed = 1;
+	}	break;
+
+	case XCB_EXPOSE:
+		break;
+
+	case XCB_ENTER_NOTIFY:
+	case XCB_LEAVE_NOTIFY:
+		break;
+
+	case XCB_KEY_PRESS: {
+		xcb_key_press_event_t* ev = (xcb_key_press_event_t*)gev;
+		lt_keycode_t key = lt_lookup_key(win, ev->detail, ev->state);
+		win->key_press_map[key] = 1;
+	}	break;
+
+	case XCB_KEY_RELEASE: {
+		xcb_key_release_event_t* ev = (xcb_key_release_event_t*)gev;
+		lt_keycode_t key = lt_lookup_key(win, ev->detail, ev->state);
+		win->key_press_map[key] = 0;
+	}	break;
+
+	case XCB_CONFIGURE_NOTIFY: {
+		xcb_configure_notify_event_t* ev = (xcb_configure_notify_event_t*)gev;
+		win->pos_x = ev->x;
+		win->pos_y = ev->y;
+		win->size_w = ev->width;
+		win->size_h = ev->height;
+	}	break;
+
+	case XCB_BUTTON_PRESS:
+		break;
+
+	case XCB_BUTTON_RELEASE:
+		break;
+
+	case XCB_MOTION_NOTIFY:
+		break;
+
+	default:
+		break;
+	}
+}
+
+void lt_window_poll_events(lt_window_t* win) {
+	memcpy(win->old_key_press_map, win->key_press_map, sizeof(win->key_press_map));
+
+	// TODO: Only consume events belonging to the current window
 	xcb_generic_event_t* gev = NULL;
-	while ((gev = xcb_poll_for_event(lt_conn))) { // TODO: Only consume events belonging to the current window
-		switch (gev->response_type & ~0x80) {
-		case XCB_DESTROY_NOTIFY: {
-			xcb_destroy_notify_event_t* ev = (xcb_destroy_notify_event_t*)gev;
-			if (ev->window == window)
-				win->closed = 1;
-		}	break;
-
-		case XCB_EXPOSE:
-			break;
-
-		case XCB_ENTER_NOTIFY:
-		case XCB_LEAVE_NOTIFY:
-			break;
-
-		case XCB_KEY_PRESS: {
-			xcb_key_press_event_t* ev = (xcb_key_press_event_t*)gev;
-			lt_keycode_t key = lt_lookup_key(win, ev->detail, ev->state);
-			win->key_press_map[key] = 1;
-		}	break;
-
-		case XCB_KEY_RELEASE: {
-			xcb_key_release_event_t* ev = (xcb_key_release_event_t*)gev;
-			lt_keycode_t key = lt_lookup_key(win, ev->detail, ev->state);
-			win->key_press_map[key] = 0;
-		}	break;
-
-		case XCB_CONFIGURE_NOTIFY: {
-			xcb_configure_notify_event_t* ev = (xcb_configure_notify_event_t*)gev;
-			win->pos_x = ev->x;
-			win->pos_y = ev->y;
-			win->size_w = ev->width;
-			win->size_h = ev->height;
-		}	break;
-
-		case XCB_BUTTON_PRESS:
-			break;
-
-		case XCB_BUTTON_RELEASE:
-			break;
-
-		case XCB_MOTION_NOTIFY:
-			break;
-
-		default:
-			break;
-		}
+	while ((gev = xcb_poll_for_event(lt_conn))) {
+		handle_event(win, gev);
 		free(gev);
 	}
+	xcb_flush(lt_conn);
+}
+
+void lt_window_wait_events(lt_window_t* win) {
+	memcpy(win->old_key_press_map, win->key_press_map, sizeof(win->key_press_map));
+
+	// TODO: Only consume events belonging to the current window
+	xcb_generic_event_t* gev = xcb_wait_for_event(lt_conn);
+	if (gev)
+		handle_event(win, gev);
+
 	xcb_flush(lt_conn);
 }
 
@@ -270,12 +317,14 @@ void lt_window_set_fullscreen(lt_window_t* win, lt_winstate_t state) {
 	ev.type = lt_ewmh._NET_WM_STATE;
 	ev.format = 32;
 	ev.window = win->window;
+
 	switch (state) {
 	case LT_WIN_SET: ev.data.data32[0] = XCB_EWMH_WM_STATE_ADD; break;
 	default:
 	case LT_WIN_CLEAR: ev.data.data32[0] = XCB_EWMH_WM_STATE_REMOVE; break;
 	case LT_WIN_TOGGLE: ev.data.data32[0] = XCB_EWMH_WM_STATE_TOGGLE; break;
 	}
+
 	ev.data.data32[1] = lt_ewmh._NET_WM_STATE_FULLSCREEN;
 	ev.data.data32[2] = XCB_ATOM_NONE;
 	ev.data.data32[3] = XCB_ATOM_NONE;
