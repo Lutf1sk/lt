@@ -88,6 +88,7 @@ typedef
 enum lt_wintype {
 	LT_WIN_GL = 1,
 	LT_WIN_VK = 2,
+	LT_WIN_SOFT = 4,
 } lt_wintype_t;
 
 typedef struct lt_output {
@@ -105,7 +106,7 @@ typedef struct lt_window_description {
 	lt_wintype_t type;
 } lt_window_description_t;
 
-// x11.c
+// x11.c / win32.c
 b8 lt_window_init(lt_arena_t* arena);
 void lt_window_terminate(void);
 
@@ -125,7 +126,13 @@ void lt_window_set_size(lt_window_t* win, int w, int h);
 void lt_window_get_pos(lt_window_t* win, int* x, int* y);
 void lt_window_get_size(lt_window_t* win, int* w, int* h);
 
+void lt_window_draw_color(lt_window_t* win, int r, int g, int b);
+void lt_window_draw_rect(lt_window_t* win, int x, int y, int w, int h);
+void lt_window_draw_rect_filled(lt_window_t* win, int x, int y, int w, int h);
+void lt_window_draw_present(lt_window_t* win);
+
 // window.c
+b8 lt_window_exposed(lt_window_t* win);
 b8 lt_window_closed(lt_window_t* win);
 
 b8 lt_window_key_pressed(lt_window_t* win, lt_keycode_t keycode);

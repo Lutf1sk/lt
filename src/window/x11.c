@@ -204,12 +204,20 @@ lt_window_t* lt_window_create(lt_arena_t* arena, lt_window_description_t* desc) 
 	// Map window
 	xcb_void_cookie_t map_cookie = xcb_map_window(lt_conn, window);
 
+	// Create graphics context
+	u32 gc = xcb_generate_id(lt_conn);
+	u32 gc_mask = XCB_GC_FOREGROUND;
+	u32 gc_list[] = { lt_screen->black_pixel };
+	xcb_void_cookie_t gc_cookie = xcb_create_gc(lt_conn, gc, window, gc_mask, gc_list);
+
 	if (xcb_request_check(lt_conn, window_cookie))
 		return NULL;
 	if (xcb_request_check(lt_conn, title_cookie))
 		lt_werr(CLSTR("Failed to set window title\n"));
 	if (xcb_request_check(lt_conn, map_cookie))
 		goto setup_err;
+	if (xcb_request_check(lt_conn, gc_cookie))
+		lt_werr(CLSTR("Failed to create graphics context\n"));
 
 	// Flush XCB connection
 	xcb_flush(lt_conn);
@@ -218,11 +226,13 @@ lt_window_t* lt_window_create(lt_arena_t* arena, lt_window_description_t* desc) 
 	lt_window_t* win = lt_arena_reserve(arena, sizeof(lt_window_t));
 	win->window = window;
 	win->closed = 0;
+	win->exposed = 1;
 	win->type = desc->type;
 	win->pos_x = x;
 	win->pos_y = y;
 	win->size_w = w;
 	win->size_h = h;
+	win->gc = gc;
 
 	lt_generate_keytab(arena, win);
 	return win;
@@ -248,6 +258,7 @@ void handle_event(lt_window_t* win, xcb_generic_event_t* gev) {
 	}	break;
 
 	case XCB_EXPOSE:
+		win->exposed = 1;
 		break;
 
 	case XCB_ENTER_NOTIFY:
@@ -452,6 +463,27 @@ void lt_generate_keytab(lt_arena_t* arena, lt_window_t* win) {
 static
 lt_keycode_t lt_lookup_key(lt_window_t* win, xcb_keycode_t keycode, u16 state) {
 	return win->keytab[keycode - win->scan_min];
+}
+
+void lt_window_draw_color(lt_window_t* win, int r, int g, int b) {
+	u32 mask = XCB_GC_FOREGROUND;
+	u32 list[] = { b | (g << 8) | (r << 16) | (0xFF << 24) };
+	xcb_change_gc(lt_conn, win->gc, mask, list);
+}
+
+void lt_window_draw_rect(lt_window_t* win, int x, int y, int w, int h) {
+	xcb_rectangle_t rect = { x, y, w, h };
+	xcb_poly_rectangle(lt_conn, win->window, win->gc, 1, &rect);
+}
+
+void lt_window_draw_rect_filled(lt_window_t* win, int x, int y, int w, int h) {
+	xcb_rectangle_t rect = { x, y, w, h };
+	xcb_poly_fill_rectangle(lt_conn, win->window, win->gc, 1, &rect);
+}
+
+void lt_window_draw_present(lt_window_t* win) {
+	win->exposed = 0;
+	xcb_flush(lt_conn);
 }
 
 #endif

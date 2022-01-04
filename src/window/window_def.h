@@ -16,9 +16,12 @@
 
 extern xcb_connection_t* lt_conn;
 
+//typedef u32 xcb_gc_t;
+
 typedef
 struct lt_window {
 	xcb_window_t window;
+	xcb_gc_t gc;
 
 	lt_wintype_t type;
 
@@ -28,6 +31,7 @@ struct lt_window {
 	int pos_x, pos_y;
 	int size_w, size_h;
 
+	b8 exposed;
 	b8 closed;
 	b8 key_press_map[LT_KEY_MAX];
 	b8 old_key_press_map[LT_KEY_MAX];

@@ -57,6 +57,18 @@ XPFN_FWD(xcb_generic_event_t*, xcb_poll_for_event, (xcb_connection_t*));
 XPFN_FWD(xcb_generic_event_t*, xcb_wait_for_event, (xcb_connection_t*));
 #define xcb_wait_for_event(...) lt_xproto_xcb_wait_for_event(__VA_ARGS__)
 
+XPFN_FWD(xcb_void_cookie_t, xcb_create_gc, (xcb_connection_t*, xcb_gc_t, xcb_drawable_t, u32, u32*));
+#define xcb_create_gc(...) lt_xproto_xcb_create_gc(__VA_ARGS__)
+
+XPFN_FWD(xcb_void_cookie_t, xcb_change_gc, (xcb_connection_t*, xcb_gc_t, u32, u32*));
+#define xcb_change_gc(...) lt_xproto_xcb_change_gc(__VA_ARGS__)
+
+XPFN_FWD(xcb_void_cookie_t, xcb_poly_rectangle, (xcb_connection_t*, xcb_drawable_t, xcb_gc_t, u32, xcb_rectangle_t*));
+#define xcb_poly_rectangle(...) lt_xproto_xcb_poly_rectangle(__VA_ARGS__)
+
+XPFN_FWD(xcb_void_cookie_t, xcb_poly_fill_rectangle, (xcb_connection_t*, xcb_drawable_t, xcb_gc_t, u32, xcb_rectangle_t*));
+#define xcb_poly_fill_rectangle(...) lt_xproto_xcb_poly_fill_rectangle(__VA_ARGS__)
+
 // XCB-EWMH
 
 XPFN_FWD(xcb_intern_atom_cookie_t*, xcb_ewmh_init_atoms, (xcb_connection_t*, xcb_ewmh_connection_t*));

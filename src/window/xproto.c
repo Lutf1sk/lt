@@ -37,6 +37,12 @@ XPFN_DEF(u32, xcb_generate_id, (xcb_connection_t*));
 XPFN_DEF(xcb_generic_event_t*, xcb_poll_for_event, (xcb_connection_t*));
 XPFN_DEF(xcb_generic_event_t*, xcb_wait_for_event, (xcb_connection_t*));
 
+XPFN_DEF(xcb_void_cookie_t, xcb_create_gc, (xcb_connection_t*, xcb_gc_t, xcb_drawable_t, u32, u32*));
+XPFN_DEF(xcb_void_cookie_t, xcb_change_gc, (xcb_connection_t*, xcb_gc_t, u32, u32*));
+
+XPFN_DEF(xcb_void_cookie_t, xcb_poly_rectangle, (xcb_connection_t*, xcb_drawable_t, xcb_gc_t, u32, xcb_rectangle_t*));
+XPFN_DEF(xcb_void_cookie_t, xcb_poly_fill_rectangle, (xcb_connection_t*, xcb_drawable_t, xcb_gc_t, u32, xcb_rectangle_t*));
+
 // XCB-EWMH
 
 XPFN_DEF(xcb_intern_atom_cookie_t*, xcb_ewmh_init_atoms, (xcb_connection_t*, xcb_ewmh_connection_t*));
@@ -122,6 +128,10 @@ void lt_xproto_init(void) {
 		XPFN_LOAD(xcb_generate_id);
 		XPFN_LOAD(xcb_poll_for_event);
 		XPFN_LOAD(xcb_wait_for_event);
+		XPFN_LOAD(xcb_create_gc);
+		XPFN_LOAD(xcb_change_gc);
+		XPFN_LOAD(xcb_poly_rectangle);
+		XPFN_LOAD(xcb_poly_fill_rectangle);
 	}
 
 	{
