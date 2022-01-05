@@ -24,4 +24,7 @@ typedef struct lt_arg lt_arg_t;
 // conf.h
 typedef struct lt_conf lt_conf_t;
 
+// font.h
+typedef struct lt_font lt_font_t;
+
 #endif
