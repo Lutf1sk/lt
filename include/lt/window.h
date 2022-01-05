@@ -91,20 +91,40 @@ enum lt_wintype {
 	LT_WIN_SOFT = 4,
 } lt_wintype_t;
 
-typedef struct lt_output {
+typedef
+struct lt_output {
 	int x, y;
 	int w, h;
 	short rate;
 	lstr_t name;
 } lt_output_t;
 
-typedef struct lt_window_description {
+typedef
+struct lt_window_description {
 	lstr_t title;
 	int x, y;
 	int w, h;
 	int output_index;
 	lt_wintype_t type;
 } lt_window_description_t;
+
+typedef
+enum lt_window_event_type {
+	LT_WINDOW_EVENT_KEY_PRESS,
+	LT_WINDOW_EVENT_KEY_RELEASE,
+	LT_WINDOW_EVENT_BUTTON_PRESS,
+	LT_WINDOW_EVENT_BUTTON_RELEASE,
+	LT_WINDOW_EVENT_MOTION,
+} lt_window_event_type_t;
+
+typedef
+struct lt_window_event {
+	lt_window_event_type_t type;
+	union {
+		lt_keycode_t key;
+		lt_keycode_t button;
+	};
+} lt_window_event_t;
 
 // x11.c / win32.c
 b8 lt_window_init(lt_arena_t* arena);
@@ -118,6 +138,9 @@ void lt_window_destroy(lt_window_t* win);
 
 void lt_window_poll_events(lt_window_t* win);
 void lt_window_wait_events(lt_window_t* win);
+
+b8 lt_window_poll_event(lt_window_t* win, lt_window_event_t* event);
+b8 lt_window_wait_event(lt_window_t* win, lt_window_event_t* event);
 
 void lt_window_set_fullscreen(lt_window_t* win, lt_winstate_t fullscreen);
 void lt_window_set_pos(lt_window_t* win, int x, int y);
