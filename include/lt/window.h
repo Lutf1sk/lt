@@ -149,6 +149,8 @@ void lt_window_set_size(lt_window_t* win, int w, int h);
 void lt_window_get_pos(lt_window_t* win, int* x, int* y);
 void lt_window_get_size(lt_window_t* win, int* w, int* h);
 
+void lt_window_gl_swap_buffers(lt_window_t* win);
+
 void lt_window_draw_color(lt_window_t* win, int r, int g, int b);
 void lt_window_draw_rect(lt_window_t* win, int x, int y, int w, int h);
 void lt_window_draw_rect_filled(lt_window_t* win, int x, int y, int w, int h);

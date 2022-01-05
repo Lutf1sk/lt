@@ -13,15 +13,16 @@
 #if defined(LT_X11)
 #	include <xcb/xcb.h>
 #	include <X11/Xlib.h>
+#	include <GL/glx.h>
 
 extern xcb_connection_t* lt_conn;
-
-//typedef u32 xcb_gc_t;
 
 typedef
 struct lt_window {
 	xcb_window_t window;
 	xcb_gc_t gc;
+
+	GLXContext glctx;
 
 	lt_wintype_t type;
 

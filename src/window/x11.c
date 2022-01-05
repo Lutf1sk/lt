@@ -180,21 +180,33 @@ lt_window_t* lt_window_create(lt_arena_t* arena, lt_window_description_t* desc) 
 	xcb_window_t window;
 	xcb_void_cookie_t window_cookie;
 
-	u32 win_mask = XCB_CW_EVENT_MASK;
-	u32 win_list[16] = {
+	u32 win_mask = XCB_CW_EVENT_MASK | XCB_CW_COLORMAP;
+	u32 win_list[] = {
 		XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_KEY_RELEASE |
 		XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE |
 		XCB_EVENT_MASK_POINTER_MOTION |
 		XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_LEAVE_WINDOW |
 		XCB_EVENT_MASK_EXPOSURE |
-		XCB_EVENT_MASK_STRUCTURE_NOTIFY
+		XCB_EVENT_MASK_STRUCTURE_NOTIFY,
+		0
 	};
-	int win_visual = lt_screen->root_visual;
+	int visual = lt_screen->root_visual, depth = XCB_COPY_FROM_PARENT;
+
+	// Get GL visual and create colormap
+	XVisualInfo* vi = NULL;
+	if (desc->type & LT_WIN_GL) {
+		static GLint att[] = { GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None };
+		vi = glXChooseVisual(lt_display, 0, att);
+		visual = vi->visualid;
+
+		Colormap clrmap = XCreateColormap(lt_display, lt_screen->root, vi->visual, AllocNone);
+		win_list[1] = clrmap;
+	}
 
 	window = xcb_generate_id(lt_conn);
 	window_cookie = xcb_create_window(
-		lt_conn, XCB_COPY_FROM_PARENT, window, lt_screen->root, x, y, w, h, 0,
-		XCB_WINDOW_CLASS_INPUT_OUTPUT, win_visual, win_mask, win_list
+		lt_conn, depth, window, lt_screen->root, x, y, w, h, 0,
+		XCB_WINDOW_CLASS_INPUT_OUTPUT, visual, win_mask, win_list
 	);
 
 	// Set title
@@ -204,28 +216,40 @@ lt_window_t* lt_window_create(lt_arena_t* arena, lt_window_description_t* desc) 
 	// Map window
 	xcb_void_cookie_t map_cookie = xcb_map_window(lt_conn, window);
 
-	// Create graphics context
-	u32 gc = xcb_generate_id(lt_conn);
-	u32 gc_mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND;
-	u32 gc_list[] = { lt_screen->white_pixel, lt_screen->black_pixel };
-	xcb_void_cookie_t gc_cookie = xcb_create_gc(lt_conn, gc, window, gc_mask, gc_list);
-
 	if (xcb_request_check(lt_conn, window_cookie))
 		return NULL;
 	if (xcb_request_check(lt_conn, title_cookie))
 		lt_werr(CLSTR("Failed to set window title\n"));
 	if (xcb_request_check(lt_conn, map_cookie))
 		goto setup_err;
-	if (xcb_request_check(lt_conn, gc_cookie))
-		lt_werr(CLSTR("Failed to create graphics context\n"));
+
+	// Create graphics context
+	u32 gc = 0;
+	if (desc->type & LT_WIN_SOFT) {
+		gc = xcb_generate_id(lt_conn);
+		u32 gc_mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND;
+		u32 gc_list[] = { lt_screen->white_pixel, lt_screen->black_pixel };
+		xcb_void_cookie_t gc_cookie = xcb_create_gc(lt_conn, gc, window, gc_mask, gc_list);
+
+		if (xcb_request_check(lt_conn, gc_cookie))
+			lt_werr(CLSTR("Failed to create graphics context\n"));
+	}
 
 	// Flush XCB connection
 	xcb_flush(lt_conn);
+
+	// Create GL context
+	GLXContext glc = 0;
+	if (desc->type & LT_WIN_GL) {
+		glc = glXCreateContext(lt_display, vi, NULL, GL_TRUE);
+		glXMakeCurrent(lt_display, window, glc);
+	}
 
 	// Create lt_window structure
 	lt_window_t* win = lt_arena_reserve(arena, sizeof(lt_window_t));
 	win->window = window;
 	win->gc = gc;
+	win->glctx = glc;
 	win->closed = 0;
 	win->exposed = 1;
 	win->type = desc->type;
@@ -245,13 +269,26 @@ setup_err:
 }
 
 void lt_window_destroy(lt_window_t* win) {
+	if (win->glctx) {
+		glXMakeCurrent(lt_display, None, NULL);
+		glXDestroyContext(lt_display, win->glctx);
+	}
+
 	xcb_destroy_window(lt_conn, win->window);
 }
 
+static lt_keycode_t btnmap[] = {
+	[0] = 0,
+	[1] = LT_KEY_MB1,
+	[2] = LT_KEY_MB3,
+	[3] = LT_KEY_MB2,
+	[4] = 0,
+	[5] = 0,
+};
+
 static
-b8 handle_event(lt_window_t* win, xcb_generic_event_t* gev, lt_window_event_t* event) {
+void handle_event(lt_window_t* win, xcb_generic_event_t* gev) {
 	xcb_window_t window = win->window;
-	b8 event_out = 0;
 
 	switch (gev->response_type & ~0x80) {
 	case XCB_DESTROY_NOTIFY: {
@@ -272,24 +309,12 @@ b8 handle_event(lt_window_t* win, xcb_generic_event_t* gev, lt_window_event_t* e
 		xcb_key_press_event_t* ev = (xcb_key_press_event_t*)gev;
 		lt_keycode_t key = lt_lookup_key(win, ev->detail, ev->state);
 		win->key_press_map[key] = 1;
-
-		if (event) {
-			event->type = LT_WINDOW_EVENT_KEY_PRESS;
-			event->key = key;
-			event_out = 1;
-		}
 	}	break;
 
 	case XCB_KEY_RELEASE: {
 		xcb_key_release_event_t* ev = (xcb_key_release_event_t*)gev;
 		lt_keycode_t key = lt_lookup_key(win, ev->detail, ev->state);
 		win->key_press_map[key] = 0;
-
-		if (event) {
-			event->type = LT_WINDOW_EVENT_KEY_RELEASE;
-			event->key = key;
-			event_out = 1;
-		}
 	}	break;
 
 	case XCB_CONFIGURE_NOTIFY: {
@@ -300,83 +325,97 @@ b8 handle_event(lt_window_t* win, xcb_generic_event_t* gev, lt_window_event_t* e
 		win->size_h = ev->height;
 	}	break;
 
-	static lt_keycode_t btnmap[] = {
-		[0] = 0,
-		[1] = LT_KEY_MB1,
-		[2] = LT_KEY_MB3,
-		[3] = LT_KEY_MB2,
-		[4] = 0,
-		[5] = 0,
-	};
-
 	case XCB_BUTTON_PRESS: {
 		xcb_button_press_event_t* ev = (xcb_button_press_event_t*)gev;
 		lt_keycode_t btn = btnmap[ev->detail];
-		if (btn) {
+		if (btn)
 			win->key_press_map[btn] = 1;
-			if (event) {
-				event->type = LT_WINDOW_EVENT_BUTTON_PRESS;
-				event->button = btn;
-
-				event_out = 1;
-			}
-		}
 	}	break;
 
 	case XCB_BUTTON_RELEASE: {
 		xcb_button_release_event_t* ev = (xcb_button_release_event_t*)gev;
 		lt_keycode_t btn = btnmap[ev->detail];
-		if (btn) {
+		if (btn)
 			win->key_press_map[btn] = 0;
-			if (event) {
-				event->type = LT_WINDOW_EVENT_BUTTON_RELEASE;
-				event->button = btn;
-
-				event_out = 1;
-			}
-		}
 	}	break;
 
 	case XCB_MOTION_NOTIFY: {
 		xcb_motion_notify_event_t* ev = (xcb_motion_notify_event_t*)gev;
 		win->mpos_x = ev->event_x - 1;
 		win->mpos_y = ev->event_y - 2;
-
-		if (event) {
-			event->type = LT_WINDOW_EVENT_MOTION;
-			event_out = 1;
-		}
 	}	break;
 
 	default:
 		break;
 	}
+}
 
-	return event_out;
+static
+b8 translate_event(lt_window_t* win, xcb_generic_event_t* gev, lt_window_event_t* ltev) {
+	switch (gev->response_type & ~0x80) {
+	case XCB_KEY_PRESS: {
+		xcb_key_press_event_t* ev = (xcb_key_press_event_t*)gev;
+		lt_keycode_t key = lt_lookup_key(win, ev->detail, ev->state);
+		ltev->type = LT_WIN_EVENT_KEY_PRESS;
+		ltev->key = key;
+	}	return 1;
+
+	case XCB_KEY_RELEASE: {
+		xcb_key_release_event_t* ev = (xcb_key_release_event_t*)gev;
+		lt_keycode_t key = lt_lookup_key(win, ev->detail, ev->state);
+		ltev->type = LT_WIN_EVENT_KEY_RELEASE;
+		ltev->key = key;
+	}	return 1;
+
+	case XCB_BUTTON_PRESS: {
+		xcb_button_press_event_t* ev = (xcb_button_press_event_t*)gev;
+		lt_keycode_t btn = btnmap[ev->detail];
+		ltev->type = LT_WIN_EVENT_BUTTON_PRESS;
+		ltev->button = btn;
+	}	return 1;
+
+	case XCB_BUTTON_RELEASE: {
+		xcb_button_release_event_t* ev = (xcb_button_release_event_t*)gev;
+		lt_keycode_t btn = btnmap[ev->detail];
+		ltev->type = LT_WIN_EVENT_BUTTON_RELEASE;
+		ltev->button = btn;
+	}	return 1;
+
+	case XCB_MOTION_NOTIFY:
+		ltev->type = LT_WIN_EVENT_MOTION;
+		return 1;
+
+	default:
+		return 0;
+	}
 }
 
 b8 lt_window_poll_event(lt_window_t* win, lt_window_event_t* event) {
 	// TODO: Only consume events belonging to the current window
-	xcb_generic_event_t* gev = xcb_poll_for_event(lt_conn);
-	if (gev) {
-		b8 ret = handle_event(win, gev, event);
+	xcb_generic_event_t* gev = NULL;
+
+	while ((gev = xcb_poll_for_event(lt_conn))) {
+		handle_event(win, gev);
+		b8 found = translate_event(win, gev, event);
 		free(gev);
 		xcb_flush(lt_conn);
-		return ret;
+		if (found)
+			return 1;
 	}
-	else
-		return 0;
+
+	return 0;
 }
 
 b8 lt_window_wait_event(lt_window_t* win, lt_window_event_t* event) {
 	// TODO: Only consume events belonging to the current window
 	xcb_generic_event_t* gev = xcb_wait_for_event(lt_conn);
-	b8 ret;
-	if (gev)
-		ret = handle_event(win, gev, event);
+	if (gev) {
+		handle_event(win, gev);
+		free(gev);
+	}
 
 	xcb_flush(lt_conn);
-	return ret;
+	return 1;
 }
 
 void lt_window_poll_events(lt_window_t* win) {
@@ -385,7 +424,7 @@ void lt_window_poll_events(lt_window_t* win) {
 	// TODO: Only consume events belonging to the current window
 	xcb_generic_event_t* gev = NULL;
 	while ((gev = xcb_poll_for_event(lt_conn))) {
-		handle_event(win, gev, NULL);
+		handle_event(win, gev);
 		free(gev);
 	}
 	xcb_flush(lt_conn);
@@ -397,7 +436,7 @@ void lt_window_wait_events(lt_window_t* win) {
 	// TODO: Only consume events belonging to the current window
 	xcb_generic_event_t* gev = xcb_wait_for_event(lt_conn);
 	if (gev)
-		handle_event(win, gev, NULL);
+		handle_event(win, gev);
 
 	xcb_flush(lt_conn);
 }
@@ -542,6 +581,10 @@ void lt_generate_keytab(lt_arena_t* arena, lt_window_t* win) {
 static
 lt_keycode_t lt_lookup_key(lt_window_t* win, xcb_keycode_t keycode, u16 state) {
 	return win->keytab[keycode - win->scan_min];
+}
+
+void lt_window_gl_swap_buffers(lt_window_t* win) {
+	glXSwapBuffers(lt_display, win->window);
 }
 
 void lt_window_draw_color(lt_window_t* win, int r, int g, int b) {
