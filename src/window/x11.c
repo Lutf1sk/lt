@@ -206,8 +206,8 @@ lt_window_t* lt_window_create(lt_arena_t* arena, lt_window_description_t* desc) 
 
 	// Create graphics context
 	u32 gc = xcb_generate_id(lt_conn);
-	u32 gc_mask = XCB_GC_FOREGROUND;
-	u32 gc_list[] = { lt_screen->black_pixel };
+	u32 gc_mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND;
+	u32 gc_list[] = { lt_screen->white_pixel, lt_screen->black_pixel };
 	xcb_void_cookie_t gc_cookie = xcb_create_gc(lt_conn, gc, window, gc_mask, gc_list);
 
 	if (xcb_request_check(lt_conn, window_cookie))
@@ -225,6 +225,7 @@ lt_window_t* lt_window_create(lt_arena_t* arena, lt_window_description_t* desc) 
 	// Create lt_window structure
 	lt_window_t* win = lt_arena_reserve(arena, sizeof(lt_window_t));
 	win->window = window;
+	win->gc = gc;
 	win->closed = 0;
 	win->exposed = 1;
 	win->type = desc->type;
@@ -232,7 +233,8 @@ lt_window_t* lt_window_create(lt_arena_t* arena, lt_window_description_t* desc) 
 	win->pos_y = y;
 	win->size_w = w;
 	win->size_h = h;
-	win->gc = gc;
+	win->mpos_x = -1;
+	win->mpos_y = -1;
 
 	lt_generate_keytab(arena, win);
 	return win;
@@ -292,6 +294,9 @@ void handle_event(lt_window_t* win, xcb_generic_event_t* gev) {
 		break;
 
 	case XCB_MOTION_NOTIFY:
+		xcb_motion_notify_event_t* ev = (xcb_motion_notify_event_t*)gev;
+		win->mpos_x = ev->event_x - 1;
+		win->mpos_y = ev->event_y - 2;
 		break;
 
 	default:
@@ -353,7 +358,6 @@ void lt_window_set_size(lt_window_t* win, int w, int h) {
 	u32 values[2] = { w, h };
 	xcb_configure_window(lt_conn, win->window, XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, values);
 }
-
 
 void lt_window_get_pos(lt_window_t* win, int* x, int* y) {
 	*x = win->pos_x;

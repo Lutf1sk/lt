@@ -135,6 +135,7 @@ void lt_window_draw_present(lt_window_t* win);
 b8 lt_window_exposed(lt_window_t* win);
 b8 lt_window_closed(lt_window_t* win);
 
+void lt_window_mouse_pos(lt_window_t* win, int* x, int* y);
 b8 lt_window_key_pressed(lt_window_t* win, lt_keycode_t keycode);
 b8 lt_window_key_released(lt_window_t* win, lt_keycode_t keycode);
 b8 lt_window_key_held(lt_window_t* win, lt_keycode_t keycode);

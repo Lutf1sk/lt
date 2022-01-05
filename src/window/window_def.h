@@ -31,6 +31,8 @@ struct lt_window {
 	int pos_x, pos_y;
 	int size_w, size_h;
 
+	int mpos_x, mpos_y;
+
 	b8 exposed;
 	b8 closed;
 	b8 key_press_map[LT_KEY_MAX];
