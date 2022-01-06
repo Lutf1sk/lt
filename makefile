@@ -6,6 +6,8 @@ OBJS = \
 	src/conf/conf.o \
 	src/font/font.o \
 	src/font/psf.o \
+	src/img/img.o \
+	src/img/tga.o \
 	src/io/cli.o \
 	src/io/file.o \
 	src/io/fmt.o \

@@ -1,4 +1,5 @@
 #ifndef LT_FONT_H
+#define LT_FONT_H 1
 
 #include <lt/lt.h>
 #include <lt/fwd.h>
