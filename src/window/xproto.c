@@ -43,11 +43,16 @@ XPFN_DEF(xcb_void_cookie_t, xcb_change_gc, (xcb_connection_t*, xcb_gc_t, u32, u3
 XPFN_DEF(xcb_void_cookie_t, xcb_poly_rectangle, (xcb_connection_t*, xcb_drawable_t, xcb_gc_t, u32, xcb_rectangle_t*));
 XPFN_DEF(xcb_void_cookie_t, xcb_poly_fill_rectangle, (xcb_connection_t*, xcb_drawable_t, xcb_gc_t, u32, xcb_rectangle_t*));
 
+XPFN_DEF(xcb_intern_atom_cookie_t, xcb_intern_atom, (xcb_connection_t*, u8, u16, char*));
+XPFN_DEF(xcb_intern_atom_reply_t*, xcb_intern_atom_reply, (xcb_connection_t*, xcb_intern_atom_cookie_t, xcb_generic_error_t**));
+
 // XCB-EWMH
 
 XPFN_DEF(xcb_intern_atom_cookie_t*, xcb_ewmh_init_atoms, (xcb_connection_t*, xcb_ewmh_connection_t*));
 
 XPFN_DEF(u8, xcb_ewmh_init_atoms_replies, (xcb_ewmh_connection_t*, xcb_intern_atom_cookie_t*, xcb_generic_error_t**));
+
+XPFN_DEF(xcb_void_cookie_t, xcb_ewmh_set_supported, (xcb_ewmh_connection_t*, int, u32, xcb_atom_t*));
 
 // XCB-Randr
 
@@ -132,6 +137,8 @@ void lt_xproto_init(void) {
 		XPFN_LOAD(xcb_change_gc);
 		XPFN_LOAD(xcb_poly_rectangle);
 		XPFN_LOAD(xcb_poly_fill_rectangle);
+		XPFN_LOAD(xcb_intern_atom);
+		XPFN_LOAD(xcb_intern_atom_reply);
 	}
 
 	{
@@ -141,6 +148,7 @@ void lt_xproto_init(void) {
 
 		XPFN_LOAD(xcb_ewmh_init_atoms);
 		XPFN_LOAD(xcb_ewmh_init_atoms_replies);
+		XPFN_LOAD(xcb_ewmh_set_supported);
 	}
 
 	{

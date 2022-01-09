@@ -69,6 +69,12 @@ XPFN_FWD(xcb_void_cookie_t, xcb_poly_rectangle, (xcb_connection_t*, xcb_drawable
 XPFN_FWD(xcb_void_cookie_t, xcb_poly_fill_rectangle, (xcb_connection_t*, xcb_drawable_t, xcb_gc_t, u32, xcb_rectangle_t*));
 #define xcb_poly_fill_rectangle(...) lt_xproto_xcb_poly_fill_rectangle(__VA_ARGS__)
 
+XPFN_FWD(xcb_intern_atom_cookie_t, xcb_intern_atom, (xcb_connection_t*, u8, u16, char*));
+#define xcb_intern_atom(...) lt_xproto_xcb_intern_atom(__VA_ARGS__)
+
+XPFN_FWD(xcb_intern_atom_reply_t*, xcb_intern_atom_reply, (xcb_connection_t*, xcb_intern_atom_cookie_t, xcb_generic_error_t**));
+#define xcb_intern_atom_reply(...) lt_xproto_xcb_intern_atom_reply(__VA_ARGS__)
+
 // XCB-EWMH
 
 XPFN_FWD(xcb_intern_atom_cookie_t*, xcb_ewmh_init_atoms, (xcb_connection_t*, xcb_ewmh_connection_t*));
@@ -76,6 +82,9 @@ XPFN_FWD(xcb_intern_atom_cookie_t*, xcb_ewmh_init_atoms, (xcb_connection_t*, xcb
 
 XPFN_FWD(u8, xcb_ewmh_init_atoms_replies, (xcb_ewmh_connection_t*, xcb_intern_atom_cookie_t*, xcb_generic_error_t**));
 #define xcb_ewmh_init_atoms_replies(...) lt_xproto_xcb_ewmh_init_atoms_replies(__VA_ARGS__)
+
+XPFN_FWD(xcb_void_cookie_t, xcb_ewmh_set_supported, (xcb_ewmh_connection_t*, int, u32, xcb_atom_t*));
+#define xcb_ewmh_set_supported(...) lt_xproto_xcb_ewmh_set_supported(__VA_ARGS__)
 
 // XCB-Randr
 

@@ -21,6 +21,8 @@ xcb_ewmh_connection_t lt_ewmh;
 xcb_screen_t* lt_screen = NULL;
 u32 lt_screen_index = 0;
 
+xcb_atom_t WM_DELETE_WINDOW;
+
 int lt_output_count = 0;
 lt_output_t* lt_outputs = NULL;
 
@@ -33,10 +35,8 @@ double mode_rate(xcb_randr_mode_info_t* mode) {
 	if (mode->mode_flags & XCB_RANDR_MODE_FLAG_INTERLACE)
 		vtotal /= 2;
 
-	if (!mode->htotal || !vtotal) {
-		lt_printf("ASDF\n");
+	if (!mode->htotal || !vtotal)
 		return 0;
-	}
 
 	return (double)mode->dot_clock / ((double)mode->htotal * vtotal);
 }
@@ -70,13 +70,29 @@ b8 lt_window_init(lt_arena_t* arena) {
 		return 0;
 	}
 
+	xcb_generic_error_t* error = NULL;
+
 	// EWMH
 	xcb_intern_atom_cookie_t* ewmh_cookie = xcb_ewmh_init_atoms(lt_conn, &lt_ewmh);
 	if (!xcb_ewmh_init_atoms_replies(&lt_ewmh, ewmh_cookie, NULL))
-		lt_werr(CLSTR("Failed to initialize emwh atoms\n"));
+		lt_werr(CLSTR("Failed to initialize EWMH atoms\n"));
+
+	lstr_t delwin_name = CLSTR("WM_DELETE_WINDOW");
+	xcb_intern_atom_cookie_t delwin_cookie = xcb_intern_atom(lt_conn, 1, delwin_name.len, delwin_name.str);
+	xcb_intern_atom_reply_t* delwin_reply = xcb_intern_atom_reply(lt_conn, delwin_cookie, &error);
+
+	if (error) {
+		XCloseDisplay(lt_display);
+		return 0;
+	}
+
+	WM_DELETE_WINDOW = delwin_reply->atom;
+	if (WM_DELETE_WINDOW == XCB_ATOM_NONE)
+		lt_werr(CLSTR("WM_DELETE_WINDOW not found\n"));
+
+	free(delwin_reply);
 
 	// Find outputs
-	xcb_generic_error_t* error = NULL;
 	xcb_randr_get_screen_resources_current_cookie_t scrres_cookie =
 			xcb_randr_get_screen_resources_current(lt_conn, lt_screen->root);
 	xcb_randr_get_screen_resources_current_reply_t* scrres_reply =
@@ -235,6 +251,9 @@ lt_window_t* lt_window_create(lt_arena_t* arena, lt_window_description_t* desc) 
 			lt_werr(CLSTR("Failed to create graphics context\n"));
 	}
 
+	// Listen for close events
+	xcb_change_property(lt_conn, XCB_PROP_MODE_REPLACE, window, lt_ewmh.WM_PROTOCOLS, XCB_ATOM_ATOM, 32, 1, &WM_DELETE_WINDOW);
+
 	// Flush XCB connection
 	xcb_flush(lt_conn);
 
@@ -303,6 +322,8 @@ void handle_event(lt_window_t* win, xcb_generic_event_t* gev) {
 
 	case XCB_ENTER_NOTIFY:
 	case XCB_LEAVE_NOTIFY:
+	case XCB_REPARENT_NOTIFY:
+	case XCB_MAP_NOTIFY:
 		break;
 
 	case XCB_KEY_PRESS: {
@@ -345,7 +366,20 @@ void handle_event(lt_window_t* win, xcb_generic_event_t* gev) {
 		win->mpos_y = ev->event_y - 2;
 	}	break;
 
+	case XCB_CLIENT_MESSAGE: {
+		xcb_client_message_event_t* ev = (xcb_client_message_event_t*)gev;
+
+		if (ev->type == lt_ewmh.WM_PROTOCOLS) {
+			xcb_atom_t prot = ev->data.data32[0];
+			if (prot == WM_DELETE_WINDOW)
+				win->closed = 1;
+		}
+		else if (ev->type != XCB_ATOM_NONE)
+			lt_printf("Unhandled XCB client message\n");
+	}	break;
+
 	default:
+		lt_printf("Unhandled XCB event %ud\n", gev->response_type & ~0x80);
 		break;
 	}
 }
