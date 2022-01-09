@@ -142,6 +142,12 @@ XPFN_FWD(Display*, XOpenDisplay, (_Xconst char*));
 XPFN_FWD(int, XCloseDisplay, (Display*));
 #define XCloseDisplay(...) lt_xproto_XCloseDisplay(__VA_ARGS__)
 
+XPFN_FWD(Colormap, XCreateColormap, (Display*, Window, Visual*, int));
+#define XCreateColormap(...) lt_xproto_XCreateColormap(__VA_ARGS__)
+
+XPFN_FWD(Colormap, XFreeColormap, (Display*, Colormap));
+#define XFreeColormap(...) lt_xproto_XFreeColormap(__VA_ARGS__)
+
 XPFN_FWD(Bool, XkbSetDetectableAutoRepeat, (Display*, Bool, Bool*));
 #define XkbSetDetectableAutoRepeat(...) lt_xproto_XkbSetDetectableAutoRepeat(__VA_ARGS__)
 

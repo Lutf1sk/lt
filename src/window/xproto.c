@@ -94,6 +94,9 @@ XPFN_DEF(Display*, XOpenDisplay, (_Xconst char*));
 
 XPFN_DEF(int, XCloseDisplay, (Display*));
 
+XPFN_DEF(Colormap, XCreateColormap, (Display*, Window, Visual*, int));
+XPFN_DEF(Colormap, XFreeColormap, (Display*, Colormap));
+
 XPFN_DEF(Bool, XkbSetDetectableAutoRepeat, (Display*, Bool, Bool*));
 
 XPFN_DEF(Status, XkbGetNames, (Display*, unsigned int, XkbDescPtr));
@@ -177,6 +180,8 @@ void lt_xproto_init(void) {
 
 		XPFN_LOAD(XOpenDisplay);
 		XPFN_LOAD(XCloseDisplay);
+		XPFN_LOAD(XCreateColormap);
+		XPFN_LOAD(XFreeColormap);
 		XPFN_LOAD(XkbSetDetectableAutoRepeat);
 		XPFN_LOAD(XkbGetNames);
 		XPFN_LOAD(XkbGetMap);

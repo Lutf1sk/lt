@@ -210,12 +210,13 @@ lt_window_t* lt_window_create(lt_arena_t* arena, lt_window_description_t* desc) 
 
 	// Get GL visual and create colormap
 	XVisualInfo* vi = NULL;
+	Colormap clrmap = 0;
 	if (desc->type & LT_WIN_GL) {
 		static GLint att[] = { GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None };
 		vi = glXChooseVisual(lt_display, 0, att);
 		visual = vi->visualid;
 
-		Colormap clrmap = XCreateColormap(lt_display, lt_screen->root, vi->visual, AllocNone);
+		clrmap = XCreateColormap(lt_display, lt_screen->root, vi->visual, AllocNone);
 		win_list[1] = clrmap;
 	}
 
@@ -269,6 +270,7 @@ lt_window_t* lt_window_create(lt_arena_t* arena, lt_window_description_t* desc) 
 	win->window = window;
 	win->gc = gc;
 	win->glctx = glc;
+	win->clrmap = clrmap;
 	win->closed = 0;
 	win->exposed = 1;
 	win->type = desc->type;
@@ -289,6 +291,7 @@ setup_err:
 
 void lt_window_destroy(lt_window_t* win) {
 	if (win->glctx) {
+		XFreeColormap(lt_display, win->clrmap);
 		glXMakeCurrent(lt_display, None, NULL);
 		glXDestroyContext(lt_display, win->glctx);
 	}

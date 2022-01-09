@@ -23,6 +23,7 @@ struct lt_window {
 	xcb_gc_t gc;
 
 	GLXContext glctx;
+	Colormap clrmap;
 
 	lt_wintype_t type;
 
