@@ -4,7 +4,8 @@
 #include <lt/lt.h>
 #include <lt/fwd.h>
 
-#define LT_FONT_PSF_MAGIC 0x864ab572
+#define LT_FONT_PSF1_MAGIC 0x0436
+#define LT_FONT_PSF2_MAGIC 0x864ab572
 
 typedef
 struct lt_font {

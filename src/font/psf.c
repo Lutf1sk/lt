@@ -2,7 +2,14 @@
 #include <lt/mem.h>
 
 typedef
-struct lt_psf_header {
+struct lt_psf1_header {
+	u16 magic;
+	u8 mode;
+	u8 height;
+} lt_psf1_header_t;
+
+typedef
+struct lt_psf2_header {
 	u32 magic;
 	u32 version;
 	u32 header_size;
@@ -11,7 +18,7 @@ struct lt_psf_header {
 	u32 glyph_bytes;
 	u32 height;
 	u32 width;
-} lt_psf_header_t;
+} lt_psf2_header_t;
 
 #define _ 0x00000000,
 #define X 0xFFFFFFFF,
@@ -280,27 +287,50 @@ u32 precomp_tab[256][8] = {
 #undef X
 
 lt_font_t* lt_font_load_psf(lt_arena_t* arena, void* data, usz len) {
-	lt_psf_header_t* h = data;
-
-	if (len < sizeof(lt_psf_header_t) || h->magic != LT_FONT_PSF_MAGIC || h->version != 0)
+	if (len < sizeof(u32))
 		return NULL;
 
-	usz glyphtab_size = h->glyph_count * h->glyph_bytes;
+	u32 w, h, glyph_count;
+	u8* it = NULL;
 
-	if (len < h->header_size + glyphtab_size || h->width == 0 || h->height == 0)
+	if (*(u16*)data == LT_FONT_PSF1_MAGIC) {
+		lt_psf1_header_t* head = data;
+
+		if (len < sizeof(lt_psf1_header_t) || head->height == 0)
+			return NULL;
+
+		w = 8;
+		h = head->height;
+		glyph_count = 256;
+		it = (u8*)data + sizeof(lt_psf1_header_t);
+	}
+	else if (*(u32*)data == LT_FONT_PSF2_MAGIC) {
+		lt_psf2_header_t* head = data;
+
+		if (len < sizeof(lt_psf2_header_t) || head->version != 0)
+			return NULL;
+
+		usz glyphtab_size = head->glyph_count * head->glyph_bytes;
+
+		if (len < head->header_size + glyphtab_size || head->width == 0 || head->height == 0)
+			return NULL;
+
+		w = head->width;
+		h = head->height;
+		glyph_count = head->glyph_count;
+		it = (u8*)data + head->header_size;
+	}
+	else
 		return NULL;
-
-	u32 w = h->width;
 
 	lt_font_t* font = lt_arena_reserve(arena, sizeof(lt_font_t));
 	font->width = w;
-	font->height = h->height;
-	font->glyph_count = h->glyph_count;
-	font->glyph_data = lt_arena_reserve(arena, h->glyph_count * w * h->height * sizeof(u32));
+	font->height = h;
+	font->glyph_count = glyph_count;
+	font->glyph_data = lt_arena_reserve(arena, glyph_count * w * h * sizeof(u32));
 
-	u8* it = (u8*)data + h->header_size;
-	for (u32* out = font->glyph_data, i = 0; i < h->glyph_count; ++i) {
-		for (usz j = 0; j < h->height; ++j) {
+	for (u32* out = font->glyph_data, i = 0; i < glyph_count; ++i) {
+		for (usz j = 0; j < h; ++j) {
 			i32 bits = w;
 			while (bits > 0) {
 				usz left = bits < 8 ? 8 - bits : 8;
