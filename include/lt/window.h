@@ -136,11 +136,8 @@ lt_output_t* lt_window_outputs(void);
 lt_window_t* lt_window_create(lt_arena_t* arena, lt_window_description_t* desc);
 void lt_window_destroy(lt_window_t* win);
 
-void lt_window_poll_events(lt_window_t* win);
-void lt_window_wait_events(lt_window_t* win);
-
-b8 lt_window_poll_event(lt_window_t* win, lt_window_event_t* event);
-b8 lt_window_wait_event(lt_window_t* win, lt_window_event_t* event);
+usz lt_window_poll_events(lt_window_t* win, lt_window_event_t* events, usz max_events);
+usz lt_window_wait_events(lt_window_t* win, lt_window_event_t* events, usz max_events);
 
 void lt_window_set_fullscreen(lt_window_t* win, lt_winstate_t fullscreen);
 void lt_window_set_pos(lt_window_t* win, int x, int y);

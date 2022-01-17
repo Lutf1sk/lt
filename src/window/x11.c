@@ -427,55 +427,40 @@ b8 translate_event(lt_window_t* win, xcb_generic_event_t* gev, lt_window_event_t
 	}
 }
 
-b8 lt_window_poll_event(lt_window_t* win, lt_window_event_t* event) {
+usz lt_window_poll_events(lt_window_t* win, lt_window_event_t* events, usz max_events) {
+	memcpy(win->old_key_press_map, win->key_press_map, sizeof(win->key_press_map));
+
+	usz ev_count = 0;
+
 	// TODO: Only consume events belonging to the current window
 	xcb_generic_event_t* gev = NULL;
-
 	while ((gev = xcb_poll_for_event(lt_conn))) {
 		handle_event(win, gev);
-		b8 found = translate_event(win, gev, event);
+		if (events && ev_count < max_events && translate_event(win, gev, &events[ev_count]))
+			++ev_count;
 		free(gev);
-		xcb_flush(lt_conn);
-		if (found)
-			return 1;
 	}
 
-	return 0;
+	xcb_flush(lt_conn);
+	return ev_count;
 }
 
-b8 lt_window_wait_event(lt_window_t* win, lt_window_event_t* event) {
+usz lt_window_wait_events(lt_window_t* win, lt_window_event_t* events, usz max_events) {
+	memcpy(win->old_key_press_map, win->key_press_map, sizeof(win->key_press_map));
+
+	usz ev_count = 0;
+
 	// TODO: Only consume events belonging to the current window
 	xcb_generic_event_t* gev = xcb_wait_for_event(lt_conn);
 	if (gev) {
 		handle_event(win, gev);
+		if (events && ev_count < max_events && translate_event(win, gev, &events[ev_count]))
+			++ev_count;
 		free(gev);
 	}
 
 	xcb_flush(lt_conn);
-	return 1;
-}
-
-void lt_window_poll_events(lt_window_t* win) {
-	memcpy(win->old_key_press_map, win->key_press_map, sizeof(win->key_press_map));
-
-	// TODO: Only consume events belonging to the current window
-	xcb_generic_event_t* gev = NULL;
-	while ((gev = xcb_poll_for_event(lt_conn))) {
-		handle_event(win, gev);
-		free(gev);
-	}
-	xcb_flush(lt_conn);
-}
-
-void lt_window_wait_events(lt_window_t* win) {
-	memcpy(win->old_key_press_map, win->key_press_map, sizeof(win->key_press_map));
-
-	// TODO: Only consume events belonging to the current window
-	xcb_generic_event_t* gev = xcb_wait_for_event(lt_conn);
-	if (gev)
-		handle_event(win, gev);
-
-	xcb_flush(lt_conn);
+	return ev_count;
 }
 
 void lt_window_set_fullscreen(lt_window_t* win, lt_winstate_t state) {
