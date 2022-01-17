@@ -7,6 +7,7 @@ OBJS = \
 	src/ctype/ctype.o \
 	src/font/font.o \
 	src/font/psf.o \
+	src/gui/gui.o \
 	src/img/img.o \
 	src/img/tga.o \
 	src/io/cli.o \
