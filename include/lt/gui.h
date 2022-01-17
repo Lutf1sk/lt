@@ -7,6 +7,10 @@
 #define LT_GUI_GROW_DOWN 0
 #define LT_GUI_GROW_RIGHT 1
 
+#define LT_GUI_ICON_EXPANDED 0
+#define LT_GUI_ICON_COLLAPSED 1
+#define LT_GUI_ICON_MAX 2
+
 typedef
 struct lt_gui_cont {
 	isz x, y, w, h;
@@ -17,6 +21,7 @@ struct lt_gui_cont {
 
 typedef void (*lt_gui_rect_callback_t)(void* usr, isz x, isz y, isz w, isz h, u32 clr);
 typedef void (*lt_gui_text_callback_t)(void* usr, isz x, isz y, lstr_t text, u32 clr);
+typedef void (*lt_gui_icon_callback_t)(void* usr, usz icon, isz x, isz y, isz w, isz h, u32 clr);
 typedef void (*lt_gui_scissor_callback_t)(void* usr, isz x, isz y, isz w, isz h);
 
 typedef usz (*lt_gui_text_width_callback_t)(void* usr, lstr_t text);
@@ -35,6 +40,7 @@ struct lt_gui_ctx {
 	lt_gui_rect_callback_t draw_filled_rect;
 	lt_gui_rect_callback_t draw_rect;
 	lt_gui_text_callback_t draw_text;
+	lt_gui_icon_callback_t draw_icon;
 	lt_gui_scissor_callback_t scissor;
 
 	isz glyph_width;
@@ -58,7 +64,7 @@ void lt_gui_label(lt_gui_ctx_t* cx, lstr_t text);
 
 u8 lt_gui_button(lt_gui_ctx_t* cx, lstr_t text);
 
-u8 lt_gui_expandable(lt_gui_ctx_t* cx, lstr_t text, isz tw);
+u8 lt_gui_expandable(lt_gui_ctx_t* cx, lstr_t text, b8* expanded);
 
 void lt_gui_vspace(lt_gui_ctx_t* cx, usz space);
 void lt_gui_hspace(lt_gui_ctx_t* cx, usz space);

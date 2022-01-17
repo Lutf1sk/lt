@@ -167,26 +167,34 @@ u8 lt_gui_button(lt_gui_ctx_t* cx, lstr_t text) {
 	return hovered && mb_pressed(cx, 0);
 }
 
-u8 lt_gui_expandable(lt_gui_ctx_t* cx, lstr_t text, isz tw) {
+u8 lt_gui_expandable(lt_gui_ctx_t* cx, lstr_t text, b8* expanded) {
 	isz x, y, w, h;
 	get_avail_space(cx, &x, &y, &w, &h);
 
 	isz text_w = text.len * cx->glyph_width, text_h = cx->glyph_height;
-	w = calc_size(w, tw), h = text_h + 2;
+	h = text_h + 2;
 
 	u32 bg = BUTTON_BG;
 	b8 hovered = is_hovered(cx, x, y, w, h);
-	if (hovered)
+	if (hovered) {
 		bg += 0x202020;
+		if (mb_pressed(cx, 0))
+			*expanded = !*expanded;
+	}
+
+	usz icon = LT_GUI_ICON_COLLAPSED;
+	if (*expanded)
+		icon = LT_GUI_ICON_EXPANDED;
 
 	cx->draw_filled_rect(cx->user_data, x, y, w, h, bg);
 	cx->draw_rect(cx->user_data, x, y, w, h, BORDER);
 
 	cx->draw_text(cx->user_data, x + w/2 - text_w/2, y + 1, text, BUTTON_TEXT);
+	cx->draw_icon(cx->user_data, icon, x + 1, y + 1, cx->glyph_height, cx->glyph_height, BUTTON_TEXT);
 
 	reserve_space(cx, w, h);
 
-	return hovered && mb_pressed(cx, 0);
+	return *expanded;
 }
 
 void lt_gui_vspace(lt_gui_ctx_t* cx, usz space) {
