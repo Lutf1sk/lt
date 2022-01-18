@@ -1,7 +1,7 @@
 #include <lt/gui.h>
 #include <lt/mem.h>
 
-#define BUTTON_HPAD 16
+#define BUTTON_HPAD 8
 
 #define PANEL_BG 0x282828
 #define PANEL_BORDER 0x404040
@@ -37,15 +37,10 @@ lt_gui_cont_t cont_pop(lt_gui_ctx_t* cx) {
 	return cx->conts[--cx->cont_top];
 }
 
-static LT_INLINE
-void set_scissor(lt_gui_ctx_t* cx, lt_gui_rect_t* r) {
-	cx->scissor(cx->user_data, r);
-}
-
-
-
 void lt_gui_ctx_init(lt_arena_t* arena, lt_gui_ctx_t* cx) {
 	cx->conts = lt_arena_reserve(arena, sizeof(lt_gui_cont_t) * cx->cont_max);
+
+	memset(&cx->cmdbufs, 0, sizeof(cx->cmdbufs));
 
 	LT_ASSERT(cx->draw_rect);
 	LT_ASSERT(cx->draw_text);
@@ -60,9 +55,28 @@ void lt_gui_begin(lt_gui_ctx_t* cx, isz w, isz h) {
 	c->cols = 0;
 
 	c->padding = 0;
+	c->spacing = SPACE;
+
+	cx->cbuf = &cx->cmdbufs[0];
 }
 
 void lt_gui_end(lt_gui_ctx_t* cx) {
+	for (usz i = 0; i < 2; ++i) {
+		lt_gui_command_buffer_t* cbuf = &cx->cmdbufs[i];
+
+		cx->draw_rect(cx->user_data, cbuf->box_count, cbuf->box_rects, cbuf->box_clrs);
+
+		for (usz i = 0; i < cbuf->icon_count; ++i)
+			cx->draw_icon(cx->user_data, cbuf->icon_ids[i], &cbuf->icon_rects[i], cbuf->icon_clrs[i]);
+
+		cx->draw_text(cx->user_data, cbuf->text_count, cbuf->text_points, cbuf->text_strs, cbuf->text_clrs);
+
+		cbuf->box_count = 0;
+		cbuf->icon_count = 0;
+		cbuf->text_count = 0;
+		cbuf->text_data_idx = 0;
+	}
+
 	LT_ASSERT(cx->cont_top == 1);
 	cx->prev_mouse_state = cx->mouse_state;
 }
@@ -71,7 +85,7 @@ lt_gui_cont_t* lt_gui_get_container(lt_gui_ctx_t* cx) {
 	return cont_top(cx);
 }
 
-usz lt_gui_draw_border(lt_gui_rect_t* r, u32 clr, u32 flags, lt_gui_rect_t* out_r, u32* out_clr) {
+void lt_gui_draw_border(lt_gui_ctx_t* cx, lt_gui_rect_t* r, u32 clr, u32 flags) {
 	u32 tl_clr = clr;
 	u32 br_clr = clr;
 
@@ -80,17 +94,49 @@ usz lt_gui_draw_border(lt_gui_rect_t* r, u32 clr, u32 flags, lt_gui_rect_t* out_
 	if (flags & LT_GUI_BORDER_INSET)
 		br_clr += 0x202020;
 
-	out_clr[0] = br_clr;
-	out_clr[1] = br_clr;
-	out_clr[2] = tl_clr;
-	out_clr[3] = tl_clr;
+	usz count = cx->cbuf->box_count;
+	u32* clrs = cx->cbuf->box_clrs;
+	lt_gui_rect_t* rects = cx->cbuf->box_rects;
 
-	out_r[0] = (lt_gui_rect_t){ r->x + r->w - BORDER_SIZE, r->y, BORDER_SIZE, r->h };
-	out_r[1] = (lt_gui_rect_t){ r->x, r->y + r->h - BORDER_SIZE, r->w, BORDER_SIZE };
-	out_r[2] = (lt_gui_rect_t){ r->x, r->y, BORDER_SIZE, r->h };
-	out_r[3] = (lt_gui_rect_t){ r->x, r->y, r->w, BORDER_SIZE };
+	clrs[count + 0] = br_clr;
+	clrs[count + 1] = br_clr;
+	clrs[count + 2] = tl_clr;
+	clrs[count + 3] = tl_clr;
 
-	return 4;
+	rects[count + 0] = (lt_gui_rect_t){ r->x + r->w - BORDER_SIZE, r->y, BORDER_SIZE, r->h };
+	rects[count + 1] = (lt_gui_rect_t){ r->x, r->y + r->h - BORDER_SIZE, r->w, BORDER_SIZE };
+	rects[count + 2] = (lt_gui_rect_t){ r->x, r->y, BORDER_SIZE, r->h };
+	rects[count + 3] = (lt_gui_rect_t){ r->x, r->y, r->w, BORDER_SIZE };
+
+	cx->cbuf->box_count += 4;
+}
+
+void lt_gui_draw_rect(lt_gui_ctx_t* cx, lt_gui_rect_t* r, u32 clr) {
+	usz count = cx->cbuf->box_count;
+	cx->cbuf->box_clrs[count] = clr;
+	cx->cbuf->box_rects[count] = *r;
+	++cx->cbuf->box_count;
+}
+
+void lt_gui_draw_icon(lt_gui_ctx_t* cx, u32 icon, lt_gui_rect_t* r, u32 clr) {
+	usz count = cx->cbuf->icon_count;
+	cx->cbuf->icon_clrs[count] = clr;
+	cx->cbuf->icon_rects[count] = *r;
+	cx->cbuf->icon_ids[count] = icon;
+	++cx->cbuf->icon_count;
+}
+
+void lt_gui_draw_text(lt_gui_ctx_t* cx, i32 x, i32 y, lstr_t str, u32 clr) {
+	char* cmd_str = &cx->cbuf->text_data[cx->cbuf->text_data_idx];
+	memcpy(cmd_str, str.str, str.len);
+
+	cx->cbuf->text_data_idx += str.len;
+
+	usz count = cx->cbuf->text_count;
+	cx->cbuf->text_clrs[count] = clr;
+	cx->cbuf->text_points[count] = LT_GUI_POINT(x, y);
+	cx->cbuf->text_strs[count] = LSTR(cmd_str, str.len);
+	++cx->cbuf->text_count;
 }
 
 static
@@ -110,15 +156,18 @@ void make_space(lt_gui_ctx_t* cx, lt_gui_rect_t* r, u32 flags) {
 	if (r->h <= 0)
 		r->h += c->a.h;
 
+	if (flags & LT_GUI_GROW_X)
+		r->w = c->a.w;
+
 	if (flags & LT_GUI_ALIGN_RIGHT)
 		r->x += c->a.w - r->w;
 
 	if (c->cols) {
 		if (flags & LT_GUI_ALIGN_RIGHT)
-			c->a.w -= r->w + SPACE;
+			c->a.w -= r->w + c->spacing;
 		else {
-			c->a.x += r->w + SPACE;
-			c->a.w -= r->w + SPACE;
+			c->a.x += r->w + c->spacing;
+			c->a.w -= r->w + c->spacing;
 		}
 
 		if (c->ymax < r->h)
@@ -128,14 +177,14 @@ void make_space(lt_gui_ctx_t* cx, lt_gui_rect_t* r, u32 flags) {
 			c->a.w = c->r.w - c->padding*2;
 			c->a.x = c->r.x + c->padding;
 
-			c->a.y += c->ymax + SPACE;
-			c->a.h -= c->ymax + SPACE;
+			c->a.y += c->ymax + c->spacing;
+			c->a.h -= c->ymax + c->spacing;
 			c->ymax = 0;
 		}
 	}
 	else {
-		c->a.y += r->h + SPACE;
-		c->a.h -= r->h + SPACE;
+		c->a.y += r->h + c->spacing;
+		c->a.h -= r->h + c->spacing;
 	}
 }
 
@@ -145,22 +194,20 @@ void lt_gui_panel_begin(lt_gui_ctx_t* cx, isz w, isz h, u32 flags) {
 	c.r.h = h;
 	c.cols = 0;
 	c.padding = PAD;
+	c.spacing = SPACE;
 	make_space(cx, &c.r, flags);
 	seta_padded(&c);
 
-	set_scissor(cx, &c.r);
+// 	set_scissor(cx, &c.r);
 
 	cx->conts[cx->cont_top++] = c;
-
-	lt_gui_rect_t rects[5] = { c.r };
-	u32 clrs[5] = { PANEL_BG };
-	lt_gui_draw_border(&c.r, PANEL_BORDER, flags, &rects[1], &clrs[1]);
-	cx->draw_rect(cx->user_data, 5, rects, clrs);
+	lt_gui_draw_rect(cx, &c.r, PANEL_BG);
+	lt_gui_draw_border(cx, &c.r, PANEL_BORDER, flags);
 }
 
 void lt_gui_panel_end(lt_gui_ctx_t* cx) {
 	cont_pop(cx);
-	set_scissor(cx, &cont_top(cx)->r);
+// 	set_scissor(cx, &cont_top(cx)->r);
 }
 
 void lt_gui_row(lt_gui_ctx_t* cx, usz cols) {
@@ -173,7 +220,7 @@ void lt_gui_label(lt_gui_ctx_t* cx, lstr_t text, u32 flags) {
 	lt_gui_rect_t r = { 0, 0, text.len * cx->glyph_width, cx->glyph_height };
 	make_space(cx, &r, flags);
 
-	cx->draw_text(cx->user_data, r.x, r.y, text, TEXT);
+	lt_gui_draw_text(cx, r.x, r.y, text, TEXT);
 }
 
 u8 lt_gui_button(lt_gui_ctx_t* cx, lstr_t text, u32 flags) {
@@ -187,12 +234,10 @@ u8 lt_gui_button(lt_gui_ctx_t* cx, lstr_t text, u32 flags) {
 	if (hovered)
 		bg += 0x202020;
 
-	lt_gui_rect_t rects[5] = { r };
-	u32 clrs[5] = { bg };
-	lt_gui_draw_border(&r, BORDER, flags, &rects[1], &clrs[1]);
-	cx->draw_rect(cx->user_data, 5, rects, clrs);
+	lt_gui_draw_rect(cx, &r, bg);
+	lt_gui_draw_border(cx, &r, BORDER, flags);
 
-	cx->draw_text(cx->user_data, r.x + BUTTON_HPAD, r.y + 1, text, BUTTON_TEXT);
+	lt_gui_draw_text(cx, r.x + BUTTON_HPAD, r.y + 1, text, BUTTON_TEXT);
 
 	return hovered && mb_pressed(cx, 0);
 }
@@ -213,15 +258,13 @@ u8 lt_gui_expandable(lt_gui_ctx_t* cx, lstr_t text, b8* expanded, u32 flags) {
 	if (*expanded)
 		icon = LT_GUI_ICON_EXPANDED;
 
-	lt_gui_rect_t rects[5] = { r };
-	u32 clrs[5] = { bg };
-	lt_gui_draw_border(&r, BORDER, flags, &rects[1], &clrs[1]);
-	cx->draw_rect(cx->user_data, 5, rects, clrs);
+	lt_gui_draw_rect(cx, &r, bg);
+	lt_gui_draw_border(cx, &r, BORDER, flags);
 
-	cx->draw_text(cx->user_data, r.x + r.w/2 - (text.len * cx->glyph_width)/2, r.y + 1, text, BUTTON_TEXT);
+	lt_gui_draw_text(cx, r.x + r.w/2 - (text.len * cx->glyph_width)/2, r.y + 1, text, BUTTON_TEXT);
 
 	lt_gui_rect_t ir = { r.x + 1, r.y + 1, cx->glyph_height, cx->glyph_height };
-	cx->draw_icon(cx->user_data, icon, &ir, BUTTON_TEXT);
+	lt_gui_draw_icon(cx, icon, &ir, BUTTON_TEXT);
 
 	return *expanded;
 }
@@ -250,6 +293,7 @@ b8 lt_gui_dropdown_begin(lt_gui_ctx_t* cx, lstr_t text, isz ew, isz eh, u32* sta
 	c.r = LT_GUI_RECT(r.x, r.y + r.h, ew, eh);
 	c.a = c.r;
 	c.padding = 0;
+	c.spacing = 0;
 
 	if (hovered) {
 		bg += 0x202020;
@@ -260,34 +304,31 @@ b8 lt_gui_dropdown_begin(lt_gui_ctx_t* cx, lstr_t text, isz ew, isz eh, u32* sta
 	if (!hovered && !is_hovered(cx, &c.r))
 		*state = 0;
 
-	lt_gui_rect_t rects[10] = { r };
-	u32 clrs[10] = { bg };
-	usz rect_count = 1;
+	lt_gui_draw_rect(cx, &r, bg);
+	lt_gui_draw_border(cx, &r, BORDER, flags);
 
-	rect_count += lt_gui_draw_border(&r, BORDER, flags, &rects[rect_count], &clrs[rect_count]);
+	lt_gui_draw_text(cx, r.x + PAD, r.y + 1, text, BUTTON_TEXT);
+
+	lt_gui_rect_t ir = { r.x + r.w - cx->glyph_height - PAD, r.y + 1, cx->glyph_height, cx->glyph_height };
+	lt_gui_draw_icon(cx, LT_GUI_ICON_EXPANDED, &ir, BUTTON_TEXT);
 
 	if (*state) {
 		cx->conts[cx->cont_top++] = c;
+		++cx->cbuf;
 
-		rects[rect_count] = c.r;
-		clrs[rect_count++] = PANEL_BG;
-
-		rect_count += lt_gui_draw_border(&c.r, 0xFF, 0, &rects[rect_count], &clrs[rect_count]);
+		lt_gui_draw_rect(cx, &c.r, PANEL_BG);
+		lt_gui_draw_border(cx, &c.r, PANEL_BORDER, 0);
 	}
-
-	cx->draw_rect(cx->user_data, rect_count, rects, clrs);
-
-	cx->draw_text(cx->user_data, r.x + PAD, r.y + 1, text, BUTTON_TEXT);
-
-	lt_gui_rect_t ir = { r.x + r.w - cx->glyph_height - PAD, r.y + 1, cx->glyph_height, cx->glyph_height };
-	cx->draw_icon(cx->user_data, LT_GUI_ICON_EXPANDED, &ir, BUTTON_TEXT);
 
 	return *state;
 }
 
 void lt_gui_dropdown_end(lt_gui_ctx_t* cx) {
+	--cx->cbuf;
 	cont_pop(cx);
-	set_scissor(cx, &cont_top(cx)->r);
+	cx->mouse_x = -1;
+	cx->mouse_y = -1;
+// 	set_scissor(cx, &cont_top(cx)->r);
 }
 
 b8 lt_gui_checkbox(lt_gui_ctx_t* cx, lstr_t text, b8* state, u32 flags) {
@@ -304,15 +345,14 @@ b8 lt_gui_checkbox(lt_gui_ctx_t* cx, lstr_t text, b8* state, u32 flags) {
 			*state = !*state;
 	}
 
-	cx->draw_text(cx->user_data, r.x + cx->glyph_height + PAD*2, r.y, text, TEXT);
+	lt_gui_draw_text(cx, r.x + cx->glyph_height + PAD*2, r.y, text, TEXT);
 
-	lt_gui_rect_t rects[5] = { { r.x, r.y, cx->glyph_height, cx->glyph_height } };
-	u32 clrs[5] = { bg };
-	lt_gui_draw_border(&rects[0], BORDER, flags, &rects[1], &clrs[1]);
-	cx->draw_rect(cx->user_data, 5, rects, clrs);
+	lt_gui_rect_t cr = { r.x, r.y, cx->glyph_height, cx->glyph_height };
+	lt_gui_draw_rect(cx, &cr, bg);
+	lt_gui_draw_border(cx, &cr, BORDER, flags);
 
 	if (*state)
-		cx->draw_icon(cx->user_data, LT_GUI_ICON_CHECK, &rects[0], TEXT);
+		lt_gui_draw_icon(cx, LT_GUI_ICON_CHECK, &cr, TEXT);
 
 	return *state;
 }

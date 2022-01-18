@@ -13,6 +13,7 @@
 #define LT_GUI_BORDER_INSET		2
 #define LT_GUI_BORDER_TOGGLE	4
 #define LT_GUI_ALIGN_RIGHT		8
+#define LT_GUI_GROW_X			16
 
 typedef
 struct lt_gui_rect {
@@ -26,18 +27,40 @@ struct lt_gui_cont {
 	isz ymax;
 	usz cols;
 
-	isz padding;
+	isz padding, spacing;
 } lt_gui_cont_t;
 
+typedef
+struct lt_gui_point {
+	i32 x, y;
+} lt_gui_point_t;
+typedef
+struct lt_gui_command_buffer {
+	lt_gui_rect_t box_rects[256];
+	u32 box_clrs[256];
+	usz box_count;
+
+	lt_gui_rect_t icon_rects[64];
+	u32 icon_clrs[64];
+	u32 icon_ids[64];
+	usz icon_count;
+
+	lt_gui_point_t text_points[128];
+	lstr_t text_strs[128];
+	u32 text_clrs[128];
+	usz text_count;
+
+	char text_data[4096];
+	usz text_data_idx;
+} lt_gui_command_buffer_t;
+
 #define LT_GUI_RECT(x, y, w, h) ((lt_gui_rect_t){ (x), (y), (w), (h) })
+#define LT_GUI_POINT(x, y) ((lt_gui_point_t){ (x), (y) })
 
 typedef void (*lt_gui_rect_callback_t)(void* usr, usz count, lt_gui_rect_t* r, u32* clr);
-typedef void (*lt_gui_text_callback_t)(void* usr, i32 x, i32 y, lstr_t text, u32 clr);
+typedef void (*lt_gui_text_callback_t)(void* usr, usz count, lt_gui_point_t* pts, lstr_t* strs, u32* clrs);
 typedef void (*lt_gui_icon_callback_t)(void* usr, usz icon, lt_gui_rect_t* r, u32 clr);
 typedef void (*lt_gui_scissor_callback_t)(void* usr, lt_gui_rect_t* r);
-
-typedef usz (*lt_gui_text_width_callback_t)(void* usr, lstr_t text);
-typedef usz (*lt_gui_text_height_callback_t)(void* usr);
 
 #define LT_GUI_MB1_PRESSED 1
 
@@ -57,6 +80,9 @@ struct lt_gui_ctx {
 	isz glyph_width;
 	isz glyph_height;
 
+	lt_gui_command_buffer_t cmdbufs[2];
+	lt_gui_command_buffer_t* cbuf;
+
 	int mouse_x, mouse_y;
 	u32 mouse_state, prev_mouse_state;
 } lt_gui_ctx_t;
@@ -68,7 +94,10 @@ void lt_gui_end(lt_gui_ctx_t* cx);
 
 lt_gui_cont_t* lt_gui_get_container(lt_gui_ctx_t* cx);
 
-usz lt_gui_draw_border(lt_gui_rect_t* r, u32 clr, u32 flags, lt_gui_rect_t* out_r, u32* out_clr);
+void lt_gui_draw_border(lt_gui_ctx_t* cx, lt_gui_rect_t* r, u32 clr, u32 flags);
+void lt_gui_draw_rect(lt_gui_ctx_t* cx, lt_gui_rect_t* r, u32 clr);
+void lt_gui_draw_icon(lt_gui_ctx_t* cx, u32 icon, lt_gui_rect_t* r, u32 clr);
+void lt_gui_draw_text(lt_gui_ctx_t* cx, i32 x, i32 y, lstr_t str, u32 clr);
 
 void lt_gui_panel_begin(lt_gui_ctx_t* cx, isz w, isz h, u32 flags);
 void lt_gui_panel_end(lt_gui_ctx_t* cx);
