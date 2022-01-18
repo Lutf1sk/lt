@@ -20,12 +20,12 @@ void lt_gui_ctx_init(lt_arena_t* arena, lt_gui_ctx_t* cx) {
 void lt_gui_begin(lt_gui_ctx_t* cx, isz w, isz h) {
 	cx->cont_top = 1;
 
-	cx->conts[0].x = -PAD;
-	cx->conts[0].y = -PAD;
-	cx->conts[0].w = w + PAD*2;
-	cx->conts[0].h = h + PAD*2;
-	cx->conts[0].yrem = h + PAD*2;
-	cx->conts[0].xrem = w + PAD*2;
+	cx->conts[0].x = -PAD + 1;
+	cx->conts[0].y = -PAD + 1;
+	cx->conts[0].w = w + PAD*2 - 1;
+	cx->conts[0].h = h + PAD*2 - 1;
+	cx->conts[0].yrem = h + PAD*2 - 1;
+	cx->conts[0].xrem = w + PAD*2 - 1;
 	cx->conts[0].cols = 0;
 }
 
