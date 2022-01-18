@@ -12,7 +12,7 @@ void lt_font_render(lt_font_t* font, lstr_t text, u32* buf) {
 	usz total_w = text.len * w;
 
 	for (usz i = 0; i < text.len; ++i) {
-		char c = text.str[i];
+		u8 c = text.str[i];
 		u32* glyph = &font->glyph_data[c * dwords];
 		u32* out = &buf[i * w];
 
