@@ -171,6 +171,22 @@ XPFN_FWD(xcb_connection_t*, XGetXCBConnection, (Display*));
 XPFN_FWD(void, XSetEventQueueOwner, (Display*, enum XEventQueueOwner));
 #define XSetEventQueueOwner(...) lt_xproto_XSetEventQueueOwner(__VA_ARGS__)
 
+// GLX
+
+XPFN_FWD(XVisualInfo*, glXChooseVisual, (Display*, int, int*));
+#define glXChooseVisual(...) lt_xproto_glXChooseVisual(__VA_ARGS__)
+
+XPFN_FWD(GLXContext, glXCreateContext, (Display*, XVisualInfo*, GLXContext, Bool));
+#define glXCreateContext(...) lt_xproto_glXCreateContext(__VA_ARGS__)
+
+XPFN_FWD(void, glXDestroyContext, (Display*, GLXContext));
+#define glXDestroyContext(...) lt_xproto_glXDestroyContext(__VA_ARGS__)
+
+XPFN_FWD(Bool, glXMakeCurrent, (Display*, GLXDrawable, GLXContext));
+#define glXMakeCurrent(...) lt_xproto_glXMakeCurrent(__VA_ARGS__)
+
+XPFN_FWD(void, glXSwapBuffers, (Display*, GLXDrawable));
+#define glXSwapBuffers(...) lt_xproto_glXSwapBuffers(__VA_ARGS__)
 
 #undef XPFN_FWD
 

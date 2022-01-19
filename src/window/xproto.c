@@ -113,6 +113,16 @@ XPFN_DEF(xcb_connection_t*, XGetXCBConnection, (Display*));
 
 XPFN_DEF(void, XSetEventQueueOwner, (Display*, enum XEventQueueOwner));
 
+// GLX
+
+XPFN_DEF(XVisualInfo*, glXChooseVisual, (Display*, int, int*));
+
+XPFN_DEF(GLXContext, glXCreateContext, (Display*, XVisualInfo*, GLXContext, Bool));
+XPFN_DEF(void, glXDestroyContext, (Display*, GLXContext));
+
+XPFN_DEF(Bool, glXMakeCurrent, (Display*, GLXDrawable, GLXContext));
+
+XPFN_DEF(void, glXSwapBuffers, (Display*, GLXDrawable));
 
 #define XPFN_LOAD(name) lt_xproto_##name = lt_dynl_sym(hnd, #name);
 
@@ -196,6 +206,18 @@ void lt_xproto_init(void) {
 
 		XPFN_LOAD(XGetXCBConnection);
 		XPFN_LOAD(XSetEventQueueOwner);
+	}
+
+	{
+		void* hnd = lt_dynl_open("libGLX.so");
+		if (!hnd)
+			lt_ferrf("Failed to load GLX: %s\n", lt_dynl_err_str());
+
+		XPFN_LOAD(glXChooseVisual);
+		XPFN_LOAD(glXCreateContext);
+		XPFN_LOAD(glXDestroyContext);
+		XPFN_LOAD(glXMakeCurrent);
+		XPFN_LOAD(glXSwapBuffers);
 	}
 }
 
