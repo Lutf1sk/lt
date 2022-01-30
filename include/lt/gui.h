@@ -34,6 +34,7 @@ typedef
 struct lt_gui_point {
 	i32 x, y;
 } lt_gui_point_t;
+
 typedef
 struct lt_gui_command_buffer {
 	lt_gui_rect_t box_rects[256];
@@ -86,6 +87,11 @@ struct lt_gui_ctx {
 	int mouse_x, mouse_y;
 	u32 mouse_state, prev_mouse_state;
 } lt_gui_ctx_t;
+
+typedef
+struct lt_gui_scroll_state {
+	u32 vscroll;
+} lt_gui_scroll_state_t;
 
 void lt_gui_ctx_init(lt_arena_t* arena, lt_gui_ctx_t* cx);
 

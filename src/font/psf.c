@@ -1,12 +1,25 @@
 #include <lt/font.h>
 #include <lt/mem.h>
 
+#define PSF1_MODE512    0x01
+#define PSF1_MODEHASTAB 0x02
+#define PSF1_MODEHASSEQ 0x04
+#define PSF1_MAXMODE    0x05
+
+#define PSF1_SEPARATOR  0xFFFF
+#define PSF1_STARTSEQ   0xFFFE
+
 typedef
 struct lt_psf1_header {
 	u16 magic;
 	u8 mode;
 	u8 height;
 } lt_psf1_header_t;
+
+#define PSF2_UNICODE_TAB 0x01
+
+#define PSF2_SEPARATOR  0xFF
+#define PSF2_STARTSEQ   0xFE
 
 typedef
 struct lt_psf2_header {
@@ -302,6 +315,8 @@ lt_font_t* lt_font_load_psf(lt_arena_t* arena, void* data, usz len) {
 		w = 8;
 		h = head->height;
 		glyph_count = 256;
+		if (head->mode & PSF1_MODE512)
+			glyph_count = 512;
 		it = (u8*)data + sizeof(lt_psf1_header_t);
 	}
 	else if (*(u32*)data == LT_FONT_PSF2_MAGIC) {
