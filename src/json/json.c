@@ -24,7 +24,7 @@ lstr_t consume_string(parse_ctx_t* cx) {
 	++cx->it; // "
 	char* start_it = &cx->data[cx->it];
 	// TODO: This loop does not handle \\" correctly.
-	while (cx->it < cx->len && (cx->data[cx->it] != '"' && !(cx->it && cx->data[cx->it - 1] == '\\'))) {
+	while (cx->it < cx->len && (cx->data[cx->it] != '"' && (cx->it != 0 || cx->data[cx->it - 1] == '\\'))) {
 		++cx->it;
 	}
 	++cx->it; // "
