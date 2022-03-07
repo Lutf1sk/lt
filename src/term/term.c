@@ -1,12 +1,13 @@
 #include <lt/term.h>
 #include <lt/utf8.h>
 
-#include <termios.h>
-#include <unistd.h>
-#include <poll.h>
-#include <signal.h>
-#include <sys/ioctl.h>
-#include <ctype.h>
+#if defined(LT_UNIX)
+#	include <termios.h>
+#	include <unistd.h>
+#	include <poll.h>
+#	include <signal.h>
+#	include <sys/ioctl.h>
+#	include <ctype.h>
 
 static lt_term_flags_t term_flags;
 static struct termios old_term;
@@ -274,4 +275,6 @@ void lt_term_write_direct(char* str, usz len) {
 	write(STDOUT_FILENO, str, len);
 	fsync(STDOUT_FILENO);
 }
+
+#endif
 
