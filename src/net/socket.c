@@ -7,9 +7,32 @@
 #	include <netdb.h>
 #	include <unistd.h>
 
+#	define SOCKET int
+#	define INIT_IF_NECESSARY()
+#elif defined(LT_WINDOWS)
+#	define WIN32_LEAN_AND_MEAN 1
+#	include <windows.h>
+#	include <winsock2.h>
+#	include <ws2tcpip.h>
+
+#	define MSG_NOSIGNAL 0
+
+static b8 ws_initialized = 0;
+static WSADATA wsadata;
+
+#	define INIT_IF_NECESSARY() { \
+	if (!ws_initialized) { \
+		int res = WSAStartup(MAKEWORD(2, 2), &wsadata); \
+		if (res != 0) \
+			return 0; \
+		ws_initialized = 1; \
+	} \
+}
+#endif
+
 typedef
 struct lt_socket {
-	int fd;
+	SOCKET fd;
 } lt_socket_t;
 
 typedef
@@ -19,7 +42,7 @@ struct lt_sockaddr_impl {
 } lt_sockaddr_impl_t;
 
 static
-int lt_socktype_to_unix(lt_socktype_t type) {
+int lt_socktype_to_native(lt_socktype_t type) {
 	switch (type) {
 	case LT_SOCKTYPE_TCP: return SOCK_STREAM;
 	case LT_SOCKTYPE_UDP: return SOCK_DGRAM;
@@ -27,18 +50,14 @@ int lt_socktype_to_unix(lt_socktype_t type) {
 	}
 }
 
-#elif defined(LT_WINDOWS)
-
-#endif
-
 b8 lt_sockaddr_resolve(char* addr, char* port, lt_socktype_t type, lt_sockaddr_t* out_addr_) {
-#if defined(LT_UNIX)
+	INIT_IF_NECESSARY();
 	lt_sockaddr_impl_t* out_addr = (lt_sockaddr_impl_t*)out_addr_;
 
 	struct addrinfo hints;
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;
-	hints.ai_socktype = lt_socktype_to_unix(type);
+	hints.ai_socktype = lt_socktype_to_native(type);
 
 	struct addrinfo* resolved;
 	if (getaddrinfo(addr, port, &hints, &resolved) != 0)
@@ -50,38 +69,35 @@ b8 lt_sockaddr_resolve(char* addr, char* port, lt_socktype_t type, lt_sockaddr_t
 	out_addr->addr = *resolved->ai_addr;
 	freeaddrinfo(resolved);
 	return 1;
-#endif
 }
 
 lt_socket_t* lt_socket_create(lt_arena_t* arena, lt_socktype_t type) {
-#if defined(LT_UNIX)
-	int fd = socket(AF_INET, lt_socktype_to_unix(type), 0);
+	INIT_IF_NECESSARY();
+	SOCKET fd = socket(AF_INET, lt_socktype_to_native(type), 0);
 	if (fd < 0)
 		return NULL;
 
 	lt_socket_t* sock = lt_arena_reserve(arena, sizeof(lt_socket_t));
 	sock->fd = fd;
 	return sock;
-#endif
 }
 
 void lt_socket_destroy(lt_socket_t* sock) {
 #if defined(LT_UNIX)
 	close(sock->fd);
+#elif defined(LT_WINDOWS)
+	closesocket(sock->fd);
 #endif
 }
 
 b8 lt_socket_connect(lt_socket_t* sock, lt_sockaddr_t* addr_) {
-#if defined(LT_UNIX)
 	lt_sockaddr_impl_t* addr = (lt_sockaddr_impl_t*)addr_;
 	return connect(sock->fd, &addr->addr, addr->addr_len) >= 0;
-#endif
 }
 
 b8 lt_socket_server(lt_socket_t* sock, u16 port) {
-#if defined(LT_UNIX)
 	int reuse_addr = 1;
-	if (setsockopt(sock->fd, SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(int)) < 0)
+	if (setsockopt(sock->fd, SOL_SOCKET, SO_REUSEADDR, (void*)&reuse_addr, sizeof(int)) < 0)
 		return 0;
 
 	struct sockaddr_in server_addr;
@@ -94,33 +110,25 @@ b8 lt_socket_server(lt_socket_t* sock, u16 port) {
 	if (listen(sock->fd, 10) < 0)
 		return 0;
 	return 1;
-#endif
 }
 
 lt_socket_t* lt_socket_accept(lt_arena_t* arena, lt_socket_t* sock) {
-#if defined(LT_UNIX)
 	struct sockaddr_in new_addr;
 	usz new_size = sizeof(new_addr);
-	int new_fd = accept(sock->fd, (struct sockaddr*)&new_addr, (socklen_t*)&new_size);
+	SOCKET new_fd = accept(sock->fd, (struct sockaddr*)&new_addr, (socklen_t*)&new_size);
 	if (new_fd < 0)
 		return NULL;
 
 	lt_socket_t* new_sock = lt_arena_reserve(arena, sizeof(lt_socket_t));
 	new_sock->fd = new_fd;
 	return new_sock;
-#endif
 }
 
 isz lt_socket_send(lt_socket_t* sock, void* data, usz size) {
-#if defined(LT_UNIX)
 	return send(sock->fd, data, size, MSG_NOSIGNAL);
-#endif
 }
 
 isz lt_socket_recv(lt_socket_t* sock, void* data, usz size) {
-#if defined(LT_UNIX)
 	return recv(sock->fd, data, size, 0);
-#endif
 }
-
 
