@@ -161,8 +161,10 @@ void lt_window_destroy(lt_window_t* win) {
 
 }
 
-void lt_window_poll_events(lt_window_t* win) {
+usz lt_window_poll_events(lt_window_t* win, lt_window_event_t* evs, usz ev_max) {
 	memcpy(win->old_key_press_map, win->key_press_map, sizeof(win->key_press_map));
+
+	usz ev_it = 0;
 
 	MSG msg;
 	memset(&msg, 0, sizeof(msg));
@@ -188,8 +190,8 @@ void lt_window_poll_events(lt_window_t* win) {
 					MSG next;
 					const DWORD time = GetMessageTime();
 					if (PeekMessage(&next, NULL, 0, 0, PM_NOREMOVE)) {
-						if (msg.message == WM_KEYDOWN || msg.message == WM_SYSKEYDOWN || 
-							msg.message == WM_KEYUP || msg.message == WM_SYSKEYUP) 
+						if (msg.message == WM_KEYDOWN || msg.message == WM_SYSKEYDOWN ||
+							msg.message == WM_KEYUP || msg.message == WM_SYSKEYUP)
 						{
 							if (next.wParam == VK_MENU && HIWORD(next.lParam) & KF_EXTENDED && next.time == time)
 								break;
@@ -204,10 +206,18 @@ void lt_window_poll_events(lt_window_t* win) {
 				win->key_press_map[LT_KEY_RIGHT_SHIFT] = 0;
 				win->key_press_map[LT_KEY_LEFT_SHIFT] = 0;
 			}
-			else
+			else {
 				win->key_press_map[key] = action;
+				if (ev_it < ev_max) {
+					evs[ev_it].type = action ? LT_WIN_EVENT_KEY_PRESS : LT_WIN_EVENT_KEY_RELEASE;
+					evs[ev_it].key = key;
+					++ev_it;
+				}
+			}
 		}
 	}
+
+	return ev_it;
 }
 
 void lt_window_set_fullscreen(lt_window_t* win, lt_winstate_t state) {
@@ -239,7 +249,7 @@ void lt_window_set_fullscreen(lt_window_t* win, lt_winstate_t state) {
 		DWORD style = GetWindowLong(win->hwnd, GWL_STYLE);
 		SetWindowLong(win->hwnd, GWL_STYLE, style | WS_OVERLAPPEDWINDOW);
 		SetWindowPlacement(win->hwnd, &win->wp);
-		SetWindowPos(win->hwnd, NULL, 0, 0, 0, 0, 
+		SetWindowPos(win->hwnd, NULL, 0, 0, 0, 0,
 				SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
 	}
 	else if (state == LT_WIN_TOGGLE)

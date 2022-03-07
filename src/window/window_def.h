@@ -53,7 +53,10 @@ typedef struct lt_window {
 
 	b8 fullscreen;
 
+	int mpos_x, mpos_y;
+
 	b8 closed;
+	b8 exposed;
 	b8 key_press_map[LT_KEY_MAX];
 	b8 old_key_press_map[LT_KEY_MAX];
 } lt_window_t;
