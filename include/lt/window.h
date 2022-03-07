@@ -149,7 +149,6 @@ void lt_window_get_size(lt_window_t* win, int* w, int* h);
 void lt_window_gl_swap_buffers(lt_window_t* win);
 
 // window.c
-b8 lt_window_exposed(lt_window_t* win);
 b8 lt_window_closed(lt_window_t* win);
 
 void lt_window_mouse_pos(lt_window_t* win, int* x, int* y);

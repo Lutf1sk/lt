@@ -1,9 +1,5 @@
 #include "window_def.h"
 
-b8 lt_window_exposed(lt_window_t* win) {
-	return win->exposed;
-}
-
 b8 lt_window_closed(lt_window_t* win) {
 	return win->closed;
 }

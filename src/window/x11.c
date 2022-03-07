@@ -272,7 +272,6 @@ lt_window_t* lt_window_create(lt_arena_t* arena, lt_window_description_t* desc) 
 	win->glctx = glc;
 	win->clrmap = clrmap;
 	win->closed = 0;
-	win->exposed = 1;
 	win->type = desc->type;
 	win->pos_x = x;
 	win->pos_y = y;
@@ -320,9 +319,6 @@ void handle_event(lt_window_t* win, xcb_generic_event_t* gev) {
 	}	break;
 
 	case XCB_EXPOSE:
-		win->exposed = 1;
-		break;
-
 	case XCB_ENTER_NOTIFY:
 	case XCB_LEAVE_NOTIFY:
 	case XCB_REPARENT_NOTIFY:
