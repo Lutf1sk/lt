@@ -609,25 +609,4 @@ void lt_window_gl_swap_buffers(lt_window_t* win) {
 	glXSwapBuffers(lt_display, win->window);
 }
 
-void lt_window_draw_color(lt_window_t* win, int r, int g, int b) {
-	u32 mask = XCB_GC_FOREGROUND;
-	u32 list[] = { b | (g << 8) | (r << 16) | (0xFF << 24) };
-	xcb_change_gc(lt_conn, win->gc, mask, list);
-}
-
-void lt_window_draw_rect(lt_window_t* win, int x, int y, int w, int h) {
-	xcb_rectangle_t rect = { x, y, w, h };
-	xcb_poly_rectangle(lt_conn, win->window, win->gc, 1, &rect);
-}
-
-void lt_window_draw_rect_filled(lt_window_t* win, int x, int y, int w, int h) {
-	xcb_rectangle_t rect = { x, y, w, h };
-	xcb_poly_fill_rectangle(lt_conn, win->window, win->gc, 1, &rect);
-}
-
-void lt_window_draw_present(lt_window_t* win) {
-	win->exposed = 0;
-	xcb_flush(lt_conn);
-}
-
 #endif
