@@ -18,6 +18,8 @@ struct lt_spinlock {
 	volatile b8 locked;
 } lt_spinlock_t;
 
+#define LT_SPINLOCK_INIT { 0 }
+
 void lt_spinlock_lock(lt_spinlock_t* slock);
 void lt_spinlock_release(lt_spinlock_t* slock);
 
@@ -25,9 +27,9 @@ void lt_spinlock_release(lt_spinlock_t* slock);
 typedef struct lt_mutex lt_mutex_t;
 
 lt_mutex_t* lt_mutex_create(lt_arena_t* arena);
-void lt_mutex_destroy(lt_mutex_t* mut);
+void lt_mutex_destroy(lt_mutex_t* m);
 
-void lt_mutex_lock(lt_mutex_t* mut);
-void lt_mutex_release(lt_mutex_t* mut);
+void lt_mutex_lock(lt_mutex_t* m);
+void lt_mutex_release(lt_mutex_t* m);
 
 #endif
