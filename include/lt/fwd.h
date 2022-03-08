@@ -27,4 +27,9 @@ typedef struct lt_conf lt_conf_t;
 // font.h
 typedef struct lt_font lt_font_t;
 
+// gui.h
+typedef struct lt_gui_ctx lt_gui_ctx_t;
+typedef struct lt_gui_rect lt_gui_rect_t;
+typedef struct lt_gui_point lt_gui_point_t;
+
 #endif
