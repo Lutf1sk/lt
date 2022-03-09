@@ -1,3 +1,4 @@
+#include <lt/lt.h>
 #include <lt/term.h>
 #include <lt/utf8.h>
 
