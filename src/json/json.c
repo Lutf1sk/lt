@@ -62,6 +62,7 @@ lt_json_t* json_parse_array(parse_ctx_t* cx) {
 		lt_json_t* child = json_parse_value(cx);
 		*current = child;
 		current = &child->next;
+		++arr->child_count;
 
 		skip_whitespace(cx);
 		if (cx->data[cx->it] == ',') {
