@@ -22,6 +22,10 @@ void lt_vec4_copy(lt_vec4_t dst, lt_vec4_t src) { memcpy(dst, src, sizeof(lt_vec
 
 // vec.c
 
+#define LT_VEC2_INIT(x, y) { (x), (y) }
+#define LT_VEC3_INIT(x, y, z) { (x), (y), (z) }
+#define LT_VEC4_INIT(x, y, z, w) { (x), (y), (z), (w) }
+
 #define LT_VEC2(x, y) ((lt_vec2_t){ (x), (y) })
 #define LT_VEC3(x, y, z) ((lt_vec3_t){ (x), (y), (z) })
 #define LT_VEC4(x, y, z, w) ((lt_vec4_t){ (x), (y), (z), (w) })
@@ -48,21 +52,90 @@ void lt_vec2_normalize(lt_vec2_t v);
 
 // ----- vec3
 
-void lt_vec3_add(lt_vec3_t a, lt_vec3_t b, lt_vec3_t dst);
-void lt_vec3_sub(lt_vec3_t a, lt_vec3_t b, lt_vec3_t dst);
-void lt_vec3_div(lt_vec3_t a, lt_vec3_t b, lt_vec3_t dst);
-void lt_vec3_mul(lt_vec3_t a, lt_vec3_t b, lt_vec3_t dst);
+// void lt_vec3_add(lt_vec3_t a, lt_vec3_t b, lt_vec3_t dst);
+// void lt_vec3_sub(lt_vec3_t a, lt_vec3_t b, lt_vec3_t dst);
+// void lt_vec3_div(lt_vec3_t a, lt_vec3_t b, lt_vec3_t dst);
+// void lt_vec3_mul(lt_vec3_t a, lt_vec3_t b, lt_vec3_t dst);
+// 
+// void lt_vec3_add_f(lt_vec3_t v, float f, lt_vec3_t dst);
+// void lt_vec3_sub_f(lt_vec3_t v, float f, lt_vec3_t dst);
+// void lt_vec3_div_f(lt_vec3_t v, float f, lt_vec3_t dst);
+// void lt_vec3_mul_f(lt_vec3_t v, float f, lt_vec3_t dst);
 
-void lt_vec3_add_f(lt_vec3_t v, float f, lt_vec3_t dst);
-void lt_vec3_sub_f(lt_vec3_t v, float f, lt_vec3_t dst);
-void lt_vec3_div_f(lt_vec3_t v, float f, lt_vec3_t dst);
-void lt_vec3_mul_f(lt_vec3_t v, float f, lt_vec3_t dst);
+#include <math.h>
+
+static LT_INLINE
+void lt_vec3_add(lt_vec3_t a, lt_vec3_t b, lt_vec3_t dst) {
+	dst[0] = a[0] + b[0];
+	dst[1] = a[1] + b[1];
+	dst[2] = a[2] + b[2];
+}
+
+static LT_INLINE
+void lt_vec3_sub(lt_vec3_t a, lt_vec3_t b, lt_vec3_t dst) {
+	dst[0] = a[0] - b[0];
+	dst[1] = a[1] - b[1];
+	dst[2] = a[2] - b[2];
+}
+
+static LT_INLINE
+void lt_vec3_div(lt_vec3_t a, lt_vec3_t b, lt_vec3_t dst) {
+	dst[0] = a[0] / b[0];
+	dst[1] = a[1] / b[1];
+	dst[2] = a[2] / b[2];
+}
+
+static LT_INLINE
+void lt_vec3_mul(lt_vec3_t a, lt_vec3_t b, lt_vec3_t dst) {
+	dst[0] = a[0] * b[0];
+	dst[1] = a[1] * b[1];
+	dst[2] = a[2] * b[2];
+}
+
+static LT_INLINE
+void lt_vec3_add_f(lt_vec3_t v, float f, lt_vec3_t dst) {
+	dst[0] = v[0] + f;
+	dst[1] = v[1] + f;
+	dst[2] = v[2] + f;
+}
+
+static LT_INLINE
+void lt_vec3_sub_f(lt_vec3_t v, float f, lt_vec3_t dst) {
+	dst[0] = v[0] - f;
+	dst[1] = v[1] - f;
+	dst[2] = v[2] - f;
+}
+
+static LT_INLINE
+void lt_vec3_div_f(lt_vec3_t v, float f, lt_vec3_t dst) {
+	dst[0] = v[0] / f;
+	dst[1] = v[1] / f;
+	dst[2] = v[2] / f;
+}
+
+static LT_INLINE
+void lt_vec3_mul_f(lt_vec3_t v, float f, lt_vec3_t dst) {
+	dst[0] = v[0] * f;
+	dst[1] = v[1] * f;
+	dst[2] = v[2] * f;
+}
 
 void lt_vec3_mul_mat3(lt_vec3_t v, lt_mat3_t m);
 
-f32 lt_vec3_magnitude(lt_vec3_t v);
+// f32 lt_vec3_magnitude(lt_vec3_t v);
 
-void lt_vec3_normalize(lt_vec3_t v);
+static LT_INLINE
+f32 lt_vec3_magnitude(lt_vec3_t v) {
+	return sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+}
+
+// void lt_vec3_normalize(lt_vec3_t v);
+
+static LT_INLINE
+void lt_vec3_normalize(lt_vec3_t v) {
+	f32 m = 1.0f / lt_vec3_magnitude(v);
+	v[0] *= m, v[1] *= m, v[2] *= m;
+}
 
 void lt_vec3_cross(lt_vec3_t a, lt_vec3_t b, lt_vec3_t dst);
 f32 lt_vec3_dot(lt_vec3_t a, lt_vec3_t b);
@@ -120,5 +193,12 @@ void lt_mat4_view(lt_mat4_t mat, lt_vec3_t eye, lt_vec3_t center, lt_vec3_t up);
 	{ 0.0f, 0.0f, 1.0f, 0.0f }, \
 	{ 0.0f, 0.0f, 0.0f, 1.0f }, \
 }
+
+LT_INLINE
+void lt_mat2_copy(lt_mat2_t dst, lt_mat2_t src) { memcpy(dst, src, sizeof(lt_mat2_t)); }
+LT_INLINE
+void lt_mat3_copy(lt_mat3_t dst, lt_mat3_t src) { memcpy(dst, src, sizeof(lt_mat3_t)); }
+LT_INLINE
+void lt_mat4_copy(lt_mat4_t dst, lt_mat4_t src) { memcpy(dst, src, sizeof(lt_mat4_t)); }
 
 #endif

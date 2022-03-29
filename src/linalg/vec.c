@@ -66,53 +66,53 @@ void lt_vec2_normalize(lt_vec2_t v) {
 
 // ----- vec3
 
-void lt_vec3_add(lt_vec3_t a, lt_vec3_t b, lt_vec3_t dst) {
-	dst[0] = a[0] + b[0];
-	dst[1] = a[1] + b[1];
-	dst[2] = a[2] + b[2];
-}
-
-void lt_vec3_sub(lt_vec3_t a, lt_vec3_t b, lt_vec3_t dst) {
-	dst[0] = a[0] - b[0];
-	dst[1] = a[1] - b[1];
-	dst[2] = a[2] - b[2];
-}
-
-void lt_vec3_div(lt_vec3_t a, lt_vec3_t b, lt_vec3_t dst) {
-	dst[0] = a[0] / b[0];
-	dst[1] = a[1] / b[1];
-	dst[2] = a[2] / b[2];
-}
-
-void lt_vec3_mul(lt_vec3_t a, lt_vec3_t b, lt_vec3_t dst) {
-	dst[0] = a[0] * b[0];
-	dst[1] = a[1] * b[1];
-	dst[2] = a[2] * b[2];
-}
-
-void lt_vec3_add_f(lt_vec3_t v, float f, lt_vec3_t dst) {
-	dst[0] = v[0] + f;
-	dst[1] = v[1] + f;
-	dst[2] = v[2] + f;
-}
-
-void lt_vec3_sub_f(lt_vec3_t v, float f, lt_vec3_t dst) {
-	dst[0] = v[0] - f;
-	dst[1] = v[1] - f;
-	dst[2] = v[2] - f;
-}
-
-void lt_vec3_div_f(lt_vec3_t v, float f, lt_vec3_t dst) {
-	dst[0] = v[0] / f;
-	dst[1] = v[1] / f;
-	dst[2] = v[2] / f;
-}
-
-void lt_vec3_mul_f(lt_vec3_t v, float f, lt_vec3_t dst) {
-	dst[0] = v[0] * f;
-	dst[1] = v[1] * f;
-	dst[2] = v[2] * f;
-}
+// void lt_vec3_add(lt_vec3_t a, lt_vec3_t b, lt_vec3_t dst) {
+// 	dst[0] = a[0] + b[0];
+// 	dst[1] = a[1] + b[1];
+// 	dst[2] = a[2] + b[2];
+// }
+// 
+// void lt_vec3_sub(lt_vec3_t a, lt_vec3_t b, lt_vec3_t dst) {
+// 	dst[0] = a[0] - b[0];
+// 	dst[1] = a[1] - b[1];
+// 	dst[2] = a[2] - b[2];
+// }
+// 
+// void lt_vec3_div(lt_vec3_t a, lt_vec3_t b, lt_vec3_t dst) {
+// 	dst[0] = a[0] / b[0];
+// 	dst[1] = a[1] / b[1];
+// 	dst[2] = a[2] / b[2];
+// }
+// 
+// void lt_vec3_mul(lt_vec3_t a, lt_vec3_t b, lt_vec3_t dst) {
+// 	dst[0] = a[0] * b[0];
+// 	dst[1] = a[1] * b[1];
+// 	dst[2] = a[2] * b[2];
+// }
+// 
+// void lt_vec3_add_f(lt_vec3_t v, float f, lt_vec3_t dst) {
+// 	dst[0] = v[0] + f;
+// 	dst[1] = v[1] + f;
+// 	dst[2] = v[2] + f;
+// }
+// 
+// void lt_vec3_sub_f(lt_vec3_t v, float f, lt_vec3_t dst) {
+// 	dst[0] = v[0] - f;
+// 	dst[1] = v[1] - f;
+// 	dst[2] = v[2] - f;
+// }
+// 
+// void lt_vec3_div_f(lt_vec3_t v, float f, lt_vec3_t dst) {
+// 	dst[0] = v[0] / f;
+// 	dst[1] = v[1] / f;
+// 	dst[2] = v[2] / f;
+// }
+// 
+// void lt_vec3_mul_f(lt_vec3_t v, float f, lt_vec3_t dst) {
+// 	dst[0] = v[0] * f;
+// 	dst[1] = v[1] * f;
+// 	dst[2] = v[2] * f;
+// }
 
 void lt_vec3_mul_mat3(lt_vec3_t v, lt_mat3_t m) {
 	lt_vec3_t res, tmp;
@@ -127,15 +127,15 @@ void lt_vec3_mul_mat3(lt_vec3_t v, lt_mat3_t m) {
 	memcpy(v, res, sizeof(res));
 }
 
-f32 lt_vec3_magnitude(lt_vec3_t v) {
-	float h = sqrt(v[0] * v[0] + v[1] * v[1]);
-	return sqrt(v[2] * v[2] + h * h);
-}
-
-void lt_vec3_normalize(lt_vec3_t v) {
-	f32 m = 1.0f / lt_vec3_magnitude(v);
-	v[0] *= m, v[1] *= m, v[2] *= m;
-}
+// f32 lt_vec3_magnitude(lt_vec3_t v) {
+// 	float h = sqrt(v[0] * v[0] + v[1] * v[1]);
+// 	return sqrt(v[2] * v[2] + h * h);
+// }
+// 
+// void lt_vec3_normalize(lt_vec3_t v) {
+// 	f32 m = 1.0f / lt_vec3_magnitude(v);
+// 	v[0] *= m, v[1] *= m, v[2] *= m;
+// }
 
 void lt_vec3_cross(lt_vec3_t a, lt_vec3_t b, lt_vec3_t dst) {
 	dst[0] = a[1] * b[2] - a[2] * b[1];
