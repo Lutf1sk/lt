@@ -63,10 +63,30 @@ typedef void (*lt_gui_text_callback_t)(void* usr, usz count, lt_gui_point_t* pts
 typedef void (*lt_gui_icon_callback_t)(void* usr, usz icon, lt_gui_rect_t* r, u32 clr);
 typedef void (*lt_gui_scissor_callback_t)(void* usr, lt_gui_rect_t* r);
 
+typedef
+struct lt_gui_style {
+	u32 panel_bg_clr;
+	u32 panel_border_clr;
+
+	u32 text_clr;
+	u32 border_clr;
+
+	u32 ctrl_bg_clr;
+	u32 ctrl_text_clr;
+
+	u16 button_hpad;
+
+	u16 padding;
+	u16 spacing;
+	u16 border;
+} lt_gui_style_t;
+
 #define LT_GUI_MB1_PRESSED 1
 
 typedef
 struct lt_gui_ctx {
+	lt_gui_style_t* style;
+
 	usz cont_max;
 	lt_gui_cont_t* conts;
 	usz cont_top;
@@ -93,6 +113,8 @@ struct lt_gui_scroll_state {
 	u32 vscroll;
 } lt_gui_scroll_state_t;
 
+extern lt_gui_style_t lt_gui_default_style;
+
 void lt_gui_ctx_init(lt_arena_t* arena, lt_gui_ctx_t* cx);
 
 void lt_gui_begin(lt_gui_ctx_t* cx, isz w, isz h);
@@ -111,6 +133,7 @@ void lt_gui_panel_end(lt_gui_ctx_t* cx);
 void lt_gui_row(lt_gui_ctx_t* cx, usz cols);
 
 void lt_gui_label(lt_gui_ctx_t* cx, lstr_t text, u32 flags);
+void lt_gui_text(lt_gui_ctx_t* cx, lstr_t text, u32 flags);
 
 b8 lt_gui_button(lt_gui_ctx_t* cx, lstr_t text, u32 flags);
 

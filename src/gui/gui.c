@@ -1,20 +1,22 @@
 #include <lt/gui.h>
 #include <lt/mem.h>
 
-#define BUTTON_HPAD 8
+lt_gui_style_t lt_gui_default_style = {
+	.panel_bg_clr = 0xFF282828,
+	.panel_border_clr = 0xFF404040,
 
-#define PANEL_BG 0xFF282828
-#define PANEL_BORDER 0xFF404040
+	.text_clr = 0xFFE0E0E0,
+	.border_clr = 0xFF000000,
 
-#define BUTTON_BG 0xFF505050
-#define BUTTON_TEXT 0xFFE0E0E0
+	.ctrl_bg_clr = 0xFF505050,
+	.ctrl_text_clr = 0xFFE0E0E0,
 
-#define BORDER_SIZE 1
-#define BORDER 0xFF000000
-#define TEXT 0xFFE0E0E0
+	.button_hpad = 8,
 
-#define PAD 3
-#define SPACE 2
+	.padding = 3,
+	.spacing = 2,
+	.border = 1,
+};
 
 static
 b8 is_hovered(lt_gui_ctx_t* cx, lt_gui_rect_t* r) {
@@ -55,7 +57,7 @@ void lt_gui_begin(lt_gui_ctx_t* cx, isz w, isz h) {
 	c->cols = 0;
 
 	c->padding = 0;
-	c->spacing = SPACE;
+	c->spacing = cx->style->spacing;
 
 	cx->cbuf = &cx->cmdbufs[0];
 }
@@ -103,10 +105,10 @@ void lt_gui_draw_border(lt_gui_ctx_t* cx, lt_gui_rect_t* r, u32 clr, u32 flags) 
 	clrs[count + 2] = tl_clr;
 	clrs[count + 3] = tl_clr;
 
-	rects[count + 0] = (lt_gui_rect_t){ r->x + r->w - BORDER_SIZE, r->y, BORDER_SIZE, r->h };
-	rects[count + 1] = (lt_gui_rect_t){ r->x, r->y + r->h - BORDER_SIZE, r->w, BORDER_SIZE };
-	rects[count + 2] = (lt_gui_rect_t){ r->x, r->y, BORDER_SIZE, r->h };
-	rects[count + 3] = (lt_gui_rect_t){ r->x, r->y, r->w, BORDER_SIZE };
+	rects[count + 0] = (lt_gui_rect_t){ r->x + r->w - cx->style->border, r->y, cx->style->border, r->h };
+	rects[count + 1] = (lt_gui_rect_t){ r->x, r->y + r->h - cx->style->border, r->w, cx->style->border };
+	rects[count + 2] = (lt_gui_rect_t){ r->x, r->y, cx->style->border, r->h };
+	rects[count + 3] = (lt_gui_rect_t){ r->x, r->y, r->w, cx->style->border };
 
 	cx->cbuf->box_count += 4;
 }
@@ -140,8 +142,8 @@ void lt_gui_draw_text(lt_gui_ctx_t* cx, i32 x, i32 y, lstr_t str, u32 clr) {
 }
 
 static
-void seta_padded(lt_gui_cont_t* c) {
-	c->a = LT_GUI_RECT(c->r.x + PAD, c->r.y + PAD, c->r.w - PAD*2, c->r.h - PAD*2);
+void seta_padded(lt_gui_ctx_t* cx, lt_gui_cont_t* c) {
+	c->a = LT_GUI_RECT(c->r.x + cx->style->padding, c->r.y + cx->style->padding, c->r.w - cx->style->padding*2, c->r.h - cx->style->padding*2);
 }
 
 static
@@ -193,16 +195,16 @@ void lt_gui_panel_begin(lt_gui_ctx_t* cx, isz w, isz h, u32 flags) {
 	c.r.w = w;
 	c.r.h = h;
 	c.cols = 0;
-	c.padding = PAD;
-	c.spacing = SPACE;
+	c.padding = cx->style->padding;
+	c.spacing = cx->style->spacing;
 	make_space(cx, &c.r, flags);
-	seta_padded(&c);
+	seta_padded(cx, &c);
 
 // 	set_scissor(cx, &c.r);
 
 	cx->conts[cx->cont_top++] = c;
-	lt_gui_draw_rect(cx, &c.r, PANEL_BG);
-	lt_gui_draw_border(cx, &c.r, PANEL_BORDER, flags);
+	lt_gui_draw_rect(cx, &c.r, cx->style->panel_bg_clr);
+	lt_gui_draw_border(cx, &c.r, cx->style->panel_border_clr, flags);
 }
 
 void lt_gui_panel_end(lt_gui_ctx_t* cx) {
@@ -220,24 +222,47 @@ void lt_gui_label(lt_gui_ctx_t* cx, lstr_t text, u32 flags) {
 	lt_gui_rect_t r = { 0, 0, text.len * cx->glyph_width, cx->glyph_height };
 	make_space(cx, &r, flags);
 
-	lt_gui_draw_text(cx, r.x, r.y, text, TEXT);
+	lt_gui_draw_text(cx, r.x, r.y, text, cx->style->text_clr);
+}
+
+void lt_gui_text(lt_gui_ctx_t* cx, lstr_t text, u32 flags) {
+	lt_gui_cont_t* c = lt_gui_get_container(cx);
+	lt_gui_rect_t r = c->a;
+	r.h = 0;
+
+	char* end = text.str + text.len;
+
+	usz max_chars = r.w / cx->glyph_width;
+	if (!max_chars)
+		max_chars = 1;
+
+	isz remain = text.len;
+	do {
+		lstr_t substr = LSTR(end - remain, remain);
+		if (remain > max_chars)
+			substr.len = max_chars;
+		lt_gui_draw_text(cx, r.x, r.y + r.h, substr, cx->style->text_clr);
+		r.h += cx->glyph_height;
+		remain -= substr.len;
+	} while (remain > 0);
+	make_space(cx, &r, flags);
 }
 
 u8 lt_gui_button(lt_gui_ctx_t* cx, lstr_t text, u32 flags) {
 	isz text_w = text.len * cx->glyph_width;
 
-	lt_gui_rect_t r = {0, 0, text_w + BUTTON_HPAD*2, cx->glyph_height + 2};
+	lt_gui_rect_t r = {0, 0, text_w + cx->style->button_hpad*2, cx->glyph_height + 2};
 	make_space(cx, &r, flags);
 
-	u32 bg = BUTTON_BG;
+	u32 bg = cx->style->ctrl_bg_clr;
 	b8 hovered = is_hovered(cx, &r);
 	if (hovered)
 		bg += 0x202020;
 
 	lt_gui_draw_rect(cx, &r, bg);
-	lt_gui_draw_border(cx, &r, BORDER, flags);
+	lt_gui_draw_border(cx, &r, cx->style->border_clr, flags);
 
-	lt_gui_draw_text(cx, r.x + BUTTON_HPAD, r.y + 1, text, BUTTON_TEXT);
+	lt_gui_draw_text(cx, r.x + cx->style->button_hpad, r.y + 1, text, cx->style->ctrl_text_clr);
 
 	return hovered && mb_pressed(cx, 0);
 }
@@ -246,7 +271,7 @@ u8 lt_gui_expandable(lt_gui_ctx_t* cx, lstr_t text, b8* expanded, u32 flags) {
 	lt_gui_rect_t r = { 0, 0, 0, cx->glyph_height + 2 };
 	make_space(cx, &r, flags);
 
-	u32 bg = BUTTON_BG;
+	u32 bg = cx->style->ctrl_bg_clr;
 	b8 hovered = is_hovered(cx, &r);
 	if (hovered) {
 		bg += 0x202020;
@@ -259,12 +284,12 @@ u8 lt_gui_expandable(lt_gui_ctx_t* cx, lstr_t text, b8* expanded, u32 flags) {
 		icon = LT_GUI_ICON_EXPANDED;
 
 	lt_gui_draw_rect(cx, &r, bg);
-	lt_gui_draw_border(cx, &r, BORDER, flags);
+	lt_gui_draw_border(cx, &r, cx->style->border_clr, flags);
 
-	lt_gui_draw_text(cx, r.x + r.w/2 - (text.len * cx->glyph_width)/2, r.y + 1, text, BUTTON_TEXT);
+	lt_gui_draw_text(cx, r.x + r.w/2 - (text.len * cx->glyph_width)/2, r.y + 1, text, cx->style->ctrl_text_clr);
 
 	lt_gui_rect_t ir = { r.x + 1, r.y + 1, cx->glyph_height, cx->glyph_height };
-	lt_gui_draw_icon(cx, icon, &ir, BUTTON_TEXT);
+	lt_gui_draw_icon(cx, icon, &ir, cx->style->ctrl_text_clr);
 
 	return *expanded;
 }
@@ -282,10 +307,10 @@ void lt_gui_hspace(lt_gui_ctx_t* cx, usz space, u32 flags) {
 b8 lt_gui_dropdown_begin(lt_gui_ctx_t* cx, lstr_t text, isz ew, isz eh, u32* state, u32 flags) {
 	i32 text_w = text.len * cx->glyph_width;
 
-	lt_gui_rect_t r = { 0, 0, text_w + PAD*3 + cx->glyph_height, cx->glyph_height + 2 };
+	lt_gui_rect_t r = { 0, 0, text_w + cx->style->padding*3 + cx->glyph_height, cx->glyph_height + 2 };
 	make_space(cx, &r, flags);
 
-	u32 bg = BUTTON_BG;
+	u32 bg = cx->style->ctrl_bg_clr;
 	b8 hovered = is_hovered(cx, &r);
 
 	lt_gui_cont_t c;
@@ -305,19 +330,19 @@ b8 lt_gui_dropdown_begin(lt_gui_ctx_t* cx, lstr_t text, isz ew, isz eh, u32* sta
 		*state = 0;
 
 	lt_gui_draw_rect(cx, &r, bg);
-	lt_gui_draw_border(cx, &r, BORDER, flags);
+	lt_gui_draw_border(cx, &r, cx->style->border_clr, flags);
 
-	lt_gui_draw_text(cx, r.x + PAD, r.y + 1, text, BUTTON_TEXT);
+	lt_gui_draw_text(cx, r.x + cx->style->padding, r.y + 1, text, cx->style->ctrl_text_clr);
 
-	lt_gui_rect_t ir = { r.x + r.w - cx->glyph_height - PAD, r.y + 1, cx->glyph_height, cx->glyph_height };
-	lt_gui_draw_icon(cx, LT_GUI_ICON_EXPANDED, &ir, BUTTON_TEXT);
+	lt_gui_rect_t ir = { r.x + r.w - cx->glyph_height - cx->style->padding, r.y + 1, cx->glyph_height, cx->glyph_height };
+	lt_gui_draw_icon(cx, LT_GUI_ICON_EXPANDED, &ir, cx->style->ctrl_text_clr);
 
 	if (*state) {
 		cx->conts[cx->cont_top++] = c;
 		++cx->cbuf;
 
-		lt_gui_draw_rect(cx, &c.r, PANEL_BG);
-		lt_gui_draw_border(cx, &c.r, PANEL_BORDER, 0);
+		lt_gui_draw_rect(cx, &c.r, cx->style->panel_bg_clr);
+		lt_gui_draw_border(cx, &c.r, cx->style->panel_border_clr, 0);
 	}
 
 	return *state;
@@ -334,10 +359,10 @@ void lt_gui_dropdown_end(lt_gui_ctx_t* cx) {
 b8 lt_gui_checkbox(lt_gui_ctx_t* cx, lstr_t text, b8* state, u32 flags) {
 	i32 text_w = text.len * cx->glyph_width;
 
-	lt_gui_rect_t r = { 0, 0, text_w + PAD*2 + cx->glyph_height, cx->glyph_height };
+	lt_gui_rect_t r = { 0, 0, text_w + cx->style->padding*2 + cx->glyph_height, cx->glyph_height };
 	make_space(cx, &r, flags);
 
-	u32 bg = PANEL_BG - 0x1A1A1A;
+	u32 bg = cx->style->panel_bg_clr - 0x1A1A1A;
 	b8 hovered = is_hovered(cx, &r);
 	if (hovered) {
 		bg += 0x101010;
@@ -345,14 +370,14 @@ b8 lt_gui_checkbox(lt_gui_ctx_t* cx, lstr_t text, b8* state, u32 flags) {
 			*state = !*state;
 	}
 
-	lt_gui_draw_text(cx, r.x + cx->glyph_height + PAD*2, r.y, text, TEXT);
+	lt_gui_draw_text(cx, r.x + cx->glyph_height + cx->style->padding*2, r.y, text, cx->style->text_clr);
 
 	lt_gui_rect_t cr = { r.x, r.y, cx->glyph_height, cx->glyph_height };
 	lt_gui_draw_rect(cx, &cr, bg);
-	lt_gui_draw_border(cx, &cr, BORDER, flags);
+	lt_gui_draw_border(cx, &cr, cx->style->border_clr, flags);
 
 	if (*state)
-		lt_gui_draw_icon(cx, LT_GUI_ICON_CHECK, &cr, TEXT);
+		lt_gui_draw_icon(cx, LT_GUI_ICON_CHECK, &cr, cx->style->ctrl_text_clr);
 
 	return *state;
 }
