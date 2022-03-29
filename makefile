@@ -23,6 +23,7 @@ OBJS = \
 	src/lt/dynl.o \
 	src/lt/err.o \
 	src/mem/arena.o \
+	src/mem/heap.o \
 	src/mem/page_size.o \
 	src/mem/pool.o \
 	src/mem/vmem.o \

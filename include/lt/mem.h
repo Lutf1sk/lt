@@ -1,7 +1,7 @@
 #ifndef LT_MEM_H
 #define LT_MEM_H
 
-#include <lt/primitives.h>
+#include <lt/lt.h>
 
 // libc
 extern void* memset(void* data, int c, usz size);
@@ -19,6 +19,40 @@ extern usz (*lt_page_size)(void);
 void* lt_vmem_alloc(usz page_count);
 void lt_vmem_free(void* addr, usz page_count);
 
+// alloc.c
+typedef void*(*lt_reserve_callback_t)(void* usr, usz size);
+typedef void(*lt_relinq_callback_t)(void* usr, void* mem);
+typedef void*(*lt_resize_callback_t)(void* usr, void* mem, usz size);
+
+typedef
+struct lt_alloc {
+	void* usr;
+	lt_reserve_callback_t reserve;
+	lt_relinq_callback_t relinq;
+	lt_resize_callback_t resize;
+} lt_alloc_t;
+
+#define LT_ALLOC_INTERFACE(usr, reserve, relinq, resize) \
+		((lt_alloc_t){ (usr), (reserve), (relinq), (resize) })
+
+static LT_INLINE
+void* lt_reserve(lt_alloc_t* alloc, usz size) {
+	return alloc->reserve(alloc->usr, size);
+}
+
+static LT_INLINE
+void lt_relinq(lt_alloc_t* alloc, void* mem) {
+	alloc->relinq(alloc->usr, mem);
+}
+
+static LT_INLINE
+void* lt_resize(lt_alloc_t* alloc, void* mem, usz size) {
+	return alloc->resize(alloc->usr, mem, size);
+}
+
+// heap.c
+lt_alloc_t lt_heap_interface(void);
+
 // arena.c
 typedef struct lt_arena lt_arena_t;
 
@@ -26,6 +60,8 @@ lt_arena_t* lt_arena_alloc(usz size);
 void lt_arena_free(lt_arena_t* arena);
 
 void* lt_arena_reserve(lt_arena_t* arena, usz size);
+
+lt_alloc_t lt_arena_interface(lt_arena_t* arena);
 
 typedef struct lt_arestore {
 	void* mem_pos;

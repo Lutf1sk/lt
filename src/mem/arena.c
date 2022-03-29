@@ -7,6 +7,7 @@ struct lt_arena {
 	void* mem_pos;
 	usz free_bytes;
 	usz page_count;
+	lt_alloc_t interface;
 } lt_arena_t;
 
 static LT_INLINE
@@ -17,6 +18,18 @@ lt_arena_t lt_arena_make(void* mem, usz size, usz page_count) {
 	arena.free_bytes = size;
 	arena.page_count = page_count;
 	return arena;
+}
+
+static
+void relinq(void* usr, void* mem) {}
+
+static
+void* resize(void* usr, void* mem, usz size) {
+	lt_ferr(CLSTR("Cannot resize an arena allocation\n"));
+}
+
+lt_alloc_t lt_arena_interface(lt_arena_t* arena) {
+	return LT_ALLOC_INTERFACE(arena, (lt_reserve_callback_t)lt_arena_reserve, relinq, resize);
 }
 
 lt_arena_t* lt_arena_alloc(usz size) {

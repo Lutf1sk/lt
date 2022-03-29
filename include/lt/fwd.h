@@ -5,6 +5,7 @@
 typedef struct lt_file lt_file_t;
 
 // mem.h
+typedef struct lt_alloc lt_alloc_t;
 typedef struct lt_arena lt_arena_t;
 typedef struct lt_pool lt_pool_t;
 
