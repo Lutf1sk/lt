@@ -48,11 +48,11 @@ void lt_gui_ctx_init(lt_arena_t* arena, lt_gui_ctx_t* cx) {
 	LT_ASSERT(cx->draw_text);
 }
 
-void lt_gui_begin(lt_gui_ctx_t* cx, isz w, isz h) {
+void lt_gui_begin(lt_gui_ctx_t* cx, isz x, isz y, isz w, isz h) {
 	cx->cont_top = 1;
 
 	lt_gui_cont_t* c = &cx->conts[0];
-	c->r = LT_GUI_RECT(0, 0, w, h);
+	c->r = LT_GUI_RECT(x, y, w, h);
 	c->a = c->r;
 	c->cols = 0;
 

@@ -117,7 +117,7 @@ extern lt_gui_style_t lt_gui_default_style;
 
 void lt_gui_ctx_init(lt_arena_t* arena, lt_gui_ctx_t* cx);
 
-void lt_gui_begin(lt_gui_ctx_t* cx, isz w, isz h);
+void lt_gui_begin(lt_gui_ctx_t* cx, isz x, isz y, isz w, isz h);
 void lt_gui_end(lt_gui_ctx_t* cx);
 
 lt_gui_cont_t* lt_gui_get_container(lt_gui_ctx_t* cx);
