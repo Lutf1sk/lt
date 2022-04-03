@@ -29,5 +29,6 @@ b8 lt_lstr_endswith(lstr_t str, lstr_t substr) {
 f64 lt_lstr_float(lstr_t);
 i64 lt_lstr_int(lstr_t);
 u64 lt_lstr_uint(lstr_t);
+u64 lt_lstr_hex_uint(lstr_t str);
 
 #endif
