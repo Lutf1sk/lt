@@ -5,6 +5,9 @@
 
 extern int memcmp(const void* ptr1, const void* ptr2, size_t size);
 
+extern usz strlen(const char* str);
+extern usz strnlen(const char* str, usz max);
+
 static LT_INLINE
 b8 lt_lstr_eq(lstr_t s1, lstr_t s2) {
 	return !((s1.len - s2.len) | memcmp(s1.str, s2.str, s1.len));
