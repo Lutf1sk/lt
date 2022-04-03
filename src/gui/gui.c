@@ -241,25 +241,31 @@ void lt_gui_text(lt_gui_ctx_t* cx, lstr_t text, u32 flags) {
 	char* line_start = text.str;
 	for (char* it = text.str; it < end; ++it) {
 		if (*it == ' ')
-			word_start = it;
+			word_start = it + 1;
 
 		usz line_len = (it - line_start);
 
 		if (line_len >= max_chars) {
 			usz word_len = it - word_start;
-			if (it != text.str)
-				word_len--;
-			usz adj_line_len = it - line_start - word_len;
 
-			lt_gui_draw_text(cx, r.x, r.y + r.h, LSTR(line_start, adj_line_len), cx->style->text_clr);
+			char* new_line_start = it;
+
+			if (line_start != word_start) {
+				new_line_start -= word_len;
+				line_len -= word_len;
+			}
+			else
+				word_start = it;
+
+			lt_gui_draw_text(cx, r.x, r.y + r.h, LSTR(line_start, line_len), cx->style->text_clr);
 			r.h += cx->glyph_height;
 
-			line_start = it - word_len;
+			line_start = new_line_start;
 		}
 	}
 
-	usz adj_line_len = end - line_start;
-	lt_gui_draw_text(cx, r.x, r.y + r.h, LSTR(line_start, adj_line_len), cx->style->text_clr);
+	usz remain = end - line_start;
+	lt_gui_draw_text(cx, r.x, r.y + r.h, LSTR(line_start, remain), cx->style->text_clr);
 	r.h += cx->glyph_height;
 
 	make_space(cx, &r, flags);
