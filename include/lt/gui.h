@@ -113,6 +113,13 @@ struct lt_gui_scroll_state {
 	u32 vscroll;
 } lt_gui_scroll_state_t;
 
+typedef
+struct lt_gui_textbox_state {
+	char* buf;
+	usz maxlen;
+	u8 selected;
+} lt_gui_textbox_state_t;
+
 extern lt_gui_style_t lt_gui_default_style;
 
 void lt_gui_ctx_init(lt_arena_t* arena, lt_gui_ctx_t* cx);
@@ -134,6 +141,8 @@ void lt_gui_row(lt_gui_ctx_t* cx, usz cols);
 
 void lt_gui_label(lt_gui_ctx_t* cx, lstr_t text, u32 flags);
 void lt_gui_text(lt_gui_ctx_t* cx, lstr_t text, u32 flags);
+
+b8 lt_gui_textbox(lt_gui_ctx_t* cx, isz ew, isz eh, lt_gui_textbox_state_t* state, u32 flags);
 
 b8 lt_gui_button(lt_gui_ctx_t* cx, lstr_t text, u32 flags);
 

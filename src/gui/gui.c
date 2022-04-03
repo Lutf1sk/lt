@@ -1,5 +1,6 @@
 #include <lt/gui.h>
 #include <lt/mem.h>
+#include <lt/str.h>
 
 lt_gui_style_t lt_gui_default_style = {
 	.panel_bg_clr = 0xFF282828,
@@ -262,6 +263,40 @@ void lt_gui_text(lt_gui_ctx_t* cx, lstr_t text, u32 flags) {
 	r.h += cx->glyph_height;
 
 	make_space(cx, &r, flags);
+}
+
+b8 lt_gui_textbox(lt_gui_ctx_t* cx, isz ew, isz eh, lt_gui_textbox_state_t* state, u32 flags) {
+	lt_gui_rect_t r = {0, 0, ew, eh};
+	make_space(cx, &r, flags);
+
+	u32 bg = cx->style->panel_bg_clr - 0x1A1A1A;
+	b8 hovered = is_hovered(cx, &r);
+	if (hovered || state->selected)
+		bg += 0x101010;
+
+	if (mb_pressed(cx, 0))
+		state->selected = hovered;
+
+	lstr_t text = LSTR(state->buf, strnlen(state->buf, state->maxlen));
+
+	usz max_chars = (r.w - cx->style->padding*2) / cx->glyph_width;;
+	if (text.len > max_chars) {
+		usz offs = text.len - max_chars;
+		text = LSTR(text.str + offs, text.len - offs);
+	}
+
+	isz x = r.x + cx->style->padding;
+	lt_gui_draw_text(cx, x, r.y + 1, text, cx->style->text_clr);
+
+	lt_gui_draw_rect(cx, &r, bg);
+	lt_gui_draw_border(cx, &r, cx->style->border_clr, flags);
+
+	if (state->selected) {
+		lt_gui_rect_t cr = { x + text.len * cx->glyph_width, r.y + 1, 1, cx->glyph_height - 1 };
+		lt_gui_draw_rect(cx, &cr, cx->style->text_clr);
+	}
+
+	return state->selected;
 }
 
 u8 lt_gui_button(lt_gui_ctx_t* cx, lstr_t text, u32 flags) {
