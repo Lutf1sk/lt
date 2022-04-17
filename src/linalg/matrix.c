@@ -39,7 +39,7 @@ void lt_mat4_identity(lt_mat4_t mat) {
 }
 
 void lt_mat4_perspective(lt_mat4_t mat, f32 fov, f32 aspect, f32 near, f32 far) {
-	memset(mat, 0, sizeof(*mat));
+	memset(mat, 0, sizeof(lt_mat4_t));
 
 	f32 f = 1.0f / tanf(fov * 0.5f);
 	f32 fn = 1.0f / (near - far);
@@ -52,7 +52,19 @@ void lt_mat4_perspective(lt_mat4_t mat, f32 fov, f32 aspect, f32 near, f32 far) 
 }
 
 void lt_mat4_ortho(lt_mat4_t mat, f32 left, f32 right, f32 bottom, f32 top, f32 near, f32 far) {
-	LT_ASSERT_NOT_REACHED();
+	memset(mat, 0, sizeof(lt_mat4_t));
+
+	f32 xspace = 1.0f / (right - left);
+	f32 yspace = 1.0f / (top - bottom);
+	f32 zspace = -1.0f / (far - near);
+
+	mat[0][0] = 2.0f * xspace;
+	mat[1][1] = 2.0f * yspace;
+	mat[2][2] = -zspace;
+	mat[3][0] = -(right + left) * xspace;
+	mat[3][1] = -(top + bottom) * yspace;
+	mat[3][2] = near * zspace;
+	mat[3][3] = 1.0f;
 }
 
 void lt_mat4_view(lt_mat4_t mat, lt_vec3_t eye, lt_vec3_t center, lt_vec3_t up) {
