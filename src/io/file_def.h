@@ -6,7 +6,7 @@
 typedef
 struct lt_file {
 	int fd;
-	usz size;
+	u64 size;
 	usz block_size;
 	usz it;
 	u8* buf;
@@ -19,7 +19,7 @@ struct lt_file {
 typedef
 struct lt_file {
 	HANDLE hnd;
-	usz size;
+	u64 size;
 } lt_file_t;
 
 #endif

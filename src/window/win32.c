@@ -28,6 +28,28 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param)
 		CREATESTRUCT* create = (CREATESTRUCT*)l_param;
 		lt_window_t* win = (lt_window_t*)create->lpCreateParams;
 		SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)win);
+
+		if (win->with_opengl) {
+			PIXELFORMATDESCRIPTOR pfd = {0};
+			pfd.nSize = sizeof(pfd);
+			pfd.nVersion = 1;
+			pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+			pfd.iPixelType = PFD_TYPE_RGBA;
+			pfd.cColorBits = 32;
+			pfd.cDepthBits = 24;
+			pfd.cStencilBits = 8;
+			pfd.iLayerType = PFD_MAIN_PLANE;
+
+			HDC dc = GetDC(hwnd);
+			int px_fmt = ChoosePixelFormat(dc, &pfd);
+			LT_ASSERT(px_fmt);
+			LT_ASSERT(SetPixelFormat(dc, px_fmt, &pfd));
+
+			HGLRC glc = wglCreateContext(dc);
+			LT_ASSERT(glc);
+			LT_ASSERT(wglMakeCurrent(dc, glc));
+			win->glctx = glc;
+		}
 	}	return 0;
 
 	case WM_CLOSE:
@@ -36,6 +58,10 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param)
 
 	case WM_DESTROY:
 		win->closed = 1;
+		if (win->glctx) {
+			wglMakeCurrent(GetDC(hwnd), NULL);
+			wglDeleteContext(win->glctx);
+		}
 		return 0;
 
 	default:
@@ -50,7 +76,7 @@ b8 lt_window_init(lt_arena_t* arena) {
 
 	WNDCLASSEX wc;
 	wc.cbSize = sizeof(wc);
-	wc.style = 0;
+	wc.style = CS_OWNDC;
 	wc.lpfnWndProc = WindowProc;
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
@@ -104,7 +130,6 @@ b8 lt_window_init(lt_arena_t* arena) {
 	}
 
 	lt_generate_keytab(arena);
-
 	return 1;
 }
 
@@ -142,6 +167,8 @@ lt_window_t* lt_window_create(lt_arena_t* arena, lt_window_description_t* desc) 
 	lt_window_t* win = lt_arena_reserve(arena, sizeof(lt_window_t));
 	win->closed = 0;
 	win->fullscreen = 0;
+	win->glctx = NULL;
+	win->with_opengl = !!(desc->type & LT_WIN_GL);
 
 	// Create window
 	HWND hwnd = CreateWindowEx(0, lt_class_name, desc->title.str, WS_OVERLAPPEDWINDOW,
@@ -172,7 +199,7 @@ usz lt_window_poll_events(lt_window_t* win, lt_window_event_t* evs, usz ev_max) 
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
 
-		if (msg.message == WM_KEYDOWN || msg.message == WM_SYSKEYDOWN || 
+		if (msg.message == WM_KEYDOWN || msg.message == WM_SYSKEYDOWN ||
 			msg.message == WM_KEYUP || msg.message == WM_SYSKEYUP)
 		{
 			const int action = (HIWORD(msg.lParam) & KF_UP) ? 0 : 1;
@@ -256,6 +283,10 @@ void lt_window_set_fullscreen(lt_window_t* win, lt_winstate_t state) {
 		lt_window_set_fullscreen(win, !win->fullscreen);
 }
 
+void lt_window_gl_swap_buffers(lt_window_t* win) {
+	wglSwapLayerBuffers(GetDC(win->hwnd), WGL_SWAP_MAIN_PLANE);
+}
+
 void lt_window_set_pos(lt_window_t* win, int x, int y) {
 	SetWindowPos(win->hwnd, NULL, x, y, 0, 0, SWP_NOSIZE);
 }
@@ -273,7 +304,7 @@ void lt_window_get_pos(lt_window_t* win, int* x, int* y) {
 
 void lt_window_get_size(lt_window_t* win, int* w, int* h) {
 	RECT rect;
-	GetWindowRect(win->hwnd, &rect);
+	GetClientRect(win->hwnd, &rect);
 	*w = rect.right - rect.left;
 	*h = rect.bottom - rect.top;
 }

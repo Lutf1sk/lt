@@ -37,7 +37,6 @@ int lt_perms_to_posix(lt_file_perms_t perms) {
 
 lt_file_t* lt_file_open(lt_arena_t* arena, char* path, lt_file_mode_t mode, lt_file_perms_t perms) {
 #if defined(LT_UNIX)
-
 	mode_t posix_mode = lt_perms_to_posix(perms);
 	if (mode == LT_FILE_W)
 		posix_mode |= S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
@@ -63,11 +62,16 @@ lt_file_t* lt_file_open(lt_arena_t* arena, char* path, lt_file_mode_t mode, lt_f
 	file->block_size = stat_res.st_blksize;
 
 #elif defined(LT_WINDOWS)
+	u64 size = 0;
 	HANDLE h = INVALID_HANDLE_VALUE;
 	if (mode == LT_FILE_W)
-		h = CreateFile(path, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
-	else if (mode == LT_FILE_R)
-		h = CreateFile(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, NULL);
+		h = CreateFile(path, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+	else if (mode == LT_FILE_R) {
+		h = CreateFile(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+		LARGE_INTEGER li = {0};
+		GetFileSizeEx(h, &li);
+		size = li.QuadPart;
+	}
 	else if (mode == LT_FILE_RW)
 		lt_werr(CLSTR("LT_FILE_RW has not been implemented for windows\n"));
 
@@ -76,7 +80,7 @@ lt_file_t* lt_file_open(lt_arena_t* arena, char* path, lt_file_mode_t mode, lt_f
 
 	lt_file_t* file = lt_arena_reserve(arena, sizeof(lt_file_t));
 	file->hnd = h;
-	file->size = 0;
+	file->size = size;
 
 #endif
 

@@ -50,7 +50,11 @@ typedef struct lt_window {
 	HWND hwnd;
 	WINDOWPLACEMENT wp;
 
+	HGLRC glctx;
+
 	b8 fullscreen;
+
+	b8 with_opengl;
 
 	int mpos_x, mpos_y;
 
