@@ -168,6 +168,8 @@ lt_json_t* json_parse_object(parse_ctx_t* cx) {
 		*current = new;
 		current = &new->next;
 
+		++obj->child_count;
+
 		skip_whitespace(cx);
 		if (cx->data[cx->it] == ',') {
 			++cx->it;
