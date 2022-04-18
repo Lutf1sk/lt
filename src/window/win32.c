@@ -3,6 +3,7 @@
 #if defined(LT_WIN32)
 #	include <lt/mem.h>
 #	include <lt/io.h>
+#	include <windowsx.h>
 
 HINSTANCE lt_hinst = NULL;
 static char* lt_class_name = "Sample Window Class";
@@ -63,6 +64,10 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param)
 			wglDeleteContext(win->glctx);
 		}
 		return 0;
+
+	case WM_MOUSEMOVE:
+		win->mpos_x = GET_X_LPARAM(l_param);
+		win->mpos_y = GET_Y_LPARAM(l_param);
 
 	default:
 		return DefWindowProc(hwnd, msg, w_param, l_param);
@@ -198,6 +203,32 @@ usz lt_window_poll_events(lt_window_t* win, lt_window_event_t* evs, usz ev_max) 
 	while (PeekMessage(&msg, win->hwnd, 0, 0, PM_REMOVE)) {
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
+
+		int action = 0, button = 0;
+
+		// TODO: Handle WM_XBUTTONDOWN events
+
+		switch (msg.message) {
+		case WM_LBUTTONDOWN: button = LT_KEY_MB1, action = 1; goto mb_common;
+		case WM_MBUTTONDOWN: button = LT_KEY_MB3, action = 1; goto mb_common;
+		case WM_RBUTTONDOWN: button = LT_KEY_MB2, action = 1; goto mb_common;
+
+		case WM_LBUTTONUP: button = LT_KEY_MB1, action = 0; goto mb_common;
+		case WM_MBUTTONUP: button = LT_KEY_MB3, action = 0; goto mb_common;
+		case WM_RBUTTONUP: button = LT_KEY_MB2, action = 0; goto mb_common;
+
+		mb_common:
+			win->key_press_map[button] = action;
+			if (ev_it < ev_max) {
+				evs[ev_it].type = action ? LT_WIN_EVENT_BUTTON_PRESS : LT_WIN_EVENT_BUTTON_RELEASE;
+				evs[ev_it].button = button;
+				++ev_it;
+			}
+			break;
+
+		default:
+			break;
+		}
 
 		if (msg.message == WM_KEYDOWN || msg.message == WM_SYSKEYDOWN ||
 			msg.message == WM_KEYUP || msg.message == WM_SYSKEYUP)
