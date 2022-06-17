@@ -22,6 +22,7 @@ OBJS = \
 	src/linalg/vec.o \
 	src/lt/assert.o \
 	src/lt/backtrace.o \
+	src/lt/breakpoint.o \
 	src/lt/dynl.o \
 	src/lt/err.o \
 	src/mem/arena.o \
