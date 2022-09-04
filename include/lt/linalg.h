@@ -125,6 +125,11 @@ void lt_vec3_mul_mat3(lt_vec3_t v, lt_mat3_t m);
 // f32 lt_vec3_magnitude(lt_vec3_t v);
 
 static LT_INLINE
+f32 lt_vec3_dot(lt_vec3_t a, lt_vec3_t b) {
+	return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+}
+
+static LT_INLINE
 f32 lt_vec3_magnitude(lt_vec3_t v) {
 	return sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
 }
@@ -133,12 +138,34 @@ f32 lt_vec3_magnitude(lt_vec3_t v) {
 
 static LT_INLINE
 void lt_vec3_normalize(lt_vec3_t v) {
-	f32 m = 1.0f / lt_vec3_magnitude(v);
-	v[0] *= m, v[1] *= m, v[2] *= m;
+	f32 m = lt_vec3_magnitude(v);
+
+	if (m == 0.0f)
+		v[0] = 0.0f, v[1] = 0.0f, v[2] = 0.0f;
+	else
+		lt_vec3_mul_f(v, 1.0f / m, v);
 }
 
 void lt_vec3_cross(lt_vec3_t a, lt_vec3_t b, lt_vec3_t dst);
-f32 lt_vec3_dot(lt_vec3_t a, lt_vec3_t b);
+
+static LT_INLINE
+void lt_vec3_rotate(lt_vec3_t v, float angle, lt_vec3_t axis) {
+	lt_vec3_t ax, v1, v2;
+	float x = cos(angle), y = sin(angle);
+
+	lt_vec3_copy(ax, axis);
+	lt_vec3_normalize(ax);
+
+	lt_vec3_mul_f(v, x, v1);
+
+	lt_vec3_cross(ax, v, v2);
+	lt_vec3_mul_f(v2, y, v2);
+
+	lt_vec3_add(v1, v2, v1);
+
+	lt_vec3_mul_f(ax, lt_vec3_dot(ax, v) * (1.0f - x), v2);
+	lt_vec3_add(v1, v2, v);
+}
 
 // ----- vec4
 

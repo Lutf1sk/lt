@@ -143,10 +143,6 @@ void lt_vec3_cross(lt_vec3_t a, lt_vec3_t b, lt_vec3_t dst) {
 	dst[2] = a[0] * b[1] - a[1] * b[0];
 }
 
-f32 lt_vec3_dot(lt_vec3_t a, lt_vec3_t b) {
-	return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-}
-
 // ----- vec4
 
 void lt_vec4_add(lt_vec4_t a, lt_vec4_t b, lt_vec4_t dst) {
