@@ -51,7 +51,7 @@ void lt_vec2_mul_f(lt_vec2_t v, float f, lt_vec2_t dst);
 void lt_vec2_mul_mat2(lt_vec2_t v, lt_mat2_t m, lt_vec2_t dst) {
 	lt_vec2_t tmp = LT_VEC2_INIT(
 		m[0][0] * v[0] + m[1][0] * v[1],
-		m[0][1] * v[0] + m[1][1] * v[1],
+		m[0][1] * v[0] + m[1][1] * v[1]
 	);
 	lt_vec2_copy(dst, tmp);
 }
@@ -124,7 +124,7 @@ void lt_vec3_mul_mat3(lt_vec3_t v, lt_mat3_t m, lt_vec3_t dst) {
 	lt_vec3_t tmp = LT_VEC3_INIT(
 		m[0][0] * v[0] + m[1][0] * v[1] + m[2][0] * v[2],
 		m[0][1] * v[0] + m[1][1] * v[1] + m[2][1] * v[2],
-		m[0][2] * v[0] + m[1][2] * v[1] + m[2][2] * v[2],
+		m[0][2] * v[0] + m[1][2] * v[1] + m[2][2] * v[2]
 	);
 	lt_vec3_copy(dst, tmp);
 }
