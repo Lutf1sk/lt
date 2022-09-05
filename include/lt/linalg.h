@@ -20,6 +20,10 @@ void lt_vec3_copy(lt_vec3_t dst, lt_vec3_t src) { memcpy(dst, src, sizeof(lt_vec
 LT_INLINE
 void lt_vec4_copy(lt_vec4_t dst, lt_vec4_t src) { memcpy(dst, src, sizeof(lt_vec4_t)); }
 
+// Forward declarations
+static
+void lt_vec4_mul_mat4(lt_vec4_t v, lt_mat4_t m, lt_vec4_t dst);
+
 // vec.c
 
 #define LT_VEC2_INIT(x, y) { (x), (y) }
@@ -44,23 +48,19 @@ void lt_vec2_sub_f(lt_vec2_t v, float f, lt_vec2_t dst);
 void lt_vec2_div_f(lt_vec2_t v, float f, lt_vec2_t dst);
 void lt_vec2_mul_f(lt_vec2_t v, float f, lt_vec2_t dst);
 
-void lt_vec2_mul_mat2(lt_vec2_t v, lt_mat2_t m);
+void lt_vec2_mul_mat2(lt_vec2_t v, lt_mat2_t m, lt_vec2_t dst) {
+	lt_vec2_t tmp = LT_VEC2_INIT(
+		m[0][0] * v[0] + m[1][0] * v[1],
+		m[0][1] * v[0] + m[1][1] * v[1],
+	);
+	lt_vec2_copy(dst, tmp);
+}
 
 f32 lt_vec2_magnitude(lt_vec2_t v);
 
 void lt_vec2_normalize(lt_vec2_t v);
 
 // ----- vec3
-
-// void lt_vec3_add(lt_vec3_t a, lt_vec3_t b, lt_vec3_t dst);
-// void lt_vec3_sub(lt_vec3_t a, lt_vec3_t b, lt_vec3_t dst);
-// void lt_vec3_div(lt_vec3_t a, lt_vec3_t b, lt_vec3_t dst);
-// void lt_vec3_mul(lt_vec3_t a, lt_vec3_t b, lt_vec3_t dst);
-// 
-// void lt_vec3_add_f(lt_vec3_t v, float f, lt_vec3_t dst);
-// void lt_vec3_sub_f(lt_vec3_t v, float f, lt_vec3_t dst);
-// void lt_vec3_div_f(lt_vec3_t v, float f, lt_vec3_t dst);
-// void lt_vec3_mul_f(lt_vec3_t v, float f, lt_vec3_t dst);
 
 #include <math.h>
 
@@ -120,9 +120,21 @@ void lt_vec3_mul_f(lt_vec3_t v, float f, lt_vec3_t dst) {
 	dst[2] = v[2] * f;
 }
 
-void lt_vec3_mul_mat3(lt_vec3_t v, lt_mat3_t m);
+void lt_vec3_mul_mat3(lt_vec3_t v, lt_mat3_t m, lt_vec3_t dst) {
+	lt_vec3_t tmp = LT_VEC3_INIT(
+		m[0][0] * v[0] + m[1][0] * v[1] + m[2][0] * v[2],
+		m[0][1] * v[0] + m[1][1] * v[1] + m[2][1] * v[2],
+		m[0][2] * v[0] + m[1][2] * v[1] + m[2][2] * v[2],
+	);
+	lt_vec3_copy(dst, tmp);
+}
 
-// f32 lt_vec3_magnitude(lt_vec3_t v);
+static LT_INLINE
+void lt_vec3_mul_mat4(lt_vec3_t v, lt_mat4_t m, lt_vec3_t dst) {
+	lt_vec4_t tmp = LT_VEC4_INIT(v[0], v[1], v[2], 1.0f);
+	lt_vec4_mul_mat4(tmp, m, tmp);
+	lt_vec3_copy(dst, tmp);
+}
 
 static LT_INLINE
 f32 lt_vec3_dot(lt_vec3_t a, lt_vec3_t b) {
@@ -133,8 +145,6 @@ static LT_INLINE
 f32 lt_vec3_magnitude(lt_vec3_t v) {
 	return sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
 }
-
-// void lt_vec3_normalize(lt_vec3_t v);
 
 static LT_INLINE
 void lt_vec3_normalize(lt_vec3_t v) {
@@ -179,7 +189,16 @@ void lt_vec4_sub_f(lt_vec4_t v, float f, lt_vec4_t dst);
 void lt_vec4_div_f(lt_vec4_t v, float f, lt_vec4_t dst);
 void lt_vec4_mul_f(lt_vec4_t v, float f, lt_vec4_t dst);
 
-void lt_vec4_mul_mat4(lt_vec4_t v, lt_mat4_t m);
+static LT_INLINE
+void lt_vec4_mul_mat4(lt_vec4_t v, lt_mat4_t m, lt_vec4_t dst) {
+	lt_vec4_t tmp = LT_VEC4_INIT(
+		m[0][0] * v[0] + m[1][0] * v[1] + m[2][0] * v[2] + m[3][0] * v[3],
+		m[0][1] * v[0] + m[1][1] * v[1] + m[2][1] * v[2] + m[3][1] * v[3],
+		m[0][2] * v[0] + m[1][2] * v[1] + m[2][2] * v[2] + m[3][2] * v[3],
+		m[0][3] * v[0] + m[1][3] * v[1] + m[2][3] * v[2] + m[3][3] * v[3]
+	);
+	lt_vec4_copy(dst, tmp);
+}
 
 f32 lt_vec4_magnitude(lt_vec4_t v);
 
@@ -191,14 +210,32 @@ void lt_mat2_identity(lt_mat2_t mat);
 void lt_mat3_identity(lt_mat3_t mat);
 void lt_mat4_identity(lt_mat4_t mat);
 
-void lt_mat2_mul(lt_mat2_t dst, lt_mat2_t src);
-void lt_mat3_mul(lt_mat3_t dst, lt_mat3_t src);
-void lt_mat4_mul(lt_mat4_t dst, lt_mat4_t src);
+static LT_INLINE
+void lt_mat2_mul(lt_mat2_t m1, lt_mat2_t m2, lt_mat2_t dst) {
+	lt_vec2_mul_mat2(m1[0], m2, dst[0]);
+	lt_vec2_mul_mat2(m1[1], m2, dst[1]);
+}
+
+static LT_INLINE
+void lt_mat3_mul(lt_mat3_t m1, lt_mat3_t m2, lt_mat3_t dst) {
+	lt_vec3_mul_mat3(m1[0], m2, dst[0]);
+	lt_vec3_mul_mat3(m1[1], m2, dst[1]);
+	lt_vec3_mul_mat3(m1[2], m2, dst[2]);
+}
+
+static LT_INLINE
+void lt_mat4_mul(lt_mat4_t m1, lt_mat4_t m2, lt_mat4_t dst) {
+	lt_vec4_mul_mat4(m1[0], m2, dst[0]);
+	lt_vec4_mul_mat4(m1[1], m2, dst[1]);
+	lt_vec4_mul_mat4(m1[2], m2, dst[2]);
+	lt_vec4_mul_mat4(m1[3], m2, dst[3]);
+}
 
 void lt_mat4_perspective(lt_mat4_t mat, f32 fov, f32 aspect, f32 near, f32 far);
 void lt_mat4_ortho(lt_mat4_t mat, f32 left, f32 right, f32 bottom, f32 top, f32 near, f32 far);
 
 void lt_mat4_view(lt_mat4_t mat, lt_vec3_t eye, lt_vec3_t center, lt_vec3_t up);
+void lt_mat4_euler(lt_vec3_t angles, lt_mat4_t dst);
 
 #define LT_MAT2_IDENTITY ((lt_mat2_t)LT_MAT2_IDENTITY_INIT)
 #define LT_MAT2_IDENTITY_INIT { \

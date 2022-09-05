@@ -11,25 +11,12 @@ void lt_mat2_identity(lt_mat2_t mat) {
 	memcpy(mat, &src, sizeof(lt_mat2_t));
 }
 
-void lt_mat2_mul(lt_mat2_t dst, lt_mat2_t src) {
-	lt_vec2_mul_mat2(dst[0], src);
-	lt_vec2_mul_mat2(dst[1], src);
-}
-
-
 // ----- mat3
 
 void lt_mat3_identity(lt_mat3_t mat) {
 	static lt_mat3_t src = LT_MAT3_IDENTITY_INIT;
 	memcpy(mat, &src, sizeof(lt_mat3_t));
 }
-
-void lt_mat3_mul(lt_mat3_t dst, lt_mat3_t src) {
-	lt_vec3_mul_mat3(dst[0], src);
-	lt_vec3_mul_mat3(dst[1], src);
-	lt_vec3_mul_mat3(dst[2], src);
-}
-
 
 // ----- mat4
 
@@ -98,10 +85,36 @@ void lt_mat4_view(lt_mat4_t mat, lt_vec3_t eye, lt_vec3_t center, lt_vec3_t up) 
 	mat[3][3] = 1.0f;
 }
 
-void lt_mat4_mul(lt_mat4_t dst, lt_mat4_t src) {
-	lt_vec4_mul_mat4(dst[0], src);
-	lt_vec4_mul_mat4(dst[1], src);
-	lt_vec4_mul_mat4(dst[2], src);
-	lt_vec4_mul_mat4(dst[3], src);
+void lt_mat4_euler(lt_vec3_t angles, lt_mat4_t dst) {
+	float cx, cy, cz, sx, sy, sz, czsx, cxcz, sysz;
+
+	sx   = sinf(angles[0]); cx = cosf(angles[0]);
+	sy   = sinf(angles[1]); cy = cosf(angles[1]);
+	sz   = sinf(angles[2]); cz = cosf(angles[2]);
+
+	czsx = cz * sx;
+	cxcz = cx * cz;
+	sysz = sy * sz;
+
+	dst[0][0] =  cy * cz;
+	dst[0][1] =  czsx * sy + cx * sz;
+	dst[0][2] = -cxcz * sy + sx * sz;
+
+	dst[1][0] = -cy * sz;
+	dst[1][1] =  cxcz - sx * sysz;
+	dst[1][2] =  czsx + cx * sysz;
+
+	dst[2][0] =  sy;
+	dst[2][1] = -cy * sx;
+	dst[2][2] =  cx * cy;
+
+	dst[0][3] =  0.0f;
+	dst[1][3] =  0.0f;
+	dst[2][3] =  0.0f;
+
+	dst[3][0] =  0.0f;
+	dst[3][1] =  0.0f;
+	dst[3][2] =  0.0f;
+	dst[3][3] =  1.0f;
 }
 
