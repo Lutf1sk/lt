@@ -10,6 +10,7 @@ OBJS = \
 	src/gl/gl.o \
 	src/gl/glad.o \
 	src/gui/gui.o \
+	src/img/bmp.o \
 	src/img/img.o \
 	src/img/tga.o \
 	src/io/cli.o \
