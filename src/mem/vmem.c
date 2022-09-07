@@ -4,7 +4,7 @@
 #ifdef LT_UNIX
 #	include <sys/mman.h>
 
-#	define MAP_PAGES(size) mmap(NULL, (size), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0)
+#	define MAP_PAGES(size) mmap(NULL, (size), PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0)
 #	define UNMAP_PAGES(addr, size) munmap((addr), (size))
 #	define MAP_PAGES_ERROR MAP_FAILED
 #elif defined(LT_WINDOWS)
@@ -12,7 +12,7 @@
 #	include <windows.h>
 #	include <memoryapi.h>
 
-#	define MAP_PAGES(size) VirtualAlloc(NULL, (size), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE)
+#	define MAP_PAGES(size) VirtualAlloc(NULL, (size), MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE)
 #	define UNMAP_PAGES(addr, size) VirtualFree((addr), 0, MEM_RELEASE)
 #	define MAP_PAGES_ERROR NULL
 #endif
