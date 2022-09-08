@@ -90,7 +90,7 @@ b8 lt_file_read_entire(char* path, lstr_t* out, lt_alloc_t* alloc) {
 	if (!file)
 		return 0;
 	usz size = lt_file_size(file);
-	char* data = lt_malloc(alloc, size); // !!
+	char* data = lt_malloc(alloc, size);
 	isz res = lt_file_read(file, data, size);
 	lt_file_close(file, alloc);
 	if (res == -1) {
