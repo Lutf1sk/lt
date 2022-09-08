@@ -13,7 +13,7 @@
 #	include <lt/io.h>
 
 static lt_keycode_t lt_lookup_key(lt_window_t* win, xcb_keycode_t keycode, u16 state);
-static void lt_generate_keytab(lt_arena_t* arena, lt_window_t* win);
+static void lt_generate_keytab(lt_window_t* win, lt_alloc_t* alloc);
 
 Display* lt_display = NULL;
 xcb_connection_t* lt_conn = NULL;
@@ -41,7 +41,7 @@ double mode_rate(xcb_randr_mode_info_t* mode) {
 	return (double)mode->dot_clock / ((double)mode->htotal * vtotal);
 }
 
-b8 lt_window_init(lt_arena_t* arena) {
+b8 lt_window_init(lt_alloc_t* alloc) {
 	lt_xproto_init();
 
 	lt_display = XOpenDisplay(NULL);
@@ -111,7 +111,7 @@ b8 lt_window_init(lt_arena_t* arena) {
 	int mode_count = xcb_randr_get_screen_resources_current_modes_length(scrres_reply);
 	xcb_randr_mode_info_t* modes = xcb_randr_get_screen_resources_current_modes(scrres_reply);
 
-	lt_outputs = lt_arena_reserve(arena, output_count * sizeof(lt_output_t));
+	lt_outputs = lt_malloc(alloc, output_count * sizeof(lt_output_t));
 
 	for (int i = 0; i < output_count; ++i) {
 		xcb_randr_get_output_info_cookie_t outinf_cookie = xcb_randr_get_output_info(lt_conn, outputs[i], timestamp);
@@ -133,7 +133,7 @@ b8 lt_window_init(lt_arena_t* arena) {
 		char* out_name = (char*)xcb_randr_get_output_info_name(outinf_reply);
 		int out_name_len = xcb_randr_get_output_info_name_length(outinf_reply);
 
-		char* alloc_out_name = lt_arena_reserve(arena, out_name_len);
+		char* alloc_out_name = lt_malloc(alloc, out_name_len);
 		memcpy(alloc_out_name, out_name, out_name_len);
 
 		usz mode_index = 0;
@@ -163,7 +163,11 @@ b8 lt_window_init(lt_arena_t* arena) {
 	return 1;
 }
 
-void lt_window_terminate(void) {
+void lt_window_terminate(lt_alloc_t* alloc) {
+	for (usz i = 0; i < lt_output_count; ++i)
+		lt_mfree(alloc, lt_outputs[i].name.str);
+	lt_mfree(alloc, lt_outputs);
+
 	XCloseDisplay(lt_display);
 }
 
@@ -175,7 +179,7 @@ lt_output_t* lt_window_outputs(void) {
 	return lt_outputs;
 }
 
-lt_window_t* lt_window_create(lt_arena_t* arena, lt_window_description_t* desc) {
+lt_window_t* lt_window_create(lt_window_description_t* desc, lt_alloc_t* alloc) {
 	int output = desc->output_index;
 
 	// Calculate window dimensions
@@ -266,7 +270,7 @@ lt_window_t* lt_window_create(lt_arena_t* arena, lt_window_description_t* desc) 
 	}
 
 	// Create lt_window structure
-	lt_window_t* win = lt_arena_reserve(arena, sizeof(lt_window_t));
+	lt_window_t* win = lt_malloc(alloc, sizeof(lt_window_t));
 	win->window = window;
 	win->gc = gc;
 	win->glctx = glc;
@@ -280,7 +284,7 @@ lt_window_t* lt_window_create(lt_arena_t* arena, lt_window_description_t* desc) 
 	win->mpos_x = -1;
 	win->mpos_y = -1;
 
-	lt_generate_keytab(arena, win);
+	lt_generate_keytab(win, alloc);
 	return win;
 
 setup_err:
@@ -288,7 +292,7 @@ setup_err:
 	return NULL;
 }
 
-void lt_window_destroy(lt_window_t* win) {
+void lt_window_destroy(lt_window_t* win, lt_alloc_t* alloc) {
 	if (win->glctx) {
 		XFreeColormap(lt_display, win->clrmap);
 		glXMakeCurrent(lt_display, None, NULL);
@@ -296,6 +300,9 @@ void lt_window_destroy(lt_window_t* win) {
 	}
 
 	xcb_destroy_window(lt_conn, win->window);
+
+	lt_mfree(alloc, win->keytab);
+	lt_mfree(alloc, win);
 }
 
 static lt_keycode_t btnmap[] = {
@@ -504,7 +511,7 @@ void lt_window_get_size(lt_window_t* win, int* w, int* h) {
 extern int strncmp(char*, char*, usz);
 
 static
-void lt_generate_keytab(lt_arena_t* arena, lt_window_t* win) {
+void lt_generate_keytab(lt_window_t* win, lt_alloc_t* alloc) {
 	const struct { int key; char* name; } keymap[] = {
 		{ LT_KEY_TILDE, "TLDE" },
 		{ LT_KEY_1, "AE01" }, { LT_KEY_2, "AE02" }, { LT_KEY_3, "AE03" }, { LT_KEY_4, "AE04" },
@@ -558,7 +565,7 @@ void lt_generate_keytab(lt_arena_t* arena, lt_window_t* win) {
 	int scan_count = scan_max - scan_min + 1;
 	win->scan_min = scan_min;
 
-	int* keytab = lt_arena_reserve(arena, scan_count * sizeof(int));
+	int* keytab = lt_malloc(alloc, scan_count * sizeof(int));
 	win->keytab = keytab;
 	memset(keytab, LT_KEY_INVALID, scan_count * sizeof(int));
 

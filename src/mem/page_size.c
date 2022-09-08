@@ -29,10 +29,10 @@ usz lt_page_size_initial(void) {
 
 #endif
 
-	lt_page_size = lt_page_size_cached;
+	lt_get_pagesize = lt_page_size_cached;
 	return page_size;
 }
 
-usz (*lt_page_size)(void) = lt_page_size_initial;
+usz (*lt_get_pagesize)(void) = lt_page_size_initial;
 
 

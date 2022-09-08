@@ -19,8 +19,10 @@ struct lt_img {
 	void* data;
 } lt_img_t;
 
-b8 lt_img_load_tga(lt_arena_t* arena, void* data, usz len, lt_img_t* img);
-b8 lt_img_load_bmp(lt_arena_t* arena, void* data, usz len, lt_img_t* img);
-b8 lt_img_load(lt_arena_t* arena, void* data, usz len, lt_img_t* img);
+b8 lt_img_load_tga(void* data, usz len, lt_img_t* img, lt_alloc_t* alloc);
+b8 lt_img_load_bmp(void* data, usz len, lt_img_t* img, lt_alloc_t* alloc);
+b8 lt_img_load(void* data, usz len, lt_img_t* img, lt_alloc_t* alloc);
+
+void lt_img_free(lt_img_t* img, lt_alloc_t* alloc);
 
 #endif

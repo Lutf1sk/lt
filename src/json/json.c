@@ -9,7 +9,7 @@ struct parse_ctx {
 	char* data;
 	usz len;
 	usz it;
-	lt_arena_t* arena;
+	lt_alloc_t* alloc;
 } parse_ctx_t;
 
 static
@@ -52,7 +52,7 @@ static lt_json_t* json_parse_value(parse_ctx_t* cx);
 
 static
 lt_json_t* json_parse_array(parse_ctx_t* cx) {
-	lt_json_t* arr = lt_arena_reserve(cx->arena, sizeof(lt_json_t));
+	lt_json_t* arr = lt_malloc(cx->alloc, sizeof(lt_json_t));
 	*arr = json_make(LT_JSON_ARRAY);
 	lt_json_t** current = &arr->child;
 
@@ -87,7 +87,7 @@ lt_json_t* json_parse_value(parse_ctx_t* cx) {
 		return json_parse_array(cx);
 
 	case '"': {
-		lt_json_t* new = lt_arena_reserve(cx->arena, sizeof(lt_json_t));
+		lt_json_t* new = lt_malloc(cx->alloc, sizeof(lt_json_t));
 		*new = json_make(LT_JSON_STRING);
 		new->str_val = consume_string(cx);
 		return new;
@@ -98,7 +98,7 @@ lt_json_t* json_parse_value(parse_ctx_t* cx) {
 		if (cx->it + expect.len > cx->len || !lt_lstr_eq(expect, LSTR(&cx->data[cx->it], expect.len)))
 			return NULL;
 		cx->it += expect.len;
-		lt_json_t* new = lt_arena_reserve(cx->arena, sizeof(lt_json_t));
+		lt_json_t* new = lt_malloc(cx->alloc, sizeof(lt_json_t));
 		*new = json_make(LT_JSON_BOOL);
 		new->str_val = expect;
 		return new;
@@ -109,7 +109,7 @@ lt_json_t* json_parse_value(parse_ctx_t* cx) {
 		if (cx->it + expect.len > cx->len || !lt_lstr_eq(expect, LSTR(&cx->data[cx->it], expect.len)))
 			return NULL;
 		cx->it += expect.len;
-		lt_json_t* new = lt_arena_reserve(cx->arena, sizeof(lt_json_t));
+		lt_json_t* new = lt_malloc(cx->alloc, sizeof(lt_json_t));
 		*new = json_make(LT_JSON_BOOL);
 		new->str_val = expect;
 		return new;
@@ -120,7 +120,7 @@ lt_json_t* json_parse_value(parse_ctx_t* cx) {
 		if (cx->it + expect.len > cx->len || !lt_lstr_eq(expect, LSTR(&cx->data[cx->it], expect.len)))
 			return NULL;
 		cx->it += expect.len;
-		lt_json_t* new = lt_arena_reserve(cx->arena, sizeof(lt_json_t));
+		lt_json_t* new = lt_malloc(cx->alloc, sizeof(lt_json_t));
 		*new = json_make(LT_JSON_NULL);
 		new->str_val = expect;
 		return new;
@@ -128,7 +128,7 @@ lt_json_t* json_parse_value(parse_ctx_t* cx) {
 
 	default:
 		if (lt_is_digit(c)) {
-			lt_json_t* new = lt_arena_reserve(cx->arena, sizeof(lt_json_t));
+			lt_json_t* new = lt_malloc(cx->alloc, sizeof(lt_json_t));
 			*new = json_make(LT_JSON_NUMBER);
 			new->str_val = consume_number(cx);
 			return new;
@@ -158,7 +158,7 @@ static
 lt_json_t* json_parse_object(parse_ctx_t* cx) {
 	++cx->it; // {
 
-	lt_json_t* obj = lt_arena_reserve(cx->arena, sizeof(lt_json_t));
+	lt_json_t* obj = lt_malloc(cx->alloc, sizeof(lt_json_t));
 	*obj = json_make(LT_JSON_OBJECT);
 	lt_json_t** current = &obj->child;
 
@@ -181,11 +181,11 @@ lt_json_t* json_parse_object(parse_ctx_t* cx) {
 	return obj;
 }
 
-lt_json_t* lt_json_parse(lt_arena_t* arena, char* data, usz len) {
+lt_json_t* lt_json_parse(lt_alloc_t* alloc, char* data, usz len) {
 	parse_ctx_t cx;
 	cx.data = data;
 	cx.len = len;
-	cx.arena = arena;
+	cx.alloc = alloc;
 	cx.it = 0;
 
 	skip_whitespace(&cx);

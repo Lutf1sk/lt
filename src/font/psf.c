@@ -299,7 +299,7 @@ u32 precomp_tab[256][8] = {
 #undef _
 #undef X
 
-lt_font_t* lt_font_load_psf(lt_arena_t* arena, void* data, usz len) {
+lt_font_t* lt_font_load_psf(void* data, usz len, lt_alloc_t* alloc) {
 	if (len < sizeof(u32))
 		return NULL;
 
@@ -338,11 +338,11 @@ lt_font_t* lt_font_load_psf(lt_arena_t* arena, void* data, usz len) {
 	else
 		return NULL;
 
-	lt_font_t* font = lt_arena_reserve(arena, sizeof(lt_font_t));
+	lt_font_t* font = lt_malloc(alloc, sizeof(lt_font_t));
 	font->width = w;
 	font->height = h;
 	font->glyph_count = glyph_count;
-	font->glyph_data = lt_arena_reserve(arena, glyph_count * w * h * sizeof(u32));
+	font->glyph_data = lt_malloc(alloc, glyph_count * w * h * sizeof(u32));
 
 	for (u32* out = font->glyph_data, i = 0; i < glyph_count; ++i) {
 		for (usz j = 0; j < h; ++j) {

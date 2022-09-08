@@ -127,14 +127,14 @@ struct lt_window_event {
 } lt_window_event_t;
 
 // x11.c / win32.c
-b8 lt_window_init(lt_arena_t* arena);
-void lt_window_terminate(void);
+b8 lt_window_init(lt_alloc_t* alloc);
+void lt_window_terminate(lt_alloc_t* alloc);
 
 int lt_window_output_count(void);
 lt_output_t* lt_window_outputs(void);
 
-lt_window_t* lt_window_create(lt_arena_t* arena, lt_window_description_t* desc);
-void lt_window_destroy(lt_window_t* win);
+lt_window_t* lt_window_create(lt_window_description_t* desc, lt_alloc_t* alloc);
+void lt_window_destroy(lt_window_t* win, lt_alloc_t* alloc);
 
 usz lt_window_poll_events(lt_window_t* win, lt_window_event_t* events, usz max_events);
 usz lt_window_wait_events(lt_window_t* win, lt_window_event_t* events, usz max_events);

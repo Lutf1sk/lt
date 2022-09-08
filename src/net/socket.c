@@ -71,23 +71,24 @@ b8 lt_sockaddr_resolve(char* addr, char* port, lt_socktype_t type, lt_sockaddr_t
 	return 1;
 }
 
-lt_socket_t* lt_socket_create(lt_arena_t* arena, lt_socktype_t type) {
+lt_socket_t* lt_socket_create(lt_socktype_t type, lt_alloc_t* alloc) {
 	INIT_IF_NECESSARY();
 	SOCKET fd = socket(AF_INET, lt_socktype_to_native(type), 0);
 	if (fd < 0)
 		return NULL;
 
-	lt_socket_t* sock = lt_arena_reserve(arena, sizeof(lt_socket_t));
+	lt_socket_t* sock = lt_malloc(alloc, sizeof(lt_socket_t));
 	sock->fd = fd;
 	return sock;
 }
 
-void lt_socket_destroy(lt_socket_t* sock) {
+void lt_socket_destroy(lt_socket_t* sock, lt_alloc_t* alloc) {
 #if defined(LT_UNIX)
 	close(sock->fd);
 #elif defined(LT_WINDOWS)
 	closesocket(sock->fd);
 #endif
+	lt_mfree(alloc, sock);
 }
 
 b8 lt_socket_connect(lt_socket_t* sock, lt_sockaddr_t* addr_) {
@@ -112,14 +113,14 @@ b8 lt_socket_server(lt_socket_t* sock, u16 port) {
 	return 1;
 }
 
-lt_socket_t* lt_socket_accept(lt_arena_t* arena, lt_socket_t* sock) {
+lt_socket_t* lt_socket_accept(lt_alloc_t* alloc, lt_socket_t* sock) {
 	struct sockaddr_in new_addr;
 	usz new_size = sizeof(new_addr);
 	SOCKET new_fd = accept(sock->fd, (struct sockaddr*)&new_addr, (socklen_t*)&new_size);
 	if (new_fd < 0)
 		return NULL;
 
-	lt_socket_t* new_sock = lt_arena_reserve(arena, sizeof(lt_socket_t));
+	lt_socket_t* new_sock = lt_malloc(alloc, sizeof(lt_socket_t));
 	new_sock->fd = new_fd;
 	return new_sock;
 }

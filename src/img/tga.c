@@ -15,7 +15,7 @@ LT_PACKED_STRUCT(lt_tga_header) {
 	u8 pixel_type;
 } lt_tga_header_t;
 
-b8 lt_img_load_tga(lt_arena_t* arena, void* data, usz len, lt_img_t* img) {
+b8 lt_img_load_tga(void* data, usz len, lt_img_t* img, lt_alloc_t* alloc) {
 	lt_tga_header_t* h = data;
 
 	if (len < sizeof(lt_tga_header_t) || h->magic != LT_IMG_TGA_MAGIC[0] || h->clrmap != 0 || h->encoding != 2)
@@ -27,7 +27,7 @@ b8 lt_img_load_tga(lt_arena_t* arena, void* data, usz len, lt_img_t* img) {
 	usz px_count = h->w * h->h;
 
 	u32* bgra_data = (u32*)((usz)data + sizeof(lt_tga_header_t));
-	u32* rgba_data = lt_arena_reserve(arena, px_count * sizeof(u32));
+	u32* rgba_data = lt_malloc(alloc, px_count * sizeof(u32));
 	for (usz i = 0; i < px_count; ++i) {
 		u32 v = bgra_data[i];
 		rgba_data[i] =

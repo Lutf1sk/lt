@@ -2,11 +2,14 @@
 #include <lt/mem.h>
 #include <lt/utf8.h>
 
-lt_font_t* lt_font_load(lt_arena_t* arena, void* data, usz len) {
-	return lt_font_load_psf(arena, data, len);
+lt_font_t* lt_font_load(void* data, usz len, lt_alloc_t* alloc) {
+	return lt_font_load_psf(data, len, alloc);
 }
 
-
+void lt_font_destroy(lt_font_t* font, lt_alloc_t* alloc) {
+	lt_mfree(alloc, font->glyph_data);
+	lt_mfree(alloc, font);
+}
 
 void lt_font_render(lt_font_t* font, lstr_t text, u32* buf) {
 	usz w = font->width, h = font->height;

@@ -20,12 +20,12 @@ struct lt_sockaddr {
 
 b8 lt_sockaddr_resolve(char* addr, char* port, lt_socktype_t type, lt_sockaddr_t* out_addr_);
 
-lt_socket_t* lt_socket_create(lt_arena_t* arena, lt_socktype_t type);
-void lt_socket_destroy(lt_socket_t* sock);
+lt_socket_t* lt_socket_create(lt_socktype_t type, lt_alloc_t* alloc);
+void lt_socket_destroy(lt_socket_t* sock, lt_alloc_t* alloc);
 
 b8 lt_socket_connect(lt_socket_t* sock, lt_sockaddr_t* addr);
 b8 lt_socket_server(lt_socket_t* sock, u16 port);
-lt_socket_t* lt_socket_accept(lt_arena_t* arena, lt_socket_t* sock);
+lt_socket_t* lt_socket_accept(lt_alloc_t* alloc, lt_socket_t* sock);
 
 isz lt_socket_send(lt_socket_t* sock, void* data, usz size);
 isz lt_socket_recv(lt_socket_t* sock, void* data, usz size);

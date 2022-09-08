@@ -74,9 +74,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param)
 	}
 }
 
-static void lt_generate_keytab(lt_arena_t* arena);
+static void lt_generate_keytab(lt_alloc_t* alloc);
 
-b8 lt_window_init(lt_arena_t* arena) {
+b8 lt_window_init(lt_alloc_t* alloc) {
 	lt_hinst = GetModuleHandle(NULL);
 
 	WNDCLASSEX wc;
@@ -109,13 +109,13 @@ b8 lt_window_init(lt_arena_t* arena) {
 	}
 
 	lt_output_count = output_count;
-	lt_outputs = lt_arena_reserve(arena, output_count * sizeof(lt_output_t));
+	lt_outputs = lt_malloc(alloc, output_count * sizeof(lt_output_t));
 
 	for (int i = 0; i < output_count; ++i) {
 		EnumDisplayDevices(NULL, i, &dev, 0);
 
 		int dev_name_len = strlen(dev.DeviceName);
-		char* dev_name = lt_arena_reserve(arena, dev_name_len);
+		char* dev_name = lt_malloc(alloc, dev_name_len);
 		memcpy(dev_name, dev.DeviceName, dev_name_len);
 
 		DEVMODE dev_mode;
@@ -134,11 +134,16 @@ b8 lt_window_init(lt_arena_t* arena) {
 		dev.cb = sizeof(dev);
 	}
 
-	lt_generate_keytab(arena);
+	lt_generate_keytab(alloc);
 	return 1;
 }
 
-void lt_window_terminate(void) {
+void lt_window_terminate(lt_alloc_t* alloc) {
+	lt_mfree(alloc, lt_keytab);
+	for (usz i = 0; i < lt_output_count; ++i)
+		lt_mfree(alloc, lt_outputs[i].name.str);
+	lt_mfree(alloc, lt_outputs);
+
 	UnregisterClass(lt_class_name, lt_hinst);
 	PostQuitMessage(0);
 }
@@ -151,7 +156,7 @@ lt_output_t* lt_window_outputs(void) {
 	return lt_outputs;
 }
 
-lt_window_t* lt_window_create(lt_arena_t* arena, lt_window_description_t* desc) {
+lt_window_t* lt_window_create(lt_window_description_t* desc, lt_alloc_t* alloc) {
 	int output = desc->output_index;
 
 	// Calculate window dimensions
@@ -169,7 +174,7 @@ lt_window_t* lt_window_create(lt_arena_t* arena, lt_window_description_t* desc) 
 	if (y <= 0)
 		y = lt_outputs[output].y + lt_outputs[output].h / 2 - h / 2;
 
-	lt_window_t* win = lt_arena_reserve(arena, sizeof(lt_window_t));
+	lt_window_t* win = lt_malloc(alloc, sizeof(lt_window_t));
 	win->closed = 0;
 	win->fullscreen = 0;
 	win->glctx = NULL;
@@ -189,8 +194,8 @@ lt_window_t* lt_window_create(lt_arena_t* arena, lt_window_description_t* desc) 
 	return win;
 }
 
-void lt_window_destroy(lt_window_t* win) {
-
+void lt_window_destroy(lt_window_t* win, lt_alloc_t* alloc) {
+	lt_mfree(alloc, win);
 }
 
 usz lt_window_poll_events(lt_window_t* win, lt_window_event_t* evs, usz ev_max) {
@@ -342,8 +347,8 @@ void lt_window_get_size(lt_window_t* win, int* w, int* h) {
 
 
 static
-void lt_generate_keytab(lt_arena_t* arena) {
-	lt_keytab = lt_arena_reserve(arena, 512 * sizeof(int));
+void lt_generate_keytab(lt_alloc_t* alloc) {
+	lt_keytab = lt_malloc(alloc, 512 * sizeof(int));
 	memset(lt_keytab, LT_KEY_INVALID, 512 * sizeof(int));
 
 	lt_keytab[0x00B] = LT_KEY_0; lt_keytab[0x002] = LT_KEY_1; lt_keytab[0x003] = LT_KEY_2;

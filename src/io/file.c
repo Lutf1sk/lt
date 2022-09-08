@@ -35,7 +35,7 @@ int lt_perms_to_posix(lt_file_perms_t perms) {
 
 #endif
 
-lt_file_t* lt_file_open(lt_arena_t* arena, char* path, lt_file_mode_t mode, lt_file_perms_t perms) {
+lt_file_t* lt_file_open(char* path, lt_file_mode_t mode, lt_file_perms_t perms, lt_alloc_t* alloc) {
 #if defined(LT_UNIX)
 	mode_t posix_mode = lt_perms_to_posix(perms);
 	if (mode == LT_FILE_W)
@@ -56,11 +56,11 @@ lt_file_t* lt_file_open(lt_arena_t* arena, char* path, lt_file_mode_t mode, lt_f
 		return NULL;
 	}
 
-	lt_file_t* file = lt_arena_reserve(arena, sizeof(lt_file_t));
+	lt_file_t* file = lt_malloc(alloc, sizeof(lt_file_t));
 	file->fd = fd;
 	file->size = stat_res.st_size;
 	file->block_size = stat_res.st_blksize;
-
+	return file;
 #elif defined(LT_WINDOWS)
 	u64 size = 0;
 	HANDLE h = INVALID_HANDLE_VALUE;
@@ -73,38 +73,41 @@ lt_file_t* lt_file_open(lt_arena_t* arena, char* path, lt_file_mode_t mode, lt_f
 		size = li.QuadPart;
 	}
 	else if (mode == LT_FILE_RW)
-		lt_werr(CLSTR("LT_FILE_RW has not been implemented for windows\n"));
+		lt_werr(CLSTR("LT_FILE_RW has not been implemented for windows\n")); // !!
 
 	if (h == INVALID_HANDLE_VALUE)
 		return NULL;
 
-	lt_file_t* file = lt_arena_reserve(arena, sizeof(lt_file_t));
+	lt_file_t* file = lt_malloc(alloc, sizeof(lt_file_t));
 	file->hnd = h;
 	file->size = size;
-
-#endif
-
 	return file;
+#endif
 }
 
-b8 lt_file_read_entire(lt_arena_t* arena, char* path, lstr_t* out) {
-	lt_file_t* file = lt_file_open(arena, path, LT_FILE_R, 0);
+b8 lt_file_read_entire(char* path, lstr_t* out, lt_alloc_t* alloc) {
+	lt_file_t* file = lt_file_open(path, LT_FILE_R, 0, alloc);
 	if (!file)
 		return 0;
 	usz size = lt_file_size(file);
-	char* data = lt_arena_reserve(arena, size);
+	char* data = lt_malloc(alloc, size); // !!
 	isz res = lt_file_read(file, data, size);
-	lt_file_close(file);
+	lt_file_close(file, alloc);
+	if (res == -1) {
+		lt_mfree(alloc, data);
+		return 0;
+	}
 	*out = LSTR(data, res);
-	return res != -1;
+	return 1;
 }
 
-void lt_file_close(lt_file_t* file) {
+void lt_file_close(lt_file_t* file, lt_alloc_t* alloc) {
 #if defined(LT_UNIX)
 	close(file->fd);
 #elif defined(LT_WINDOWS)
 	CloseHandle(file->hnd);
 #endif
+	lt_mfree(alloc, file);
 }
 
 isz lt_file_read(lt_file_t* file, void* data, usz size) {
@@ -126,18 +129,15 @@ isz lt_file_read(lt_file_t* file, void* data, usz size) {
 
 isz lt_file_write(lt_file_t* file, void* data, usz size) {
 #if defined(LT_UNIX)
-
 	isz write_bytes = write(file->fd, data, size);
 	return write_bytes;
 
 #elif defined(LT_WINDOWS)
-
 	DWORD write_bytes = 0;
 	BOOL err = WriteFile(file->hnd, data, size, &write_bytes, NULL);
 	if (err == FALSE)
 		return -1;
 	return write_bytes;
-
 #endif
 }
 
@@ -194,10 +194,6 @@ isz lt_file_printfq(lt_file_t* file, f64 n) {
 		*(it++) = '-';
 		n = -n;
 	}
-
-// 	for (;;) {
-// 		*(it++) = '0';
-// 	}
 
 	isz len = (buf + sizeof(buf)) - it;
 	lt_file_write(file, it, len);

@@ -1,80 +1,91 @@
 #include <lt/mem.h>
 #include <lt/align.h>
 
-typedef struct lt_pool_node {
-	struct lt_pool_node* next;
-} lt_pool_node_t;
+static
+void* lt_pmalloc_if(lt_pool_t* pool, usz size) {
+	if (size > pool->chunk_size)
+		return NULL;
+	return lt_pmalloc(pool);
+}
 
-typedef struct lt_pool {
-	void* mem;
-	usz page_count;
-	usz chunk_count;
-	usz chunk_size;
-	lt_pool_node_t* head;
-	struct lt_pool* next;
-} lt_pool_t;
+static
+void* lt_pmrealloc_if(lt_pool_t* pool, void* chunk, usz size) {
+	if (size > pool->chunk_size)
+		return NULL;
+	if (!chunk)
+		return lt_pmalloc(pool);
+	return chunk;
+}
 
-static LT_INLINE
-lt_pool_t lt_pool_make(void* mem, usz chunk_size, usz chunk_count, usz page_count) {
-	lt_pool_t pool;
-	pool.mem = mem;
-	pool.page_count = page_count;
-	pool.chunk_count = chunk_count;
-	pool.chunk_size = chunk_size;
-	pool.head = NULL;
-	pool.next = NULL;
+lt_pool_t* lt_pmcreatem(lt_alloc_t* parent, void* mem, usz size, usz chunk_size, usz flags) {
+	usz headersz = lt_align_fwd(sizeof(lt_pool_t), LT_ALLOC_DEFAULT_ALIGN);
+	if (size < headersz)
+		return NULL;
+
+	lt_pool_t* pool = mem;
+	pool->base = mem;
+	pool->chunk_size = chunk_size;
+	pool->size = size;
+	pool->chunk_count = (size - headersz) / chunk_size;
+	pool->head = NULL;
+	pool->flags = flags;
+	pool->parent = parent;
+	pool->interf = LT_ALLOC_INTERFACE(lt_pmalloc_if, lt_pmfree, lt_pmrealloc_if, lt_pmsize);
+
+	lt_pmreset(pool);
 	return pool;
 }
 
-
-lt_pool_t* lt_pool_alloc(usz chunk_size, usz count) {
-	if (!count)
+lt_pool_t* lt_pmcreate(lt_alloc_t* parent, usz size, usz chunk_size, usz flags) {
+	usz headersz = lt_align_fwd(sizeof(lt_pool_t), LT_ALLOC_DEFAULT_ALIGN);
+	if (size < headersz)
 		return NULL;
 
-	usz header_size = lt_word_align_fwd(sizeof(lt_pool_t));
-	usz size = chunk_size * count;
-	size += lt_pad(size + header_size, lt_page_size());
-
-	usz page_count = (size + header_size) / lt_page_size();
-	void* mem = lt_vmem_alloc(page_count);
-	if (!mem)
-		return NULL;
-
-	if (chunk_size < sizeof(lt_pool_node_t))
-		chunk_size = sizeof(lt_pool_node_t);
-	chunk_size = lt_word_align_fwd(chunk_size);
-
-	lt_pool_t* header = mem;
-	*header = lt_pool_make((char*)mem + header_size, chunk_size, size / chunk_size, page_count);
-	lt_pool_reset(header);
-
-	return header;
-}
-
-void lt_pool_free(lt_pool_t* pool) {
-	if (pool->next)
-		lt_pool_free(pool->next);
-	lt_vmem_free(pool, pool->page_count);
-}
-
-void lt_pool_reset(lt_pool_t* pool) {
-	usz chunk_size = pool->chunk_size;
-	char* it_end = (char*)pool->mem + pool->chunk_count * chunk_size;
-	lt_pool_node_t* last_node = NULL;
-	for (char* it = pool->mem; it + chunk_size < it_end; it += chunk_size) {
-		lt_pool_node_t* node = (lt_pool_node_t*)it;
-		node->next = last_node;
-		last_node = node;
+	void* base = NULL;
+	if (!parent) {
+		size = lt_align_fwd(size, lt_get_pagesize());
+		base = lt_vmalloc(size);
 	}
-	pool->head = last_node;
-
-	if (pool->next)
-		lt_pool_reset(pool->next);
+	else {
+		size = lt_align_fwd(size, LT_ALLOC_DEFAULT_ALIGN);
+		base = lt_malloc(parent, size);
+	}
+	if (!base)
+		return NULL;
+	return lt_pmcreatem(parent, base, size, chunk_size, flags);
 }
 
+void lt_pmdestroy(lt_pool_t* pool) {
+	if (pool->parent)
+		lt_mfree(pool->parent, pool);
+	else
+		lt_vmfree(pool, pool->size);
+}
 
+void lt_pmreset(lt_pool_t* pool) {
+	void** last = &pool->head;
+	void* it = pool->base;
+	for (usz i = 0; i < pool->chunk_count; ++i) {
+		*last = it;
+		last = it;
+		it = (u8*)it + pool->chunk_size;
+	}
+}
 
-void* lt_pool_reserve(lt_pool_t* pool);
-void lt_pool_relinq(lt_pool_t* pool, void* chunk);
+void* lt_pmalloc(lt_pool_t* pool) {
+	void** head = pool->head;
+	if (!head)
+		return NULL;
+	pool->head = *head;
+	return head;
+}
 
+void lt_pmfree(lt_pool_t* pool, void* chunk) {
+	*(void**)chunk = pool->head;
+	pool->head = chunk;
+}
+
+usz lt_pmsize(lt_pool_t* pool, void* chunk) {
+	return pool->chunk_size;
+}
 

@@ -17,14 +17,14 @@
 #	define MAP_PAGES_ERROR NULL
 #endif
 
-void* lt_vmem_alloc(usz page_count) {
-	void* pages = MAP_PAGES(page_count * lt_page_size());
-	if (pages == MAP_PAGES_ERROR)
+void* lt_vmalloc(usz size) {
+	void* mem = MAP_PAGES(size);
+	if (mem == MAP_PAGES_ERROR)
 		return NULL;
-	return pages;
+	return mem;
 }
 
-void lt_vmem_free(void* addr, usz page_count) {
-	UNMAP_PAGES(addr, page_count * lt_page_size());
+void lt_vmfree(void* addr, usz size) {
+	UNMAP_PAGES(addr, size);
 }
 

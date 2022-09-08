@@ -10,15 +10,18 @@ struct lt_mutex {
 	pthread_mutex_t pmut;
 } lt_mutex_t;
 
-lt_mutex_t* lt_mutex_create(lt_arena_t* arena) {
-	lt_mutex_t* m = lt_arena_reserve(arena, sizeof(lt_mutex_t));
-	m->pmut = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
-	pthread_mutex_init(&m->pmut, NULL);
+lt_mutex_t* lt_mutex_create(lt_alloc_t* alloc) {
+	pthread_mutex_t pmut = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
+	if (pthread_mutex_init(&pmut, NULL))
+		return NULL;
+	lt_mutex_t* m = lt_malloc(alloc, sizeof(lt_mutex_t));
+	m->pmut = pmut;
 	return m;
 }
 
-void lt_mutex_destroy(lt_mutex_t* m) {
+void lt_mutex_destroy(lt_mutex_t* m, lt_alloc_t* alloc) {
 	pthread_mutex_destroy(&m->pmut);
+	lt_mfree(alloc, m);
 }
 
 void lt_mutex_lock(lt_mutex_t* m) {
@@ -39,16 +42,18 @@ struct lt_mutex {
 	HANDLE wmut;
 } lt_mutex_t;
 
-lt_mutex_t* lt_mutex_create(lt_arena_t* arena) {
-	lt_mutex_t* m = lt_arena_reserve(arena, sizeof(lt_mutex_t));
-	m->wmut = CreateMutex(NULL, FALSE, NULL);
-	if (!m->wmut)
+lt_mutex_t* lt_mutex_create(lt_alloc_t* alloc) {
+	HANDLE wmut = CreateMutex(NULL, FALSE, NULL);
+	if (!wmut)
 		return NULL;
+	lt_mutex_t* m = lt_malloc(alloc, sizeof(lt_mutex_t));
+	m->wmut = wmut;
 	return m;
 }
 
-void lt_mutex_destroy(lt_mutex_t* m) {
+void lt_mutex_destroy(lt_mutex_t* m, lt_alloc_t* alloc) {
 	CloseHandle(m->wmut);
+	lt_mfree(alloc, m);
 }
 
 void lt_mutex_lock(lt_mutex_t* m) {

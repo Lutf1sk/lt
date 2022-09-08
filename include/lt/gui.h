@@ -122,7 +122,7 @@ struct lt_gui_textbox_state {
 
 extern lt_gui_style_t lt_gui_default_style;
 
-void lt_gui_ctx_init(lt_arena_t* arena, lt_gui_ctx_t* cx);
+void lt_gui_ctx_init(lt_gui_ctx_t* cx, lt_alloc_t* alloc);
 
 void lt_gui_begin(lt_gui_ctx_t* cx, isz x, isz y, isz w, isz h);
 void lt_gui_end(lt_gui_ctx_t* cx);

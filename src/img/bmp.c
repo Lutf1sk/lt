@@ -49,7 +49,7 @@ LT_PACKED_STRUCT(lt_bmp_infoheader2) {
 	u32 identifier;
 } lt_bmp_infoheader2_t;
 
-b8 lt_img_load_bmp(lt_arena_t* arena, void* data, usz len, lt_img_t* img) {
+b8 lt_img_load_bmp(void* data, usz len, lt_img_t* img, lt_alloc_t* alloc) {
 	usz end = (usz)data + len;
 
 	lt_bmp_fileheader_t* fh = data;

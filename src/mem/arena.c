@@ -1,77 +1,87 @@
 #include <lt/mem.h>
 #include <lt/align.h>
 
-typedef
-struct lt_arena {
-	void* mem_start;
-	void* mem_pos;
-	usz free_bytes;
-	usz page_count;
-	lt_alloc_t interface;
-} lt_arena_t;
+lt_arena_t* lt_amcreatem(lt_alloc_t* parent, void* mem, usz size, usz flags) {
+	if (size < sizeof(lt_arena_t))
+		return NULL;
 
-static LT_INLINE
-lt_arena_t lt_arena_make(void* mem, usz size, usz page_count) {
-	lt_arena_t arena;
-	arena.mem_start = mem;
-	arena.mem_pos = mem;
-	arena.free_bytes = size;
-	arena.page_count = page_count;
+	lt_arena_t* arena = mem;
+	arena->base = mem;
+	arena->size = size;
+	arena->top = mem + sizeof(lt_arena_t);
+	arena->flags = flags;
+	arena->parent = parent;
+	arena->interf = LT_ALLOC_INTERFACE(lt_amalloc, lt_amfree, lt_amrealloc, lt_amsize);
 	return arena;
 }
 
-static
-void relinq(void* usr, void* mem) {}
-
-static
-void* resize(void* usr, void* mem, usz size) {
-	lt_ferr(CLSTR("Cannot resize an arena allocation\n"));
-}
-
-lt_alloc_t lt_arena_interface(lt_arena_t* arena) {
-	return LT_ALLOC_INTERFACE(arena, (lt_reserve_callback_t)lt_arena_reserve, relinq, resize);
-}
-
-lt_arena_t* lt_arena_alloc(usz size) {
-	if (!size)
+lt_arena_t* lt_amcreate(lt_alloc_t* parent, usz size, usz flags) {
+	if (size < sizeof(lt_arena_t))
 		return NULL;
 
-	usz page_size = lt_page_size();
-	usz header_size = lt_word_align_fwd(sizeof(lt_arena_t));
-	size += lt_pad(size + header_size, page_size);
-
-	usz page_count = (size + header_size) / page_size;
-
-	void* mem = lt_vmem_alloc(page_count);
-	if (!mem)
+	void* base = NULL;
+	if (!parent) {
+		size = lt_align_fwd(size, lt_get_pagesize());
+		base = lt_vmalloc(size);
+	}
+	else {
+		size = lt_align_fwd(size, LT_ALLOC_DEFAULT_ALIGN);
+		base = lt_malloc(parent, size);
+	}
+	if (!base)
 		return NULL;
-
-	*(lt_arena_t*)mem = lt_arena_make((char*)mem + header_size, size, page_count);
-	return (lt_arena_t*)mem;
+	return lt_amcreatem(parent, base, size, flags);
 }
 
-void lt_arena_free(lt_arena_t* arena) {
-	lt_vmem_free(arena, arena->page_count);
+void lt_amdestroy(lt_arena_t* arena) {
+	if (arena->parent)
+		lt_mfree(arena->parent, arena);
+	else
+		lt_vmfree(arena, arena->size);
 }
 
-void* lt_arena_reserve(lt_arena_t* arena, usz size) {
-	usz aligned_size = lt_word_align_fwd(size);
-// If this is ever false then we should crash anyway since the
-// program has run out of memory.
-// 	if (aligned_size > arena->free_bytes)
-// 		return NULL;
-	void* ptr = arena->mem_pos;
-	arena->free_bytes -= aligned_size;
-	arena->mem_pos = (char*)arena->mem_pos + aligned_size;
-	return ptr;
+// lt_arestore_t* lt_amsave(lt_arena_t* arena);
+// void lt_amrestore(lt_arena_t* arena, lt_arestore_t* restore_point);
+
+void* lt_amalloc(lt_arena_t* arena, usz size) {
+	u8* start = (u8*)lt_align_fwd((usz)arena->top, LT_ALLOC_DEFAULT_ALIGN);
+	u8* data_start = start + LT_ALLOC_DEFAULT_ALIGN;
+	void* new_top = data_start + size;
+	if (new_top > arena->base + arena->size)
+		return NULL;
+	*(usz*)start = size;
+	arena->top = new_top;
+	return data_start;
 }
 
-lt_arestore_t lt_arena_save(lt_arena_t* arena) {
-	return (lt_arestore_t){ arena->mem_pos, arena->free_bytes };
+void lt_amfree(lt_arena_t* arena, void* ptr) {
+	usz* psize = (usz*)((usz)ptr - LT_ALLOC_DEFAULT_ALIGN);
+	if ((u8*)ptr + *psize == arena->top)
+		arena->top = psize;
 }
 
-void lt_arena_restore(lt_arena_t* arena, lt_arestore_t* restore_point) {
-	arena->mem_pos = restore_point->mem_pos;
-	arena->free_bytes = restore_point->free_bytes;
+void* lt_amrealloc(lt_arena_t* arena, void* ptr, usz new_size) {
+	if (!ptr)
+		return lt_amalloc(arena, new_size);
+
+	usz* psize = (usz*)((usz)ptr - LT_ALLOC_DEFAULT_ALIGN);
+	if ((u8*)ptr + *psize == arena->top) {
+		void* new_top = (u8*)ptr + new_size;
+		if (new_top > arena->base + arena->size)
+			return NULL;
+		*psize = new_size;
+		arena->top = psize;
+		return ptr;
+	}
+
+	void* new_ptr = lt_amalloc(arena, new_size);
+	if (!new_ptr)
+		return NULL;
+	memcpy(new_ptr, ptr, *psize);
+	return new_ptr;
+}
+
+usz lt_amsize(lt_arena_t* arena, void* ptr) {
+	return *(usz*)((usz)ptr - LT_ALLOC_DEFAULT_ALIGN);
 }
 

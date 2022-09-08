@@ -40,8 +40,8 @@ lt_gui_cont_t cont_pop(lt_gui_ctx_t* cx) {
 	return cx->conts[--cx->cont_top];
 }
 
-void lt_gui_ctx_init(lt_arena_t* arena, lt_gui_ctx_t* cx) {
-	cx->conts = lt_arena_reserve(arena, sizeof(lt_gui_cont_t) * cx->cont_max);
+void lt_gui_ctx_init(lt_gui_ctx_t* cx, lt_alloc_t* alloc) {
+	cx->conts = lt_malloc(alloc, sizeof(lt_gui_cont_t) * cx->cont_max); // !! Leaked
 
 	memset(&cx->cmdbufs, 0, sizeof(cx->cmdbufs));
 
