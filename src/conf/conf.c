@@ -208,7 +208,7 @@ lstr_t lt_conf_str(lt_conf_t* cf, lstr_t default_) {
 static
 void lt_conf_write_indent(lt_file_t* file, isz indent) {
 	for (isz i = 0; i < indent; ++i) // TODO: Optimize this
-		lt_file_printc(file, '\t');
+		lt_file_printf(file, "\t");
 }
 
 static
@@ -216,7 +216,7 @@ b8 lt_conf_write_unsafe(lt_conf_t* cf, lt_file_t* file, isz indent) {
 	switch (cf->stype) {
 	case LT_CONF_OBJECT:
 		if (indent)
-			lt_file_printls(file, CLSTR("{\n"));
+			lt_file_printf(file, "{\n");
 		for (usz i = 0; i < cf->count; ++i) {
 			lt_conf_t* child = &cf->children[i];
 			lt_conf_write_indent(file, indent);
@@ -225,18 +225,18 @@ b8 lt_conf_write_unsafe(lt_conf_t* cf, lt_file_t* file, isz indent) {
 		}
 		if (indent) {
 			lt_conf_write_indent(file, indent - 1);
-			lt_file_printls(file, CLSTR("}\n"));
+			lt_file_printf(file, "}\n");
 		}
 		return 1;
 
 	case LT_CONF_ARRAY:
-		lt_file_printls(file, CLSTR("[\n"));
+		lt_file_printf(file, "[\n");
 		for (usz i = 0; i < cf->count; ++i) {
 			lt_conf_write_indent(file, indent);
 			lt_conf_write_unsafe(&cf->children[i], file, 0);
 		}
 		lt_conf_write_indent(file, indent - 1);
-		lt_file_printls(file, CLSTR("]\n"));
+		lt_file_printf(file, "]\n");
 		return 1;
 
 	case LT_CONF_INT: return lt_file_printf(file, "%iq\n", cf->int_val) != -1;

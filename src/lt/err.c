@@ -26,7 +26,7 @@ void LT_NORETURN lt_ferr(lstr_t str) {
 }
 
 void LT_NORETURN lt_ferrf(char* fmt, ...) {
-	lt_file_printls(lt_stderr, CLSTR("FERR: "));
+	lt_file_printf(lt_stderr, "FERR: ");
 
 	va_list list;
 	va_start(list, fmt);
@@ -42,7 +42,7 @@ void LT_NORETURN lt_ferrb(lstr_t str) {
 }
 
 void LT_NORETURN lt_ferrbf(char* fmt, ...) {
-	lt_file_printls(lt_stderr, CLSTR("FERR: "));
+	lt_file_printf(lt_stderr, "FERR: ");
 
 	va_list list;
 	va_start(list, fmt);
@@ -59,7 +59,7 @@ void lt_werr(lstr_t str) {
 }
 
 void lt_werrf(char* fmt, ...) {
-	lt_file_printls(lt_stderr, CLSTR("WARN: "));
+	lt_file_printf(lt_stderr, "WARN: ");
 
 	va_list list;
 	va_start(list, fmt);
@@ -73,7 +73,7 @@ void lt_werrb(lstr_t str) {
 }
 
 void lt_werrbf(char* fmt, ...) {
-	lt_file_printls(lt_stderr, CLSTR("WARN: "));
+	lt_file_printf(lt_stderr, "WARN: ");
 
 	va_list list;
 	va_start(list, fmt);

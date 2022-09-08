@@ -15,7 +15,7 @@ void lt_backtrace_print(char* str) {
 
 void lt_backtrace(void(*callback)(char*)) {
 	if (!callback) {
-		lt_printls(CLSTR("BACKTRACE\n"));
+		lt_printf("BACKTRACE\n");
 		callback = lt_backtrace_print;
 	}
 #if defined(LT_UNIX)
@@ -25,7 +25,7 @@ void lt_backtrace(void(*callback)(char*)) {
 
 	char** symbol_names = backtrace_symbols(symbols, symbol_count);
 	if (!symbol_names) {
-		lt_printls(CLSTR("Backtrace failed\n"));
+		lt_printf("Backtrace failed\n");
 		return;
 	}
 

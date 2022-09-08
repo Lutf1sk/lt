@@ -1,8 +1,60 @@
 #include <lt/io.h>
-#include <lt/str.h>
-#include <lt/mem.h>
+// #include <lt/mem.h>
 
-isz lt_file_vprintf(lt_file_t* file, char* fmt, va_list args) {
+static LT_FLATTEN LT_INLINE
+isz lt_io_printuq(lt_io_callback_t callb, void* usr, u64 n) {
+	char buf[32], *end = buf + sizeof(buf) - 1, *it = end;
+
+	// Fill buffer backwards with the remainder of n/10
+	while (n >= 10) {
+		*it-- = n % 10 + '0';
+		n /= 10;
+	}
+	*it = n + '0';
+
+	usz len = end - it;
+	return callb(usr, it, len + 1);
+}
+
+static LT_FLATTEN LT_INLINE
+isz lt_io_printiq(lt_io_callback_t callb, void* usr, i64 n) {
+	static char minus = '-';
+	usz sign = 0;
+
+	// Handle signed values
+	if (n < 0) {
+		n = -n;
+		callb(usr, &minus, 1);
+		sign = 1;
+	}
+
+	return lt_io_printuq(callb, usr, n) + sign;
+}
+
+static char io_hex_char[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
+
+static LT_FLATTEN LT_INLINE
+isz lt_io_printhq(lt_io_callback_t callb, void* usr, u64 n) {
+	char buf[32], *end = buf + sizeof(buf) - 1, *it = end;
+
+	// Fill buffer backwards with the lowest nibble of n
+	while (n > 0x0F) {
+		*it-- = io_hex_char[n & 0x0F];
+		n >>= 4;
+	}
+	*it = io_hex_char[n];
+
+	usz len = end - it;
+	return callb(usr, it, len + 1);
+}
+
+static LT_INLINE
+isz lt_io_printfq(lt_io_callback_t callb, void* usr, f64 n) {
+	return -1;
+}
+
+
+isz lt_io_vprintf(lt_io_callback_t callb, void* usr, char* fmt, va_list argl) {
 	char* it = fmt;
 
 	isz written = 0;
@@ -13,7 +65,7 @@ isz lt_file_vprintf(lt_file_t* file, char* fmt, va_list args) {
 			char* substr_start = it;
 			while ((c = *it) != 0 && c != '%')
 				++it;
-			written += lt_file_write(file, substr_start, it - substr_start);
+			written += callb(usr, substr_start, it - substr_start);
 			continue;
 		}
 
@@ -23,84 +75,85 @@ isz lt_file_vprintf(lt_file_t* file, char* fmt, va_list args) {
 		case 0: --it; break;
 
 		case '%':
-			written += lt_file_printc(file, '%');
+			written += callb(usr, "%", 1);
 			break;
 
-		case 'c':
-			written += lt_file_printc(file, va_arg(args, int));
-			break;
+		case 'c': {
+			char c = va_arg(argl, int);
+			written += callb(usr, &c, 1);
+		}	break;
 
 		case 'S': {
-			lstr_t str = va_arg(args, lstr_t);
-			written += lt_file_write(file, str.str, str.len);
+			lstr_t str = va_arg(argl, lstr_t);
+			written += callb(usr, str.str, str.len);
 		}	break;
 
 		case 's': {
-			char* str = va_arg(args, char*);
-			written += lt_file_write(file, str, strlen(str));
+			char* str = va_arg(argl, char*);
+			written += callb(usr, str, strlen(str));
 		}	break;
 
 		case 'u': {
 			u64 val;
 			c = *++it;
 			switch (c) {
-			case 'b': val = va_arg(args, int); break;
-			case 'w': val = va_arg(args, int); break;
-			case 'd': val = va_arg(args, u32); break;
-			case 'q': val = va_arg(args, u64); break;
-			case 'z': val = va_arg(args, usz); break;
+			case 'b': val = va_arg(argl, int); break;
+			case 'w': val = va_arg(argl, int); break;
+			case 'd': val = va_arg(argl, u32); break;
+			case 'q': val = va_arg(argl, u64); break;
+			case 'z': val = va_arg(argl, usz); break;
 			default: val = 0; break;
 			}
-			written += lt_file_printuq(file, val);
+			written += lt_io_printuq(callb, usr, val);
 		}	break;
 
 		case 'i': {
 			i64 val;
 			c = *++it;
 			switch (c) {
-			case 'b': val = va_arg(args, int); break;
-			case 'w': val = va_arg(args, int); break;
-			case 'd': val = va_arg(args, i32); break;
-			case 'q': val = va_arg(args, i64); break;
-			case 'z': val = va_arg(args, isz); break;
+			case 'b': val = va_arg(argl, int); break;
+			case 'w': val = va_arg(argl, int); break;
+			case 'd': val = va_arg(argl, i32); break;
+			case 'q': val = va_arg(argl, i64); break;
+			case 'z': val = va_arg(argl, isz); break;
 			default: val = 0; break;
 			}
-			written += lt_file_printiq(file, val);
+			written += lt_io_printiq(callb, usr, val);
 		}	break;
 
 		case 'h': {
 			u64 val;
 			c = *++it;
 			switch (c) {
-			case 'b': val = va_arg(args, int); break;
-			case 'w': val = va_arg(args, int); break;
-			case 'd': val = va_arg(args, u32); break;
-			case 'q': val = va_arg(args, u64); break;
-			case 'z': val = va_arg(args, usz); break;
+			case 'b': val = va_arg(argl, int); break;
+			case 'w': val = va_arg(argl, int); break;
+			case 'd': val = va_arg(argl, u32); break;
+			case 'q': val = va_arg(argl, u64); break;
+			case 'z': val = va_arg(argl, usz); break;
 			default: val = 0; break;
 			}
-			written += lt_file_printuq_hex(file, val);
+			written += lt_io_printhq(callb, usr, val);
 		}	break;
 
 		case 'p':
-			written += lt_file_printuq_hex(file, va_arg(args, usz));
+			written += lt_io_printhq(callb, usr, va_arg(argl, usz));
 			break;
 
 		case 'f': {
 			f64 val;
 			c = *++it;
 			switch (c) {
-			case 'd': val = va_arg(args, double); break;
-			case 'q': val = va_arg(args, f64); break;
+			case 'd': val = va_arg(argl, double); break;
+			case 'q': val = va_arg(argl, f64); break;
 			default: val = 0.0f; break;
 			}
-			written += lt_file_printfq(file, val);
+			written += lt_io_printfq(callb, usr, val);
 		}	break;
 
 		default: {
 			char buf[2] = "% ";
 			buf[1] = c;
-			written += lt_file_write(file, buf, 2);
+			written += callb(usr, buf, 2);
 		}	break;
 		}
 		++it;
@@ -109,116 +162,12 @@ isz lt_file_vprintf(lt_file_t* file, char* fmt, va_list args) {
 	return written;
 }
 
-isz lt_str_vprintf(char* str, char* fmt, va_list args) {
-	char* it = fmt;
-	char* out_it = str;
-
-	char c;
-	while ((c = *it) != 0) {
-		if (c != '%') {
-			char* substr_start = it;
-			while ((c = *it) != 0 && c != '%')
-				++it;
-
-			usz len = it - substr_start;
-			memcpy(out_it, substr_start, len);
-			out_it += len;
-			continue;
-		}
-
-		c = *++it;
-
-		switch (c) {
-		case 0: --it; break;
-
-		case '%':
-			*(out_it++) = '%';
-			break;
-
-		case 'c':
-			*(out_it++) = va_arg(args, int);
-			break;
-
-		case 'S': {
-			lstr_t str = va_arg(args, lstr_t);
-			memcpy(out_it, str.str, str.len);
-			out_it += str.len;
-		}	break;
-
-		case 's': {
-			char* str = va_arg(args, char*);
-			usz len = strlen(str);
-			memcpy(out_it, str, len);
-			out_it += len;
-		}	break;
-
-		case 'u': {
-			u64 val;
-			c = *++it;
-			switch (c) {
-			case 'b': val = va_arg(args, int); break;
-			case 'w': val = va_arg(args, int); break;
-			case 'd': val = va_arg(args, u32); break;
-			case 'q': val = va_arg(args, u64); break;
-			case 'z': val = va_arg(args, usz); break;
-			default: val = 0; break;
-			}
-			out_it += lt_str_printuq(out_it, val);
-		}	break;
-
-		case 'i': {
-			i64 val;
-			c = *++it;
-			switch (c) {
-			case 'b': val = va_arg(args, int); break;
-			case 'w': val = va_arg(args, int); break;
-			case 'd': val = va_arg(args, i32); break;
-			case 'q': val = va_arg(args, i64); break;
-			case 'z': val = va_arg(args, isz); break;
-			default: val = 0; break;
-			}
-			out_it += lt_str_printiq(out_it, val);
-		}	break;
-
-		case 'h': {
-			u64 val;
-			c = *++it;
-			switch (c) {
-			case 'b': val = va_arg(args, int); break;
-			case 'w': val = va_arg(args, int); break;
-			case 'd': val = va_arg(args, u32); break;
-			case 'q': val = va_arg(args, u64); break;
-			case 'z': val = va_arg(args, usz); break;
-			default: val = 0; break;
-			}
-			out_it += lt_str_printuq_hex(out_it, val);
-		}	break;
-
-		case 'p':
-			out_it += lt_str_printuq_hex(out_it, va_arg(args, usz));
-			break;
-
-		case 'f': {
-			f64 val;
-			c = *++it;
-			switch (c) {
-			case 'd': val = va_arg(args, double); break;
-			case 'q': val = va_arg(args, f64); break;
-			default: val = 0.0f; break;
-			}
-			out_it += lt_str_printfq(out_it, val);
-		}	break;
-
-		default: {
-			char buf[2] = "% ";
-			buf[1] = c;
-			memcpy(out_it, buf, 2);
-			out_it += 2;
-		}	break;
-		}
-		++it;
-	}
-
-	return out_it - str;
+LT_FLATTEN
+isz lt_io_printf(lt_io_callback_t callb, void* usr, char* fmt, ...) {
+	va_list argl;
+	va_start(argl, fmt);
+	isz bytes = lt_io_vprintf(callb, usr, fmt, argl);
+	va_end(argl);
+	return bytes;
 }
 

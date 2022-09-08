@@ -141,83 +141,19 @@ isz lt_file_write(lt_file_t* file, void* data, usz size) {
 #endif
 }
 
-isz lt_file_printuq_hex(lt_file_t* file, usz n) {
-	char buf[32];
-	char* it = buf + sizeof(buf);
-
-	for (;;) {
-		usz rem = n & 0xF;
-		*(it--) = rem >= 10 ? (rem - 10) + 'A' : rem + '0';
-		n >>= 4;
-		if (n == 0)
-			break;
-	}
-
-	isz len = (buf + sizeof(buf)) - (it);
-	lt_file_write(file, it + 1, len);
-	return len;
-}
-
-isz lt_file_printuq(lt_file_t* file, u64 n) {
-	char buf[32];
-	char* it = buf + sizeof(buf) - 1;
-
-	for (;;) {
-		*(it--) = (n % 10) + '0';
-		n /= 10;
-		if (n == 0)
-			break;
-	}
-	++it;
-
-	isz len = (buf + sizeof(buf)) - (it);
-	lt_file_write(file, it, len);
-
-	return len;
-}
-
-isz lt_file_printiq(lt_file_t* file, i64 n) {
-	isz sign = 0;
-	if (n < 0) {
-		lt_file_printc(file, '-');
-		n = -n;
-		sign = 1;
-	}
-	return lt_file_printuq(file, n) + sign;
-}
-
-isz lt_file_printfq(lt_file_t* file, f64 n) {
-	char buf[32];
-	char* it = buf + sizeof(buf) - 1;
-
-	if (n < 0) {
-		*(it++) = '-';
-		n = -n;
-	}
-
-	isz len = (buf + sizeof(buf)) - it;
-	lt_file_write(file, it, len);
-
-	return len;
-}
-
 usz lt_file_size(lt_file_t* file) {
 	return file->size;
 }
 
-isz lt_file_printc(lt_file_t* file, char c) {
-	return lt_file_write(file, &c, 1);
-}
-
-isz lt_file_printls(lt_file_t* file, lstr_t str) {
-	return lt_file_write(file, str.str, str.len);
+isz lt_file_vprintf(lt_file_t* file, char* fmt, va_list argl) {
+	return lt_io_vprintf((lt_io_callback_t)lt_file_write, file, fmt, argl);
 }
 
 isz lt_file_printf(lt_file_t* file, char* fmt, ...) {
-	va_list list;
-	va_start(list, fmt);
-	isz bytes = lt_file_vprintf(lt_stdout, fmt, list);
-	va_end(list);
+	va_list argl;
+	va_start(argl, fmt);
+	isz bytes = lt_io_vprintf((lt_io_callback_t)lt_file_write, file, fmt, argl);
+	va_end(argl);
 	return bytes;
 }
 
