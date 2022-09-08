@@ -40,13 +40,20 @@ lt_gui_cont_t cont_pop(lt_gui_ctx_t* cx) {
 	return cx->conts[--cx->cont_top];
 }
 
-void lt_gui_ctx_init(lt_gui_ctx_t* cx, lt_alloc_t* alloc) {
-	cx->conts = lt_malloc(alloc, sizeof(lt_gui_cont_t) * cx->cont_max); // !! Leaked
+b8 lt_gui_ctx_init(lt_gui_ctx_t* cx, lt_alloc_t* alloc) {
+	cx->conts = lt_malloc(alloc, sizeof(lt_gui_cont_t) * cx->cont_max);
+	if (!cx->conts)
+		return 0;
 
 	memset(&cx->cmdbufs, 0, sizeof(cx->cmdbufs));
 
 	LT_ASSERT(cx->draw_rect);
 	LT_ASSERT(cx->draw_text);
+	return 1;
+}
+
+void lt_gui_ctx_free(lt_gui_ctx_t* cx, lt_alloc_t* alloc) {
+	lt_mfree(alloc, cx->conts);
 }
 
 void lt_gui_begin(lt_gui_ctx_t* cx, isz x, isz y, isz w, isz h) {
