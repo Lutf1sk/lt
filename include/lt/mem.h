@@ -10,6 +10,7 @@
 extern void* memset(void* data, int c, usz size);
 extern void* memcpy(void* dst, const void* src, usz size);
 extern void* memmove(void* dst, const void* src, usz size);
+extern int memcmp(const void* dst, const void* src, usz size);
 
 extern void* malloc(usz size);
 extern void* realloc(void* addr, usz size);

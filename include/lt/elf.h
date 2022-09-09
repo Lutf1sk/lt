@@ -1,7 +1,7 @@
 #ifndef LT_ELF_H
 #define LT_ELF_H 1
 
-#include <lt/primitives.h>
+#include <lt/lt.h>
 
 #define LT_ELF_VERSION_CURRENT 1
 
@@ -100,14 +100,14 @@ LT_PACKED_STRUCT(lt_elf32_fh) {
 
 typedef
 enum lt_elf_ph_type {
-	LT_ELF_PH_NULL = 0,
-	LT_ELF_PH_LOAD = 1,
-	LT_ELF_PH_DYNAMIC = 2,
-	LT_ELF_PH_INTERP = 3,
-	LT_ELF_PH_NOTE = 4,
-	LT_ELF_PH_SHLIB = 5,
-	LT_ELF_PH_PHDR = 6,
-	LT_ELF_PH_TLS = 7,
+	LT_ELF_PH_NULL		= 0,	// Unused segment
+	LT_ELF_PH_LOAD		= 1,	// Loadable segment
+	LT_ELF_PH_DYNAMIC	= 2,	// Dynamic linking info
+	LT_ELF_PH_INTERP	= 3,	// Interpreter name
+	LT_ELF_PH_NOTE		= 4,	// Auxiliary info
+	LT_ELF_PH_SHLIB		= 5,	// Reserved
+	LT_ELF_PH_PHDR		= 6,	// Entry for header table
+	LT_ELF_PH_TLS		= 7,	// Thread-local storage segment
 } lt_elf_ph_type_t;
 
 typedef
@@ -145,25 +145,30 @@ LT_PACKED_STRUCT(lt_elf32_ph) {
 
 typedef
 enum lt_elf_sh_type {
-	LT_ELF_SH_NULL = 0,
-	LT_ELF_SH_PROGBITS = 1,
-	LT_ELF_SH_SYMTAB = 2,
-	LT_ELF_SH_STRTAB = 3,
-	LT_ELF_SH_RELA = 4,
-	LT_ELF_SH_HASH = 5,
-	LT_ELF_SH_DYNAMIC = 6,
-	LT_ELF_SH_NOTE = 7,
-	LT_ELF_SH_NOBITS = 8,
-	LT_ELF_SH_REL = 9,
-	LT_ELF_SH_SHLIB = 10,
-	LT_ELF_SH_DYNSYM = 11,
-	LT_ELF_SH_INIT_ARRAY = 14,
-	LT_ELF_SH_FINI_ARRAY = 15,
-	LT_ELF_SH_PREINIT_ARRAY = 16,
-	LT_ELF_SH_GROUP = 17,
-	LT_ELF_SH_SYMTAB_SHNDX = 18,
-	LT_ELF_SH_NUM = 19,
+	LT_ELF_SH_NULL			= 0,	// Unused section
+	LT_ELF_SH_PROGBITS		= 1,	// Program data
+	LT_ELF_SH_SYMTAB		= 2,	// Symbol table
+	LT_ELF_SH_STRTAB		= 3,	// String table
+	LT_ELF_SH_RELA			= 4,	// 'RelAdd' table
+	LT_ELF_SH_HASH			= 5,	// Symbol hash table
+	LT_ELF_SH_DYNAMIC		= 6,	// Dynamic linking info
+	LT_ELF_SH_NOTE			= 7,	// Notes
+	LT_ELF_SH_NOBITS		= 8,	// Zero-initialized program data
+	LT_ELF_SH_REL			= 9,	// 'Rel' table
+	LT_ELF_SH_SHLIB			= 10,	// Reserved
+	LT_ELF_SH_DYNSYM		= 11,	// Dynamic linker symbol table
+	LT_ELF_SH_INIT_ARRAY	= 14,	// Constructor array
+	LT_ELF_SH_FINIT_ARRAY	= 15,	// Destructor array
+	LT_ELF_SH_PREINIT_ARRAY	= 16,	// Pre-constructor array
+	LT_ELF_SH_GROUP			= 17,	// Section group
+	LT_ELF_SH_SYMTAB_SHNDX	= 18,	// Extended section indices
 } lt_elf_sh_type_t;
+
+// Special section indices
+#define LT_ELFSH_UNDEF	0		// Undefined section
+#define LT_ELFSH_ABS	0xFFF1	// Symbol is absolute
+#define LT_ELFSH_COMMON	0xFFF2	// Symbol labels an unallocated common block
+#define LT_ELFSH_XINDEX	0xFFFF	// Index is extra table
 
 typedef
 LT_PACKED_STRUCT(lt_elf64_sh) {
@@ -202,6 +207,33 @@ LT_PACKED_STRUCT(lt_elf32_sh) {
 } lt_elf32_sh_t;
 
 typedef
+enum lt_elf_sym_type {
+	// Binding
+	LT_ELF_SYM_LOCAL	= 0x00,
+	LT_ELF_SYM_GLOBAL	= 0x10,
+	LT_ELF_SYM_WEAK		= 0x20,
+
+	// Type
+	LT_ELF_SYM_NOTYPE	= 0x00,
+	LT_ELF_SYM_OBJECT	= 0x01,	// Data object
+	LT_ELF_SYM_FUNC		= 0x02,	// Function or executable code
+	LT_ELF_SYM_SECTION	= 0x03,	// Section
+	LT_ELF_SYM_FILE		= 0x04,	// Symbol name is the name of a source file
+	LT_ELF_SYM_COMMON	= 0x05,	// Uninitialized common block
+	LT_ELF_SYM_TLS		= 0x06,	// Thread-Local-Storage
+
+	LT_ELF_SYM_BIND_MASK	= 0xF0,
+	LT_ELF_SYM_TYPE_MASK	= 0x0F,
+
+	// Visibility
+	LT_ELF_SYM_DEFAULT		= 0x00, // Use binding type
+	LT_ELF_SYM_INTERNAL		= 0x01, // Local
+	LT_ELF_SYM_HIDDEN		= 0x02, // Local
+	LT_ELF_SYM_PROTECTED	= 0x03, // Prioritize over all external definitions
+} lt_elf_sym_type_t;
+
+
+typedef
 LT_PACKED_STRUCT(lt_elf64_sym) {
 	u32 name_stab_offs;
 	u8 info;
@@ -220,5 +252,48 @@ LT_PACKED_STRUCT(lt_elf32_sym) {
 	u8 other;
 	u16 section;
 } lt_elf32_sym_t;
+
+b8 lt_elf_verify_magic(void* fh);
+
+typedef
+enum lt_elf_dyn_type {
+	LT_ELF_DYN_NULL			= 0,	// Marks end of dynamic section
+	LT_ELF_DYN_NEEDED		= 1,	// Name of needed shared object
+	LT_ELF_DYN_PLTRELSZ		= 2,	// Size of PLT relocs
+	LT_ELF_DYN_PLTGOT		= 3,	// CPU defined value
+	LT_ELF_DYN_HASH			= 4,	// Offset of symbol hash table
+	LT_ELF_DYN_STRTAB		= 5,	// Offset of string table
+	LT_ELF_DYN_SYMTAB		= 6,	// Offset of symbol table
+	LT_ELF_DYN_RELA			= 7,	// Offset of 'RelAdd' relocs
+	LT_ELF_DYN_RELASZ		= 8,	// Total size of 'RelAdd' relocs
+	LT_ELF_DYN_RELAENT		= 9,	// Size of one 'RelAdd' reloc
+	LT_ELF_DYN_STRSZ		= 10,	// Size of string table
+	LT_ELF_DYN_SYMENT		= 11,	// Size of one symbol table entry
+	LT_ELF_DYN_INIT			= 12,	// Offset of init function
+	LT_ELF_DYN_FINI			= 13,	// Offset of termination function
+	LT_ELF_DYN_SONAME		= 14,	// Name of shared object
+	LT_ELF_DYN_RPATH		= 15,	// Library search path (deprecated)
+	LT_ELF_DYN_SYMBOLIC		= 16,	// Symbol search offset
+	LT_ELF_DYN_REL			= 17,	// Address of 'Rel' relocs
+	LT_ELF_DYN_RELSZ		= 18,	// Total size of 'Rel' relocs
+	LT_ELF_DYN_RELENT		= 19,	// Size of one 'Rel' reloc
+	LT_ELF_DYN_PLTREL		= 20,	// PLT reloc type
+	LT_ELF_DYN_DEBUG		= 21,	// Unspecified
+	LT_ELF_DYN_TEXTREL		= 22,	// Reloc can modify .text
+	LT_ELF_DYN_JMPREL		= 23,	// Offset of PLT relocs
+	LT_ELF_DYN_BIND_NOW		= 24,	// Process relocations of object
+	LT_ELF_DYN_INIT_ARRAY	= 25,	// Array of init function offsets
+	LT_ELF_DYN_FINI_ARRAY	= 26,	// Array of termination function offsets
+	LT_ELF_DYN_INIT_ARRAYSZ	= 27,	// Size of ELFDYN_INIT_ARR
+	LT_ELF_DYN_FINI_ARRAYSZ	= 28,	// Size of ELFDYN_FINI_ARR
+	LT_ELF_DYN_RUNPATH		= 29,	// Library search path
+	LT_ELF_DYN_FLAGS		= 30,	// Flags for loaded object
+} lt_elf_dyn_type_t;
+
+typedef
+LT_PACKED_STRUCT(lt_elf64_dyn) {
+	i64 type;
+	u64 val;
+} lt_elf64_dyn_t;
 
 #endif
