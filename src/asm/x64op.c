@@ -535,9 +535,9 @@ lt_x64_op_t ops[] = {
 
 // ----- LEA -----
 #define NAME CLSTR("lea")
-	{ NAME, ENC_RM, OSZ2(SZ_2, 0), 0, OPF_OPSZ,	1,{ 0x0D } },
-	{ NAME, ENC_RM, OSZ2(SZ_4, 0), 0, 0,		1,{ 0x0D } },
-	{ NAME, ENC_RM, OSZ2(SZ_8, 0), 0, OPF_REXW,	1,{ 0x0D } },
+	{ NAME, ENC_RM, OSZ2(SZ_2, SZ_8), 0, OPF_OPSZ,	1,{ 0x8D } },
+	{ NAME, ENC_RM, OSZ2(SZ_4, SZ_8), 0, 0,		1,{ 0x8D } },
+	{ NAME, ENC_RM, OSZ2(SZ_8, SZ_8), 0, OPF_REXW,	1,{ 0x8D } },
 #undef NAME
 
 // ----- LEAVE -----

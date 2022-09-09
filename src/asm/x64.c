@@ -109,6 +109,7 @@ usz parse_dsp_sib(lt_instr_stream_t* stream, u8 rex, usz dsp_bytes) {
 usz parse_mrm(lt_instr_stream_t* stream, u8 size, u8 mrm, u8 rex) {
 	u8 mod = MODRM_MOD(mrm);
 	u8 rm = MODRM_RM(mrm);
+	u8 b_rm = (!!(rex & REX_B) << 3) | rm;
 
 	i32 dsp;
 	switch (mod) {
@@ -123,24 +124,24 @@ usz parse_mrm(lt_instr_stream_t* stream, u8 size, u8 mrm, u8 rex) {
 			else
 				return lt_io_printf(stream->callb, stream->usr, "[rip + 0x%hd]", dsp);
 		}
-		return lt_io_printf(stream->callb, stream->usr, "[%S]", regs[rm].sized_names[SZ_8]);;
+		return lt_io_printf(stream->callb, stream->usr, "[%S]", regs[b_rm].sized_names[SZ_8]);;
 
 	case 0b01:
 		if (rm == REG_SP)
 			return parse_dsp_sib(stream, rex, 1);
 		if (!lt_instr_stream_consume(stream, &dsp, 1))
 			return 0;
-		return lt_io_printf(stream->callb, stream->usr, "[%S + 0x%ud]", regs[rm].sized_names[SZ_8], dsp);
+		return lt_io_printf(stream->callb, stream->usr, "[%S + 0x%ud]", regs[b_rm].sized_names[SZ_8], dsp);
 
 	case 0b10:
 		if (rm == REG_SP)
 			return parse_dsp_sib(stream, rex, 4);
 		if (!lt_instr_stream_consume(stream, &dsp, 4))
 			return 0;
-		return lt_io_printf(stream->callb, stream->usr, "[%S + 0x%ud]", regs[rm].sized_names[SZ_8], dsp);
+		return lt_io_printf(stream->callb, stream->usr, "[%S + 0x%ud]", regs[b_rm].sized_names[SZ_8], dsp);
 
 	case 0b11:
-		return lt_io_printf(stream->callb, stream->usr, "%S", regs[rm].sized_names[size]);
+		return lt_io_printf(stream->callb, stream->usr, "%S", regs[b_rm].sized_names[size]);
 
 	default: LT_ASSERT_NOT_REACHED(); return 0;
 	}
@@ -175,16 +176,18 @@ usz lt_x64_disasm_instr(lt_instr_stream_t* stream) {
 	u8 rex_present = 0;
 	u8 rex = REX(0, 0, 0, 0);
 	if ((v & 0xF0) == rex) {
+		++stream->it;
+
 		rex_present = 1;
 		rex = v;
 
-		char rex_str_data[8] = "REX", *str_it = rex_str_data + 3;
-		if (rex & 0x0F) *str_it++ = '.';
-		if (rex & REX_W) *str_it++ = 'W';
-		if (rex & REX_R) *str_it++ = 'R';
-		if (rex & REX_X) *str_it++ = 'X';
-		if (rex & REX_B) *str_it++ = 'B';
-		len += lt_io_printf(stream->callb, stream->usr, "%S ", LSTR(rex_str_data, str_it - rex_str_data));
+// 		char rex_str_data[8] = "REX", *str_it = rex_str_data + 3;
+// 		if (rex & 0x0F) *str_it++ = '.';
+// 		if (rex & REX_W) *str_it++ = 'W';
+// 		if (rex & REX_R) *str_it++ = 'R';
+// 		if (rex & REX_X) *str_it++ = 'X';
+// 		if (rex & REX_B) *str_it++ = 'B';
+// 		len += lt_io_printf(stream->callb, stream->usr, "%S ", LSTR(rex_str_data, str_it - rex_str_data));
 	}
 
 	// Opcode
@@ -209,7 +212,7 @@ usz lt_x64_disasm_instr(lt_instr_stream_t* stream) {
 
 		if (!!(op->flags & OPF_OPSZ) != !!(lpfx_bits & LPFX_OPSZ))
 			continue;
-		if (!!(op->flags & OPF_REXW) != !!(rex & REX_R))
+		if (!!(op->flags & OPF_REXW) != !!(rex & REX_W))
 			continue;
 		if (((op->flags & OPF_REXW) || (op->flags & OPF_REXR)) && !rex_present)
 			continue;
@@ -252,7 +255,7 @@ usz lt_x64_disasm_instr(lt_instr_stream_t* stream) {
 			len += res; \
 		}
 		#define R(n) { \
-			lstr_t name = regs[MODRM_REG(mrm)].sized_names[sz##n]; \
+			lstr_t name = regs[(!!(rex & REX_R) << 3) | MODRM_REG(mrm)].sized_names[sz##n]; \
 			len += stream->callb(stream->usr, name.str, name.len); \
 		}
 		#define I(n) { \
@@ -263,8 +266,16 @@ usz lt_x64_disasm_instr(lt_instr_stream_t* stream) {
 			stream->it += bytes; \
 			len += lt_io_printf(stream->callb, stream->usr, "0x%hq", v); \
 		}
+		#define D(n) { \
+			u64 v = 0; \
+			usz bytes = 1 << sz##n; \
+			if (!lt_instr_stream_read(stream, &v, bytes)) \
+				return 0; \
+			stream->it += bytes; \
+			len += lt_io_printf(stream->callb, stream->usr, "0x%hq", v); \
+		}
 		#define O(n) { \
-			lstr_t name = regs[opr - opr_min].sized_names[sz##n]; \
+			lstr_t name = regs[(!!(rex & REX_B) << 3) | (opr - opr_min)].sized_names[sz##n]; \
 			len += stream->callb(stream->usr, name.str, name.len); \
 		}
 		#define COMMA() len += stream->callb(stream->usr, ", ", 2)
@@ -274,7 +285,7 @@ usz lt_x64_disasm_instr(lt_instr_stream_t* stream) {
 		case ENC_M: MRM(); M(0); break;
 		case ENC_I: I(0); break;
 		case ENC_O: O(0); break;
-		case ENC_D: I(0); break;
+		case ENC_D: D(0); break;
 		case ENC_MI: MRM(); M(0); COMMA(); I(1); break;
 		case ENC_MR: MRM(); M(0); COMMA(); R(1); break;
 		case ENC_RM: MRM(); R(0); COMMA(); M(1); break;
