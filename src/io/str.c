@@ -1,7 +1,6 @@
 #include <lt/io.h>
 #include <lt/mem.h>
 
-static
 isz lt_str_io_callb(char** str, void* data, usz len) {
 	memcpy(*str, data, len);
 	*str += len;

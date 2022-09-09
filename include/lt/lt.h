@@ -93,6 +93,10 @@ extern usz strlen(const char* str);
 // Asserts
 #define LT_DEBUG
 
+// The IO callback is defined here to avoid having to include
+// io.h in other lt/ headers.
+typedef isz(*lt_io_callback_t)(void* usr, void* data, usz size);
+
 #ifdef LT_DEBUG
 int lt_assert_failed(lstr_t file, int line, lstr_t assertion);
 int lt_assert_unreachable_failed(lstr_t file, int line);

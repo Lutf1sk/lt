@@ -14,8 +14,6 @@ extern lt_file_t* lt_stderr;
 extern lt_file_t* lt_stdin;
 
 // fmt.c
-typedef isz(*lt_io_callback_t)(void* usr, void* data, usz size);
-
 isz lt_io_vprintf(lt_io_callback_t callb, void* usr, char* fmt, va_list argl);
 isz lt_io_printf(lt_io_callback_t callb, void* usr, char* fmt, ...);
 
@@ -49,10 +47,7 @@ isz lt_file_printf(lt_file_t* file, char* fmt, ...);
 isz lt_printf(char* fmt, ...);
 
 // str.c
-isz lt_str_printuq_hex(char* str, usz n);
-isz lt_str_printuq(char* str, u64 n);
-isz lt_str_printiq(char* str, i64 n);
-isz lt_str_printfq(char* str, f64 n);
+isz lt_str_io_callb(char** str, void* data, usz len);
 
 isz lt_str_vprintf(char* str, char* fmt, va_list args);
 isz lt_str_printf(char* str, char* fmt, ...);
