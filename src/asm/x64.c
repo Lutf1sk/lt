@@ -1,6 +1,7 @@
 #include <lt/asm.h>
 #include <lt/mem.h>
 #include <lt/str.h>
+#include <lt/bits.h>
 
 #define SZ_1 0
 #define SZ_2 1
@@ -59,6 +60,21 @@
 
 #include <lt/io.h>
 
+static
+u8 dsp_op_char(i64* dsp_ptr, usz dspsz) {
+	i64 dsp = *dsp_ptr;
+
+	dsp = lt_sign_ext(dsp, dspsz);
+	u8 dsp_op = '+';
+	if (dsp < 0) {
+		dsp = -dsp;
+		dsp_op = '-';
+	}
+	*dsp_ptr = dsp;
+	return dsp_op;
+}
+
+static
 usz parse_mod00_sib(lt_instr_stream_t* stream, u8 rex) {
 	u8 sib;
 	if (!lt_instr_stream_consume(stream, &sib, 1))
@@ -68,42 +84,41 @@ usz parse_mod00_sib(lt_instr_stream_t* stream, u8 rex) {
 	u8 b_base = (!!(rex & REX_B) << 3) | base;
 
 	if (base == REG_BP && index == REG_SP) {
-		u32 dsp;
+		u32 dsp = 0;
 		if (!lt_instr_stream_consume(stream, &dsp, 4))
 			return 0;
 		return lt_io_printf(stream->callb, stream->usr, "[0x%hd]", dsp);;
 	}
 	if (base == REG_BP) {
-		i32 dsp;
+		i64 dsp = 0;
 		if (!lt_instr_stream_consume(stream, &dsp, 4))
 			return 0;
-		u8 dsp_op = '+';
-		if (dsp < 0) {
-			dsp = -dsp;
-			dsp_op = '-';
-		}
-		return lt_io_printf(stream->callb, stream->usr, "[%S*%ud %c 0x%hd]", regs[index].sized_names[SZ_8], 1 << SIB_SCALE(sib), dsp_op, dsp);
+		u8 dsp_op = dsp_op_char(&dsp, 4);
+		return lt_io_printf(stream->callb, stream->usr, "[%S*%ud %c 0x%hq]", regs[index].sized_names[SZ_8], 1 << SIB_SCALE(sib), dsp_op, dsp);
 	}
 	if (index == REG_SP)
 		return lt_io_printf(stream->callb, stream->usr, "[%S]", regs[b_base].sized_names[SZ_8]);
 	return lt_io_printf(stream->callb, stream->usr, "[%S + %S*%ud]", regs[b_base].sized_names[SZ_8], regs[index].sized_names[SZ_8], 1 << SIB_SCALE(sib));
 }
 
+static
 usz parse_dsp_sib(lt_instr_stream_t* stream, u8 rex, usz dsp_bytes) {
 	u8 sib;
 	if (!lt_instr_stream_consume(stream, &sib, 1))
 		return 0;
-	u32 dsp;
+	i64 dsp = 0;
 	if (!lt_instr_stream_consume(stream, &dsp, dsp_bytes))
 		return 0;
 
 	u8 index = (!!(rex & REX_X) << 3) | SIB_INDEX(sib);
 	u8 base = (!!(rex & REX_B) << 3) | SIB_BASE(sib);
 
+	u8 dsp_op = dsp_op_char(&dsp, dsp_bytes);
 	if (base == REG_SP)
-		return lt_io_printf(stream->callb, stream->usr, "[%S + 0x%hd]", regs[base].sized_names[SZ_8], dsp);
+		return lt_io_printf(stream->callb, stream->usr, "[%S %c 0x%hq]", regs[base].sized_names[SZ_8], dsp_op, dsp);
 	else
-		return lt_io_printf(stream->callb, stream->usr, "[%S + %S*%ud + 0x%hd]", regs[base].sized_names[SZ_8], regs[index].sized_names[SZ_8], 1 << SIB_SCALE(sib), dsp);
+		return lt_io_printf(stream->callb, stream->usr, "[%S + %S*%ud %c 0x%hq]",
+				regs[base].sized_names[SZ_8], regs[index].sized_names[SZ_8], 1 << SIB_SCALE(sib), dsp_op, dsp);
 }
 
 usz parse_mrm(lt_instr_stream_t* stream, u8 size, u8 mrm, u8 rex) {
@@ -111,7 +126,8 @@ usz parse_mrm(lt_instr_stream_t* stream, u8 size, u8 mrm, u8 rex) {
 	u8 rm = MODRM_RM(mrm);
 	u8 b_rm = (!!(rex & REX_B) << 3) | rm;
 
-	i32 dsp;
+	i64 dsp = 0;
+	usz dspsz = 4;
 	switch (mod) {
 	case 0b00:
 		if (rm == REG_SP)
@@ -119,26 +135,21 @@ usz parse_mrm(lt_instr_stream_t* stream, u8 size, u8 mrm, u8 rex) {
 		else if (rm == REG_BP) {
 			if (!lt_instr_stream_consume(stream, &dsp, 4))
 				return 0;
-			if (dsp < 0)
-				return lt_io_printf(stream->callb, stream->usr, "[rip - 0x%hd]", -dsp);
-			else
-				return lt_io_printf(stream->callb, stream->usr, "[rip + 0x%hd]", dsp);
+			u8 dsp_op = dsp_op_char(&dsp, 4);
+			return lt_io_printf(stream->callb, stream->usr, "[rip %c 0x%hq]", dsp_op, dsp);
 		}
 		return lt_io_printf(stream->callb, stream->usr, "[%S]", regs[b_rm].sized_names[SZ_8]);;
 
 	case 0b01:
+		dspsz = 1;
+	case 0b10: {
 		if (rm == REG_SP)
-			return parse_dsp_sib(stream, rex, 1);
-		if (!lt_instr_stream_consume(stream, &dsp, 1))
+			return parse_dsp_sib(stream, rex, dspsz);
+		if (!lt_instr_stream_consume(stream, &dsp, dspsz))
 			return 0;
-		return lt_io_printf(stream->callb, stream->usr, "[%S + 0x%ud]", regs[b_rm].sized_names[SZ_8], dsp);
-
-	case 0b10:
-		if (rm == REG_SP)
-			return parse_dsp_sib(stream, rex, 4);
-		if (!lt_instr_stream_consume(stream, &dsp, 4))
-			return 0;
-		return lt_io_printf(stream->callb, stream->usr, "[%S + 0x%ud]", regs[b_rm].sized_names[SZ_8], dsp);
+		u8 dsp_op = dsp_op_char(&dsp, dspsz);
+		return lt_io_printf(stream->callb, stream->usr, "[%S %c 0x%hq]", regs[b_rm].sized_names[SZ_8], dsp_op, dsp);
+	}
 
 	case 0b11:
 		return lt_io_printf(stream->callb, stream->usr, "%S", regs[b_rm].sized_names[size]);
