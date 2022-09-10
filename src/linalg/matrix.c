@@ -54,10 +54,10 @@ void lt_mat4_ortho(lt_mat4_t mat, f32 left, f32 right, f32 bottom, f32 top, f32 
 	mat[3][3] = 1.0f;
 }
 
-void lt_mat4_view(lt_mat4_t mat, lt_vec3_t eye, lt_vec3_t center, lt_vec3_t up) {
+void lt_mat4_view(lt_mat4_t mat, lt_vec3_t pos, lt_vec3_t fwd, lt_vec3_t up) {
 	lt_vec3_t f, u, s;
 
-	lt_vec3_sub(center, eye, f);
+	lt_vec3_copy(f, fwd);
 	lt_vec3_normalize(f);
 
 	lt_vec3_cross(f, up, s);
@@ -79,9 +79,9 @@ void lt_mat4_view(lt_mat4_t mat, lt_vec3_t eye, lt_vec3_t center, lt_vec3_t up) 
 	mat[2][2] = f[2];
 	mat[2][3] = 0.0f;
 
-	mat[3][0] = -lt_vec3_dot(s, eye);
-	mat[3][1] = -lt_vec3_dot(u, eye);
-	mat[3][2] = -lt_vec3_dot(f, eye);
+	mat[3][0] = -lt_vec3_dot(s, pos);
+	mat[3][1] = -lt_vec3_dot(u, pos);
+	mat[3][2] = -lt_vec3_dot(f, pos);
 	mat[3][3] = 1.0f;
 }
 

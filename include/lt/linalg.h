@@ -236,7 +236,7 @@ void lt_mat4_mul(lt_mat4_t m1, lt_mat4_t m2, lt_mat4_t dst) {
 void lt_mat4_perspective(lt_mat4_t mat, f32 fov, f32 aspect, f32 near, f32 far);
 void lt_mat4_ortho(lt_mat4_t mat, f32 left, f32 right, f32 bottom, f32 top, f32 near, f32 far);
 
-void lt_mat4_view(lt_mat4_t mat, lt_vec3_t eye, lt_vec3_t center, lt_vec3_t up);
+void lt_mat4_view(lt_mat4_t mat, lt_vec3_t pos, lt_vec3_t fwd, lt_vec3_t up);
 void lt_mat4_euler(lt_vec3_t angles, lt_mat4_t dst);
 
 #define LT_MAT2_IDENTITY ((lt_mat2_t)LT_MAT2_IDENTITY_INIT)
