@@ -57,9 +57,11 @@ void lt_vec2_normalize(lt_vec2_t v) {
 // ----- vec3
 
 void lt_vec3_cross(lt_vec3_t a, lt_vec3_t b, lt_vec3_t dst) {
-	dst[0] = a[1] * b[2] - a[2] * b[1];
-	dst[1] = a[2] * b[0] - a[0] * b[2];
-	dst[2] = a[0] * b[1] - a[1] * b[0];
+	lt_vec3_t tmp;
+	tmp[0] = a[1] * b[2] - a[2] * b[1];
+	tmp[1] = a[2] * b[0] - a[0] * b[2];
+	tmp[2] = a[0] * b[1] - a[1] * b[0];
+	lt_vec3_copy(dst, tmp);
 }
 
 // ----- vec4
