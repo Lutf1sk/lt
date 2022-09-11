@@ -1,98 +1,99 @@
 #include <lt/arg.h>
 #include <lt/str.h>
 
-typedef
-enum lt_arg_stype {
-	LT_ARG_BOOL,
-	LT_ARG_STR,
-	LT_ARG_INT,
-	LT_ARG_UINT,
-} lt_arg_stype_t;
-
-typedef
-struct lt_arg {
-	lt_arg_stype_t stype;
-	usz count;
-	void* out;
-} lt_arg_t;
-
-#define ARG(stype, out) (lt_arg_t){ (stype), 0, (out) }
-
-static lt_arg_t args[LT_ARG_MAX];
-static lstr_t flags[LT_ARG_MAX];
-static usz arg_count = 0;
-
-// ----- Flag registering
-static
-lt_arg_t* new_flag(lstr_t fl, lt_arg_t arg) {
-	LT_ASSERT(arg_count < LT_ARG_MAX);
-	args[arg_count] = arg;
-	flags[arg_count] = fl;
-	return &args[arg_count++];
+lt_arg_iterator_t lt_arg_iterator_create(int argc, char** argv) {
+	lt_arg_iterator_t it;
+	it.end = argv + argc;
+	it.it = argv;
+	it.arg_len = 0;
+	it.end_of_opt = 0;
+	return it;
 }
 
-lt_arg_t* lt_arg_bool(lstr_t fl, b8* out) {
-	return new_flag(fl, ARG(LT_ARG_BOOL, out));
-}
-
-lt_arg_t* lt_arg_str(lstr_t fl, lstr_t* out) {
-	return new_flag(fl, ARG(LT_ARG_STR, out));
-}
-
-lt_arg_t* lt_arg_int(lstr_t fl, isz* out) {
-	return new_flag(fl, ARG(LT_ARG_INT, out));
-}
-
-lt_arg_t* lt_arg_uint(lstr_t fl, usz* out) {
-	return new_flag(fl, ARG(LT_ARG_UINT, out));
-}
-
-// ----- Parsing
-
-void lt_arg_parse(int argc, char** argv) {
-	for (int argi = 1; argi < argc; ++argi) {
-		if (argv[argi][0] != '-')
-			continue;
-
-		char* flag_start = &argv[argi][1];
-		lstr_t flag = LSTR(flag_start, strlen(flag_start));
-
-		for (usz i = 0; i < arg_count; ++i) {
-			if (!lt_lstr_eq(flag, flags[i]))
-				continue;
-
-			lt_arg_t* arg = &args[i];
-
-			if (arg->stype == LT_ARG_BOOL) {
-				*(b8*)arg->out = 1;
-				++arg->count;
-				break;
-			}
-
-			if (argi >= argc - 1)
-				break;
-
-			++argi;
-			lstr_t str_val = LSTR(argv[argi], strlen(argv[argi]));
-
-			++arg->count;
-
-			switch (arg->stype) {
-			case LT_ARG_STR: *(lstr_t*)arg->out = str_val; break;
-			case LT_ARG_INT: *(isz*)arg->out = lt_lstr_int(str_val); break;
-			case LT_ARG_UINT: *(usz*)arg->out = lt_lstr_uint(str_val); break;
-			default: break;
-			}
-
-			break;
-		}
+b8 lt_arg_next(lt_arg_iterator_t* it) {
+	if (++it->it >= it->end)
+		return 0;
+	it->arg_len = strlen(*it->it);
+	if (!it->end_of_opt && it->arg_len == 2 && memcmp(*it->it, "--", 2) == 0) {
+		it->end_of_opt = 1;
+		return lt_arg_next(it);
 	}
+	return 1;
 }
 
-// ----- Queries
+static
+char* find_long_val(lt_arg_iterator_t* it, lstr_t key) {
+	if (!key.len)
+		return NULL;
 
-b8 lt_arg_isset(lt_arg_t* arg) {
-	return arg->count != 0;
+	LT_ASSERT(key.str[0] != '-');
+	if (it->arg_len < 3 || memcmp(*it->it, "--", 2) != 0)
+		return NULL;
+
+	lstr_t arg = LSTR(*it->it + 2, it->arg_len - 2);
+	if (lt_lstr_eq(arg, key)) {
+		if (!lt_arg_next(it))
+			lt_ferrf("missing argument to '%S'\n", key);
+		return *it->it;
+	}
+
+	if (lt_lstr_startswith(arg, key) && arg.str[key.len] == '=')
+		return arg.str + key.len + 1;
+	return NULL;
 }
 
+static
+char* find_short_val(lt_arg_iterator_t* it, char key) {
+	if (!key)
+		return NULL;
+
+	LT_ASSERT(key != '-');
+	if (it->arg_len < 2 || **it->it != '-')
+		return NULL;
+
+	lstr_t arg = LSTR(*it->it + 1, it->arg_len - 1);
+	if (arg.len == 1 && arg.str[0] == key) {
+		if (!lt_arg_next(it))
+			lt_ferrf("missing argument to '%c'\n", key);
+		return *it->it;
+	}
+
+	if (lt_lstr_startswith(arg, LSTR(&key, 1)) && arg.len > 1)
+		return arg.str + 1;
+	return NULL;
+}
+
+b8 lt_arg_flag(lt_arg_iterator_t* it, char short_key, lstr_t long_key) {
+	lstr_t arg = LSTR(*it->it, it->arg_len);
+
+	char short_flag[2] = { '-', short_key };
+	if (short_key && arg.len == 2 && memcmp(arg.str, short_flag, 2) == 0)
+		return 1;
+
+	if (arg.len < 3 || memcmp(arg.str, "--", 2) != 0)
+		return 0;
+	return lt_lstr_eq(LSTR(arg.str + 2, arg.len - 2), long_key);
+}
+
+b8 lt_arg_str(lt_arg_iterator_t* it, char short_key, lstr_t long_key, char** out) {
+	if (it->end_of_opt)
+		return 0;
+
+	char* arg = find_short_val(it, short_key);
+	if (!arg)
+		arg = find_long_val(it, long_key);
+	if (arg)
+		*out = arg;
+	return !!arg;
+}
+
+b8 lt_arg_int(lt_arg_iterator_t* it, char short_key, lstr_t long_key, i64* out) {
+	// !!
+	return 0;
+}
+
+b8 lt_arg_uint(lt_arg_iterator_t* it, char short_key, lstr_t long_key, u64* out) {
+	// !!
+	return 0;
+}
 

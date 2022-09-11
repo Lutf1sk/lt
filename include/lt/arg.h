@@ -4,15 +4,20 @@
 #include <lt/lt.h>
 #include <lt/fwd.h>
 
-#define LT_ARG_MAX 256
+typedef
+struct lt_arg_iterator {
+	char** end;
+	char** it;
+	usz arg_len;
+	u8 end_of_opt;
+} lt_arg_iterator_t;
 
-lt_arg_t* lt_arg_bool(lstr_t fl, b8* out);
-lt_arg_t* lt_arg_str(lstr_t fl, lstr_t* out);
-lt_arg_t* lt_arg_int(lstr_t fl, isz* out);
-lt_arg_t* lt_arg_uint(lstr_t fl, usz* out);
+lt_arg_iterator_t lt_arg_iterator_create(int argc, char** argv);
+b8 lt_arg_next(lt_arg_iterator_t* it);
 
-void lt_arg_parse(int argc, char** argv);
-
-b8 lt_arg_isset(lt_arg_t* arg);
+b8 lt_arg_flag(lt_arg_iterator_t* it, char short_key, lstr_t long_key);
+b8 lt_arg_str(lt_arg_iterator_t* it, char short_key, lstr_t long_key, char** out);
+b8 lt_arg_int(lt_arg_iterator_t* it, char short_key, lstr_t long_key, i64* out);
+b8 lt_arg_uint(lt_arg_iterator_t* it, char short_key, lstr_t long_key, u64* out);
 
 #endif
