@@ -40,8 +40,13 @@ void lt_amdestroy(lt_arena_t* arena) {
 		lt_vmfree(arena, arena->size);
 }
 
-// lt_arestore_t* lt_amsave(lt_arena_t* arena);
-// void lt_amrestore(lt_arena_t* arena, lt_arestore_t* restore_point);
+void* lt_amsave(lt_arena_t* arena) {
+	return arena->top;
+}
+
+void lt_amrestore(lt_arena_t* arena, void* restore_point) {
+	arena->top = restore_point;
+}
 
 void* lt_amalloc(lt_arena_t* arena, usz size) {
 	u8* start = (u8*)lt_align_fwd((usz)arena->top, LT_ALLOC_DEFAULT_ALIGN);

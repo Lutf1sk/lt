@@ -87,8 +87,8 @@ lt_arena_t* lt_amcreatem(lt_alloc_t* parent, void* mem, usz size, usz flags);
 lt_arena_t* lt_amcreate(lt_alloc_t* parent, usz size, usz flags);
 void lt_amdestroy(lt_arena_t* arena);
 
-// lt_arestore_t* lt_amsave(lt_arena_t* arena);
-// void lt_amrestore(lt_arena_t* arena, lt_arestore_t* restore_point);
+void* lt_amsave(lt_arena_t* arena);
+void lt_amrestore(lt_arena_t* arena, void* restore_point);
 
 void* lt_amalloc(lt_arena_t* arena, usz size);
 void lt_amfree(lt_arena_t* arena, void* ptr);
