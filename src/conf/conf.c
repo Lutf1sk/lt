@@ -16,43 +16,50 @@ lstr_t conf_type_str(lt_conf_stype_t stype) {
 
 typedef
 struct parse_ctx {
-	lstr_t data;
-	usz it;
+	char* it;
+	char* end;
 } parse_ctx_t;
 
 static b8 parse_val(parse_ctx_t* cx, lt_conf_t* cf);
 
 static
-b8 parse_obj_body(parse_ctx_t* cx, lt_conf_t* cf) {
-	char* str = cx->data.str;
-	usz len = cx->data.len;
+b8 skip_whitespace(parse_ctx_t* cx) {
+	while (cx->it < cx->end && lt_is_space(*cx->it))
+		++cx->it;
+	return cx->it == cx->end;
+}
 
+static
+b8 consume_string(parse_ctx_t* cx, lstr_t str) {
+	if (cx->end - cx->it < str.len && memcmp(cx->it, str.str, str.len) == 0)
+		return 0;
+	cx->it += str.len;
+	return 1;
+}
+
+static
+b8 parse_obj_body(parse_ctx_t* cx, lt_conf_t* cf) {
 	cf->stype = LT_CONF_OBJECT;
 	cf->children = NULL;
 	cf->count = 0;
 
 	for (;;) {
-		usz it = cx->it;
-		// Skip whitespace
-		while (it < len && lt_is_space(str[it]))
-			it++;
-		if (it >= len || str[it] == '}')
+		if (skip_whitespace(cx) || *cx->it == '}')
 			return 1;
 
 		cf->children = realloc(cf->children, (cf->count + 1) * sizeof(lt_conf_t));
 		lt_conf_t* child = &cf->children[cf->count++];
 
 		// Consume name
-		char* key_start = &str[it];
-		while (it < len && lt_is_ident_body(str[it]))
-			++it;
-		lstr_t key = LSTR(key_start, &str[it] - key_start);
+		char* key_start = cx->it;
+		while (cx->it < cx->end && lt_is_ident_body(*cx->it))
+			++cx->it;
+		lstr_t key = LSTR(key_start, cx->it - key_start);
 		if (!key.len)
 			goto syntax_err;
 		child->key = key;
 
 		// Parse value
-		cx->it = it;
 		if (!parse_val(cx, child))
 			goto syntax_err;
 	}
@@ -65,28 +72,20 @@ syntax_err:
 
 static
 b8 parse_arr_body(parse_ctx_t* cx, lt_conf_t* cf) {
-	char* str = cx->data.str;
-	usz len = cx->data.len;
-
 	cf->stype = LT_CONF_ARRAY;
 	cf->children = NULL;
 	cf->count = 0;
 
 	for (;;) {
-		usz it = cx->it;
-		// Skip whitespace
-		while (it < len && lt_is_space(str[it]))
-			it++;
-		if (it >= len)
+		if (skip_whitespace(cx))
 			return 0;
-		if (str[it] == ']')
+		if (*cx->it == ']')
 			return 1;
 
 		cf->children = realloc(cf->children, (cf->count + 1) * sizeof(lt_conf_t));
 		lt_conf_t* child = &cf->children[cf->count++];
 
 		// Parse value
-		cx->it = it;
 		if (!parse_val(cx, child)) {
 			cf->count--;
 			lt_conf_free(cf);
@@ -97,59 +96,54 @@ b8 parse_arr_body(parse_ctx_t* cx, lt_conf_t* cf) {
 
 static
 b8 parse_val(parse_ctx_t* cx, lt_conf_t* cf) {
-	char* str = cx->data.str;
-	usz len = cx->data.len;
-	usz it = cx->it;
-
-	while (it < len && lt_is_space(str[it]))
-		++it;
-	if (it >= len)
+	if (skip_whitespace(cx))
 		return 0;
 
-	char c = str[it++];
-	cx->it = it;
+	char c = *cx->it++;
 	switch (c) {
 	case '{':
-		if (!parse_obj_body(cx, cf))
+		if (!parse_obj_body(cx, cf) || skip_whitespace(cx))
 			return 0;
-		while (cx->it < len && lt_is_space(str[cx->it]))
-			++cx->it;
-		if (cx->it >= len)
-			return 0;
-		return str[cx->it++] == '}';
+		return *cx->it++ == '}';
 
 	case '[':
-		if (!parse_arr_body(cx, cf))
+		if (!parse_arr_body(cx, cf) || skip_whitespace(cx))
 			return 0;
-		while (cx->it < len && lt_is_space(str[cx->it]))
-			++cx->it;
-		if (cx->it >= len)
+		return *cx->it++ == ']';
+
+	case 't':
+		if (!consume_string(cx, CLSTR("rue")))
 			return 0;
-		return str[cx->it++] == ']';
+		cf->stype = LT_CONF_BOOL;
+		cf->bool_val = 1;
+		return 1;
+
+	case 'f':
+		if (!consume_string(cx, CLSTR("alse")))
+			return 0;
+		cf->stype = LT_CONF_BOOL;
+		cf->bool_val = 0;
+		return 1;
 
 	default:
 		if (c == '"') {
-			char* start = &str[it];
-			while (str[it++] != '"') {
-				if (it >= len)
+			char* start = cx->it - 1;
+			while (*cx->it++ != '"') {
+				if (cx->it >= cx->end)
 					return 0;
 			}
 			cf->stype = LT_CONF_STRING;
 			cf->str_val = start;
-			cf->count = &str[it] - start - 1;
-
-			cx->it = it;
+			cf->count = cx->it - start - 1;
 			return 1;
 		}
 		if (lt_is_digit(c)) {
-			char* start = &str[it];
-			while (it < len && lt_is_numeric_body(str[it]))
-				++it;
+			char* start = cx->it - 1;
+			while (cx->it < cx->end && lt_is_numeric_body(*cx->it))
+				++cx->it;
 			cf->stype = LT_CONF_INT;
 			// TODO: Properly parse floats and different types of integers
-			cf->int_val = lt_lstr_uint(LSTR(start, &str[it] - start));
-
-			cx->it = it;
+			cf->int_val = lt_lstr_uint(LSTR(start, cx->it - start));
 			return 1;
 		}
 		return 0;
@@ -158,10 +152,13 @@ b8 parse_val(parse_ctx_t* cx, lt_conf_t* cf) {
 
 b8 lt_conf_parse(lt_conf_t* cf, lstr_t data) {
 	parse_ctx_t cx;
-	cx.data = data;
-	cx.it = 0;
+	cx.it = data.str;
+	cx.end = data.str + data.len;
 
-	return parse_obj_body(&cx, cf);
+	b8 res = parse_obj_body(&cx, cf);
+	if (!res)
+		lt_ferrf("'%S'\n", LSTR(cx.it, 8));
+	return res;
 }
 
 lt_conf_t* lt_conf_find(lt_conf_t* parent, lstr_t key) {
