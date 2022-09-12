@@ -11,7 +11,7 @@
 #define OSZ3(a, b, c) ((a) | ((b) << 2) | ((c) << 4))
 #define OSZ(v, n) (((v) >> (n * 2)) & 0b11)
 
-#define ENC_ZO	0x00 // 
+#define ENC_ZO	0x00 // None
 #define ENC_M	0x01 // ModR/M mod
 #define ENC_I	0x03 // Immediate
 #define ENC_O	0x04 // Opcode+reg
@@ -32,12 +32,38 @@ struct lt_x64_op {
 	u8 sizes;
 	u8 reg;
 	u8 flags;
+
 	u8 op_len;
 	u8 opcode[4];
 } lt_x64_op_t;
 
 static
 lt_x64_op_t ops[] = {
+// ----- ADC -----
+#define NAME CLSTR("adc")
+	{ NAME, ENC_I, OSZ1(SZ_1), 0, 0,		1,{ 0x14 } },
+	{ NAME, ENC_I, OSZ1(SZ_2), 0, OPF_OPSZ,	1,{ 0x15 } },
+	{ NAME, ENC_I, OSZ1(SZ_4), 0, 0,		1,{ 0x15 } },
+	{ NAME, ENC_I, OSZ1(SZ_4), 0, OPF_REXW,	1,{ 0x15 } }, // S
+
+	{ NAME, ENC_MI, OSZ2(SZ_1, SZ_1), 2, OPF_OPXT,			1,{ 0x80 } },
+	{ NAME, ENC_MI, OSZ2(SZ_2, SZ_1), 2, OPF_OPXT|OPF_OPSZ,	1,{ 0x83 } }, // S
+	{ NAME, ENC_MI, OSZ2(SZ_4, SZ_1), 2, OPF_OPXT,			1,{ 0x83 } }, // S
+	{ NAME, ENC_MI, OSZ2(SZ_8, SZ_1), 2, OPF_OPXT|OPF_REXW,	1,{ 0x83 } }, // S
+	{ NAME, ENC_MI, OSZ2(SZ_2, SZ_2), 2, OPF_OPXT|OPF_OPSZ,	1,{ 0x81 } },
+	{ NAME, ENC_MI, OSZ2(SZ_4, SZ_4), 2, OPF_OPXT,			1,{ 0x81 } },
+	{ NAME, ENC_MI, OSZ2(SZ_8, SZ_4), 2, OPF_OPXT|OPF_REXW,	1,{ 0x81 } }, // S
+
+	{ NAME, ENC_MR, OSZ2(SZ_1, SZ_1), 0, 0,			1,{ 0x10 } },
+	{ NAME, ENC_MR, OSZ2(SZ_2, SZ_2), 0, OPF_OPSZ,	1,{ 0x11 } },
+	{ NAME, ENC_MR, OSZ2(SZ_4, SZ_4), 0, 0,			1,{ 0x11 } },
+	{ NAME, ENC_MR, OSZ2(SZ_8, SZ_8), 0, OPF_REXW,	1,{ 0x11 } },
+
+	{ NAME, ENC_MR, OSZ2(SZ_1, SZ_1), 0, 0,			1,{ 0x12 } },
+	{ NAME, ENC_MR, OSZ2(SZ_2, SZ_2), 0, OPF_OPSZ,	1,{ 0x13 } },
+	{ NAME, ENC_MR, OSZ2(SZ_4, SZ_4), 0, 0,			1,{ 0x13 } },
+	{ NAME, ENC_MR, OSZ2(SZ_8, SZ_8), 0, OPF_REXW,	1,{ 0x13 } },
+#undef NAME
 
 // ----- ADD -----
 #define NAME CLSTR("add")
@@ -63,32 +89,6 @@ lt_x64_op_t ops[] = {
 	{ NAME, ENC_MR, OSZ2(SZ_2, SZ_2), 0, OPF_OPSZ,	1,{ 0x03 } },
 	{ NAME, ENC_MR, OSZ2(SZ_4, SZ_4), 0, 0,			1,{ 0x03 } },
 	{ NAME, ENC_MR, OSZ2(SZ_8, SZ_8), 0, OPF_REXW,	1,{ 0x03 } },
-#undef NAME
-
-// ----- ADC -----
-#define NAME CLSTR("adc")
-	{ NAME, ENC_I, OSZ1(SZ_1), 0, 0,		1,{ 0x14 } },
-	{ NAME, ENC_I, OSZ1(SZ_2), 0, OPF_OPSZ,	1,{ 0x15 } },
-	{ NAME, ENC_I, OSZ1(SZ_4), 0, 0,		1,{ 0x15 } },
-	{ NAME, ENC_I, OSZ1(SZ_4), 0, OPF_REXW,	1,{ 0x15 } }, // S
-
-	{ NAME, ENC_MI, OSZ2(SZ_1, SZ_1), 2, OPF_OPXT,			1,{ 0x80 } },
-	{ NAME, ENC_MI, OSZ2(SZ_2, SZ_1), 2, OPF_OPXT|OPF_OPSZ,	1,{ 0x83 } }, // S
-	{ NAME, ENC_MI, OSZ2(SZ_4, SZ_1), 2, OPF_OPXT,			1,{ 0x83 } }, // S
-	{ NAME, ENC_MI, OSZ2(SZ_8, SZ_1), 2, OPF_OPXT|OPF_REXW,	1,{ 0x83 } }, // S
-	{ NAME, ENC_MI, OSZ2(SZ_2, SZ_2), 2, OPF_OPXT|OPF_OPSZ,	1,{ 0x81 } },
-	{ NAME, ENC_MI, OSZ2(SZ_4, SZ_4), 2, OPF_OPXT,			1,{ 0x81 } },
-	{ NAME, ENC_MI, OSZ2(SZ_8, SZ_4), 2, OPF_OPXT|OPF_REXW,	1,{ 0x81 } }, // S
-
-	{ NAME, ENC_MR, OSZ2(SZ_1, SZ_1), 0, 0,			1,{ 0x10 } },
-	{ NAME, ENC_MR, OSZ2(SZ_2, SZ_2), 0, OPF_OPSZ,	1,{ 0x11 } },
-	{ NAME, ENC_MR, OSZ2(SZ_4, SZ_4), 0, 0,			1,{ 0x11 } },
-	{ NAME, ENC_MR, OSZ2(SZ_8, SZ_8), 0, OPF_REXW,	1,{ 0x11 } },
-
-	{ NAME, ENC_MR, OSZ2(SZ_1, SZ_1), 0, 0,			1,{ 0x12 } },
-	{ NAME, ENC_MR, OSZ2(SZ_2, SZ_2), 0, OPF_OPSZ,	1,{ 0x13 } },
-	{ NAME, ENC_MR, OSZ2(SZ_4, SZ_4), 0, 0,			1,{ 0x13 } },
-	{ NAME, ENC_MR, OSZ2(SZ_8, SZ_8), 0, OPF_REXW,	1,{ 0x13 } },
 #undef NAME
 
 // ----- AND -----
@@ -530,20 +530,27 @@ lt_x64_op_t ops[] = {
 	// TODO
 #undef NAME
 
-// !! LAR
+// ----- LAR -----
+#define NAME CLSTR("lar")
+	{ NAME, ENC_RM, OSZ2(SZ_2, SZ_2), 0, OPF_OPSZ,	2, { 0x0F, 0x02 } },
+	{ NAME, ENC_RM, OSZ2(SZ_4, SZ_4), 0, 0,			2, { 0x0F, 0x02 } }, // !!
+#undef NAME
+
 // !! LDS/LES/LFS/LGS/LSS
 
 // ----- LEA -----
 #define NAME CLSTR("lea")
 	{ NAME, ENC_RM, OSZ2(SZ_2, SZ_8), 0, OPF_OPSZ,	1,{ 0x8D } },
-	{ NAME, ENC_RM, OSZ2(SZ_4, SZ_8), 0, 0,		1,{ 0x8D } },
+	{ NAME, ENC_RM, OSZ2(SZ_4, SZ_8), 0, 0,			1,{ 0x8D } },
 	{ NAME, ENC_RM, OSZ2(SZ_8, SZ_8), 0, OPF_REXW,	1,{ 0x8D } },
 #undef NAME
 
 // ----- LEAVE -----
 	{ CLSTR("leave"), ENC_ZO, 0, 0, OPF_REXW, 1,{ 0xC9 } },
 
-// !! LGDT/LIDT
+// ----- LGDT/LIDT -----
+	{ CLSTR("lgdt"), ENC_M, OSZ1(SZ_8), 2, OPF_OPXT, 1,{ 0x0F, 0x01 } },
+	{ CLSTR("lidt"), ENC_M, OSZ1(SZ_8), 3, OPF_OPXT, 1,{ 0x0F, 0x01 } },
 
 // ----- LLDT -----
 	{ CLSTR("lldt"), ENC_M, OSZ1(SZ_2), 2, OPF_OPXT, 2,{ 0x0F, 0x00 } },
@@ -562,7 +569,12 @@ lt_x64_op_t ops[] = {
 	{ CLSTR("loope"), ENC_D, OSZ1(SZ_1), 0, 0,	1,{ 0xE1 } },
 	{ CLSTR("loopne"), ENC_D, OSZ1(SZ_1), 0, 0,	1,{ 0xE0 } },
 
-// !! LSL
+// ----- LSL -----
+#define NAME CLSTR("lsl")
+	{ NAME, ENC_RM, OSZ2(SZ_2, SZ_2), 0, OPF_OPSZ,	1,{ 0x0F, 0x03 } },
+	{ NAME, ENC_RM, OSZ2(SZ_4, SZ_4), 0, 0,			1,{ 0x0F, 0x03 } }, // !!
+	{ NAME, ENC_RM, OSZ2(SZ_8, SZ_4), 0, OPF_REXW,	1,{ 0x0F, 0x03 } }, // !!
+#undef NAME
 
 // ----- LTR -----
 	{ CLSTR("ltr"), ENC_M, OSZ1(SZ_2), 3, OPF_OPXT, 2,{ 0x0F, 0x00 } },
@@ -599,8 +611,6 @@ lt_x64_op_t ops[] = {
 
 	// TODO
 #undef NAME
-
-// !! MOVBE
 
 // ----- MOVS/MOVSB/MOVSW/MOVSD/MOVSQ -----
 	{ CLSTR("movsb"), ENC_ZO, 0, 0, 0,			1,{ 0xA4 } },
@@ -954,13 +964,21 @@ lt_x64_op_t ops[] = {
 	{ CLSTR("sets"), ENC_M, OSZ1(SZ_1), 0, 0,	2,{ 0x0F, 0x98 } },
 	{ CLSTR("setz"), ENC_M, OSZ1(SZ_1), 0, 0,	2,{ 0x0F, 0x94 } },
 
-// !! SGDT
-// !! SIDT
+// ----- SGDT -----
+	{ CLSTR("sgdt"), ENC_M, OSZ1(SZ_8), 0, OPF_OPXT, 1,{ 0x0F, 0x01 } }, // !!
+
+// ----- SIDT -----
+	{ CLSTR("sidt"), ENC_M, OSZ1(SZ_8), 1, OPF_OPXT, 1,{ 0x0F, 0x01 } }, // !!
 
 // ----- SLDT -----
 	{ CLSTR("sldt"), ENC_M, OSZ1(SZ_2), 0, OPF_OPXT, 2,{ 0x0F, 0x00 } },
 
-// !! SMSW
+// ----- SMSW -----
+#define NAME CLSTR("smsw")
+	{ NAME, ENC_M, OSZ1(SZ_2), 4, OPF_OPXT|OPF_OPSZ,	1,{ 0x0F, 0x01 } },
+	{ NAME, ENC_M, OSZ1(SZ_4), 4, OPF_OPXT,				1,{ 0x0F, 0x01 } },
+	{ NAME, ENC_M, OSZ1(SZ_8), 4, OPF_OPXT|OPF_REXW,	1,{ 0x0F, 0x01 } },
+#undef NAME
 
 // ----- STC -----
 	{ CLSTR("stc"), ENC_ZO, 0, 0, 0, 1,{ 0xF9 } },
@@ -1075,7 +1093,10 @@ lt_x64_op_t ops[] = {
 	{ NAME, ENC_MR, OSZ2(SZ_8, SZ_8), 0, OPF_REXW,	1,{ 0x87 } },
 #undef NAME
 
-// !! XLAT/XLATB
+// ----- XLAT/XLATB -----
+	{ CLSTR("xlat"), ENC_ZO, 0, 0, OPF_OPSZ,	1,{ 0xD7 } },
+	{ CLSTR("xlatb"), ENC_ZO, 0, 0, 0,			1,{ 0xD7 } },
+	{ CLSTR("xlatb"), ENC_ZO, 0, 0, OPF_REXW,	1,{ 0xD7 } },
 
 // ----- XOR -----
 #define NAME CLSTR("xor")
