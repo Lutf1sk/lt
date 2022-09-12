@@ -154,11 +154,7 @@ b8 lt_conf_parse(lt_conf_t* cf, lstr_t data) {
 	parse_ctx_t cx;
 	cx.it = data.str;
 	cx.end = data.str + data.len;
-
-	b8 res = parse_obj_body(&cx, cf);
-	if (!res)
-		lt_ferrf("'%S'\n", LSTR(cx.it, 8));
-	return res;
+	return parse_obj_body(&cx, cf);;
 }
 
 lt_conf_t* lt_conf_find(lt_conf_t* parent, lstr_t key) {
