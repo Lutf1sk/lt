@@ -10,6 +10,14 @@ void lt_hashtab_init(lt_hashtab_t* htab) {
 	memset(htab, 0, sizeof(lt_hashtab_t));
 }
 
+void lt_hashtab_free(lt_hashtab_t* htab, lt_alloc_t* alloc) {
+	for (usz i = 0; i < LT_HASHTAB_SIZE; ++i) {
+		if (htab->counts[i] <= 1)
+			continue;
+		lt_mfree(alloc, htab->values[i]);
+	}
+}
+
 void lt_hashtab_insert(lt_hashtab_t* htab, u32 hash, void* val, lt_alloc_t* alloc) {
 	u32 idx = hash & LT_HASHTAB_MASK;
 	usz count = htab->counts[idx];
@@ -22,14 +30,14 @@ void lt_hashtab_insert(lt_hashtab_t* htab, u32 hash, void* val, lt_alloc_t* allo
 	}
 	else if (count == 1) {
 		void* old_val = vals;
-		vals = malloc(LT_HASHTAB_ALLOC_COUNT * sizeof(void*));
+		vals = lt_malloc(alloc, LT_HASHTAB_ALLOC_COUNT * sizeof(void*));
 		LT_ASSERT(vals);
 		vals[0] = old_val;
 
 		htab->values[idx] = vals;
 	}
 	else if (lt_is_pow2(count)) {
-		vals = realloc(vals, (count << 1) * sizeof(void*));
+		vals = lt_mrealloc(alloc, vals, (count << 1) * sizeof(void*));
 		LT_ASSERT(vals);
 
 		htab->values[idx] = vals;

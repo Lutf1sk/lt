@@ -11,6 +11,7 @@ struct lt_hashtab {
 } lt_hashtab_t;
 
 void lt_hashtab_init(lt_hashtab_t* htab);
+void lt_hashtab_free(lt_hashtab_t* htab, lt_alloc_t* alloc);
 
 void lt_hashtab_insert(lt_hashtab_t* htab, u32 hash, void* val, lt_alloc_t* alloc);
 
