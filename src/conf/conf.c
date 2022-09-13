@@ -135,7 +135,6 @@ b8 parse_val(parse_ctx_t* cx, lt_conf_t* cf) {
 		cf->str_val = start;
 		cf->count = cx->it - start - 1;
 		return 1;
-		return 1;
 
 	default:
 		if (lt_is_digit(c)) {
@@ -155,7 +154,7 @@ b8 lt_conf_parse(lt_conf_t* cf, lstr_t data) {
 	parse_ctx_t cx;
 	cx.it = data.str;
 	cx.end = data.str + data.len;
-	return parse_obj_body(&cx, cf);;
+	return parse_obj_body(&cx, cf);
 }
 
 lt_conf_t* lt_conf_find(lt_conf_t* parent, lstr_t key) {
