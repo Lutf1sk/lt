@@ -45,11 +45,10 @@ b8 lt_conf_parse(lt_conf_t* cf, lstr_t data);
 
 lt_conf_t* lt_conf_find(lt_conf_t* parent, lstr_t key);
 
-i64 lt_conf_int(lt_conf_t* cf, i64 default_);
-u64 lt_conf_uint(lt_conf_t* cf, u64 default_);
-f64 lt_conf_float(lt_conf_t* cf, f64 default_);
-b8 lt_conf_bool(lt_conf_t* cf, b8 default_);
-lstr_t lt_conf_str(lt_conf_t* cf, lstr_t default_);
+lt_conf_t* lt_conf_find_int(lt_conf_t* parent, lstr_t key, i64* out);
+lt_conf_t* lt_conf_find_uint(lt_conf_t* parent, lstr_t key, u64* out);
+lt_conf_t* lt_conf_find_bool(lt_conf_t* parent, lstr_t key, b8* out);
+lt_conf_t* lt_conf_find_str(lt_conf_t* parent, lstr_t key, lstr_t* out);
 
 b8 lt_conf_write(lt_conf_t* cf, lt_file_t* file);
 

@@ -125,18 +125,19 @@ b8 parse_val(parse_ctx_t* cx, lt_conf_t* cf) {
 		cf->bool_val = 0;
 		return 1;
 
-	default:
-		if (c == '"') {
-			char* start = cx->it - 1;
-			while (*cx->it++ != '"') {
-				if (cx->it >= cx->end)
-					return 0;
-			}
-			cf->stype = LT_CONF_STRING;
-			cf->str_val = start;
-			cf->count = cx->it - start - 1;
-			return 1;
+	case '"':
+		char* start = cx->it;
+		while (*cx->it++ != '"') {
+			if (cx->it >= cx->end)
+				return 0;
 		}
+		cf->stype = LT_CONF_STRING;
+		cf->str_val = start;
+		cf->count = cx->it - start - 1;
+		return 1;
+		return 1;
+
+	default:
 		if (lt_is_digit(c)) {
 			char* start = cx->it - 1;
 			while (cx->it < cx->end && lt_is_numeric_body(*cx->it))
@@ -168,34 +169,36 @@ lt_conf_t* lt_conf_find(lt_conf_t* parent, lstr_t key) {
 	return NULL;
 }
 
-i64 lt_conf_int(lt_conf_t* cf, i64 default_) {
+lt_conf_t* lt_conf_find_int(lt_conf_t* cf, lstr_t key, i64* out) {
+	cf = lt_conf_find(cf, key);
 	if (!cf || cf->stype != LT_CONF_INT)
-		return default_;
-	return cf->int_val;
+		return NULL;
+	*out = cf->int_val;
+	return cf;
 }
 
-u64 lt_conf_uint(lt_conf_t* cf, u64 default_) {
+lt_conf_t* lt_conf_find_uint(lt_conf_t* cf, lstr_t key, u64* out) {
+	cf = lt_conf_find(cf, key);
 	if (!cf || cf->stype != LT_CONF_INT)
-		return default_;
-	return cf->uint_val;
+		return NULL;
+	*out = cf->uint_val;
+	return cf;
 }
 
-f64 lt_conf_float(lt_conf_t* cf, f64 default_) {
-	if (!cf || cf->stype != LT_CONF_FLOAT)
-		return default_;
-	return cf->float_val;
-}
-
-b8 lt_conf_bool(lt_conf_t* cf, b8 default_) {
+lt_conf_t* lt_conf_find_bool(lt_conf_t* cf, lstr_t key, b8* out) {
+	cf = lt_conf_find(cf, key);
 	if (!cf || cf->stype != LT_CONF_BOOL)
-		return default_;
-	return cf->bool_val;
+		return NULL;
+	*out = cf->bool_val;
+	return cf;
 }
 
-lstr_t lt_conf_str(lt_conf_t* cf, lstr_t default_) {
+lt_conf_t* lt_conf_find_str(lt_conf_t* cf, lstr_t key, lstr_t* out) {
+	cf = lt_conf_find(cf, key);
 	if (!cf || cf->stype != LT_CONF_STRING)
-		return default_;
-	return LSTR(cf->str_val, cf->count);
+		return NULL;
+	*out = LSTR(cf->str_val, cf->count);
+	return cf;
 }
 
 static
