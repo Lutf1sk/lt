@@ -175,6 +175,7 @@ lt_window_t* lt_window_create(lt_window_description_t* desc, lt_alloc_t* alloc) 
 		y = lt_outputs[output].y + lt_outputs[output].h / 2 - h / 2;
 
 	lt_window_t* win = lt_malloc(alloc, sizeof(lt_window_t));
+	memset(win, 0, sizeof(lt_window_t));
 	win->closed = 0;
 	win->fullscreen = 0;
 	win->glctx = NULL;
