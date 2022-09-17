@@ -11,9 +11,38 @@ typedef f32 lt_vec2_t[2];
 typedef f32 lt_vec3_t[3];
 typedef f32 lt_vec4_t[4];
 
+#define LT_VEC2_INIT(x, y) { (x), (y) }
+#define LT_VEC3_INIT(x, y, z) { (x), (y), (z) }
+#define LT_VEC4_INIT(x, y, z, w) { (x), (y), (z), (w) }
+
+#define LT_VEC2(x, y) ((lt_vec2_t){ (x), (y) })
+#define LT_VEC3(x, y, z) ((lt_vec3_t){ (x), (y), (z) })
+#define LT_VEC4(x, y, z, w) ((lt_vec4_t){ (x), (y), (z), (w) })
+
 typedef lt_vec2_t lt_mat2_t[2];
 typedef lt_vec3_t lt_mat3_t[3];
 typedef lt_vec4_t lt_mat4_t[4];
+
+#define LT_MAT2_IDENTITY ((lt_mat2_t)LT_MAT2_IDENTITY_INIT)
+#define LT_MAT2_IDENTITY_INIT { \
+	{ 1.0f, 0.0f }, \
+	{ 0.0f, 1.0f }, \
+}
+
+#define LT_MAT3_IDENTITY ((lt_mat3_t)LT_MAT2_IDENTITY_INIT)
+#define LT_MAT3_IDENTITY_INIT { \
+	{ 1.0f, 0.0f, 0.0f }, \
+	{ 0.0f, 1.0f, 0.0f }, \
+	{ 0.0f, 0.0f, 1.0f }, \
+}
+
+#define LT_MAT4_IDENTITY ((lt_mat4_t)LT_MAT4_IDENTITY_INIT)
+#define LT_MAT4_IDENTITY_INIT { \
+	{ 1.0f, 0.0f, 0.0f, 0.0f }, \
+	{ 0.0f, 1.0f, 0.0f, 0.0f }, \
+	{ 0.0f, 0.0f, 1.0f, 0.0f }, \
+	{ 0.0f, 0.0f, 0.0f, 1.0f }, \
+}
 
 LT_INLINE
 void lt_vec2_copy(lt_vec2_t dst, lt_vec2_t src) { memcpy(dst, src, sizeof(lt_vec2_t)); }
@@ -27,16 +56,6 @@ static
 void lt_vec4_mul_mat4(lt_vec4_t v, lt_mat4_t m, lt_vec4_t dst);
 
 // vec.c
-
-#define LT_VEC2_INIT(x, y) { (x), (y) }
-#define LT_VEC3_INIT(x, y, z) { (x), (y), (z) }
-#define LT_VEC4_INIT(x, y, z, w) { (x), (y), (z), (w) }
-
-#define LT_VEC2(x, y) ((lt_vec2_t){ (x), (y) })
-#define LT_VEC3(x, y, z) ((lt_vec3_t){ (x), (y), (z) })
-#define LT_VEC4(x, y, z, w) ((lt_vec4_t){ (x), (y), (z), (w) })
-
-#include <lt/linalg.h>
 
 // ----- vec2
 
@@ -379,32 +398,11 @@ void lt_mat4_ortho(lt_mat4_t mat, f32 left, f32 right, f32 bottom, f32 top, f32 
 void lt_mat4_view(lt_mat4_t mat, lt_vec3_t pos, lt_vec3_t fwd, lt_vec3_t up);
 void lt_mat4_euler(lt_vec3_t angles, lt_mat4_t dst);
 
-#define LT_MAT2_IDENTITY ((lt_mat2_t)LT_MAT2_IDENTITY_INIT)
-#define LT_MAT2_IDENTITY_INIT { \
-	{ 1.0f, 0.0f }, \
-	{ 0.0f, 1.0f }, \
-}
-
-#define LT_MAT3_IDENTITY ((lt_mat3_t)LT_MAT2_IDENTITY_INIT)
-#define LT_MAT3_IDENTITY_INIT { \
-	{ 1.0f, 0.0f, 0.0f }, \
-	{ 0.0f, 1.0f, 0.0f }, \
-	{ 0.0f, 0.0f, 1.0f }, \
-}
-
-#define LT_MAT4_IDENTITY ((lt_mat4_t)LT_MAT4_IDENTITY_INIT)
-#define LT_MAT4_IDENTITY_INIT { \
-	{ 1.0f, 0.0f, 0.0f, 0.0f }, \
-	{ 0.0f, 1.0f, 0.0f, 0.0f }, \
-	{ 0.0f, 0.0f, 1.0f, 0.0f }, \
-	{ 0.0f, 0.0f, 0.0f, 1.0f }, \
-}
-
-LT_INLINE
+static LT_INLINE
 void lt_mat2_copy(lt_mat2_t dst, lt_mat2_t src) { memcpy(dst, src, sizeof(lt_mat2_t)); }
-LT_INLINE
+static LT_INLINE
 void lt_mat3_copy(lt_mat3_t dst, lt_mat3_t src) { memcpy(dst, src, sizeof(lt_mat3_t)); }
-LT_INLINE
+static LT_INLINE
 void lt_mat4_copy(lt_mat4_t dst, lt_mat4_t src) { memcpy(dst, src, sizeof(lt_mat4_t)); }
 
 #endif
