@@ -4,27 +4,6 @@
 
 #include <math.h>
 
-// ----- mat2
-
-void lt_mat2_identity(lt_mat2_t mat) {
-	static lt_mat2_t src = LT_MAT2_IDENTITY_INIT;
-	memcpy(mat, &src, sizeof(lt_mat2_t));
-}
-
-// ----- mat3
-
-void lt_mat3_identity(lt_mat3_t mat) {
-	static lt_mat3_t src = LT_MAT3_IDENTITY_INIT;
-	memcpy(mat, &src, sizeof(lt_mat3_t));
-}
-
-// ----- mat4
-
-void lt_mat4_identity(lt_mat4_t mat) {
-	static lt_mat4_t src = LT_MAT4_IDENTITY_INIT;
-	memcpy(mat, &src, sizeof(lt_mat4_t));
-}
-
 void lt_mat4_perspective(lt_mat4_t mat, f32 fov, f32 aspect, f32 near, f32 far) {
 	memset(mat, 0, sizeof(lt_mat4_t));
 

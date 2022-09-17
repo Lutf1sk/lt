@@ -5,6 +5,8 @@
 #include <lt/mem.h>
 #include <lt/lt.h>
 
+#include <math.h>
+
 typedef f32 lt_vec2_t[2];
 typedef f32 lt_vec3_t[3];
 typedef f32 lt_vec4_t[4];
@@ -38,15 +40,53 @@ void lt_vec4_mul_mat4(lt_vec4_t v, lt_mat4_t m, lt_vec4_t dst);
 
 // ----- vec2
 
-void lt_vec2_add(lt_vec2_t a, lt_vec2_t b, lt_vec2_t dst);
-void lt_vec2_sub(lt_vec2_t a, lt_vec2_t b, lt_vec2_t dst);
-void lt_vec2_div(lt_vec2_t a, lt_vec2_t b, lt_vec2_t dst);
-void lt_vec2_mul(lt_vec2_t a, lt_vec2_t b, lt_vec2_t dst);
+static LT_INLINE
+void lt_vec2_add(lt_vec2_t a, lt_vec2_t b, lt_vec2_t dst) {
+	dst[0] = a[0] + b[0];
+	dst[1] = a[1] + b[1];
+}
 
-void lt_vec2_add_f(lt_vec2_t v, float f, lt_vec2_t dst);
-void lt_vec2_sub_f(lt_vec2_t v, float f, lt_vec2_t dst);
-void lt_vec2_div_f(lt_vec2_t v, float f, lt_vec2_t dst);
-void lt_vec2_mul_f(lt_vec2_t v, float f, lt_vec2_t dst);
+static LT_INLINE
+void lt_vec2_sub(lt_vec2_t a, lt_vec2_t b, lt_vec2_t dst) {
+	dst[0] = a[0] - b[0];
+	dst[1] = a[1] - b[1];
+}
+
+static LT_INLINE
+void lt_vec2_div(lt_vec2_t a, lt_vec2_t b, lt_vec2_t dst) {
+	dst[0] = a[0] / b[0];
+	dst[1] = a[1] / b[1];
+}
+
+static LT_INLINE
+void lt_vec2_mul(lt_vec2_t a, lt_vec2_t b, lt_vec2_t dst) {
+	dst[0] = a[0] * b[0];
+	dst[1] = a[1] * b[1];
+}
+
+static LT_INLINE
+void lt_vec2_add_f(lt_vec2_t v, float f, lt_vec2_t dst) {
+	dst[0] = v[0] + f;
+	dst[1] = v[1] + f;
+}
+
+static LT_INLINE
+void lt_vec2_sub_f(lt_vec2_t v, float f, lt_vec2_t dst) {
+	dst[0] = v[0] - f;
+	dst[1] = v[1] - f;
+}
+
+static LT_INLINE
+void lt_vec2_div_f(lt_vec2_t v, float f, lt_vec2_t dst) {
+	dst[0] = v[0] / f;
+	dst[1] = v[1] / f;
+}
+
+static LT_INLINE
+void lt_vec2_mul_f(lt_vec2_t v, float f, lt_vec2_t dst) {
+	dst[0] = v[0] * f;
+	dst[1] = v[1] * f;
+}
 
 static LT_INLINE
 void lt_vec2_mul_mat2(lt_vec2_t v, lt_mat2_t m, lt_vec2_t dst) {
@@ -57,9 +97,20 @@ void lt_vec2_mul_mat2(lt_vec2_t v, lt_mat2_t m, lt_vec2_t dst) {
 	lt_vec2_copy(dst, tmp);
 }
 
-f32 lt_vec2_magnitude(lt_vec2_t v);
+static LT_INLINE
+f32 lt_vec2_magnitude(lt_vec2_t v) {
+	return sqrt(v[0] * v[0] + v[1] * v[1]);
+}
 
-void lt_vec2_normalize(lt_vec2_t v);
+static LT_INLINE
+void lt_vec2_normalize(lt_vec2_t v) {
+	f32 m = lt_vec2_magnitude(v);
+
+	if (m == 0.0f)
+		v[0] = 0.0f, v[1] = 0.0f;
+	else
+		lt_vec2_mul_f(v, 1.0f / m, v);
+}
 
 // ----- vec3
 
@@ -158,7 +209,14 @@ void lt_vec3_normalize(lt_vec3_t v) {
 		lt_vec3_mul_f(v, 1.0f / m, v);
 }
 
-void lt_vec3_cross(lt_vec3_t a, lt_vec3_t b, lt_vec3_t dst);
+static LT_INLINE
+void lt_vec3_cross(lt_vec3_t a, lt_vec3_t b, lt_vec3_t dst) {
+	lt_vec3_t tmp;
+	tmp[0] = a[1] * b[2] - a[2] * b[1];
+	tmp[1] = a[2] * b[0] - a[0] * b[2];
+	tmp[2] = a[0] * b[1] - a[1] * b[0];
+	lt_vec3_copy(dst, tmp);
+}
 
 static LT_INLINE
 void lt_vec3_rotate(lt_vec3_t v, float angle, lt_vec3_t axis) {
@@ -181,15 +239,69 @@ void lt_vec3_rotate(lt_vec3_t v, float angle, lt_vec3_t axis) {
 
 // ----- vec4
 
-void lt_vec4_add(lt_vec4_t a, lt_vec4_t b, lt_vec4_t dst);
-void lt_vec4_sub(lt_vec4_t a, lt_vec4_t b, lt_vec4_t dst);
-void lt_vec4_div(lt_vec4_t a, lt_vec4_t b, lt_vec4_t dst);
-void lt_vec4_mul(lt_vec4_t a, lt_vec4_t b, lt_vec4_t dst);
+static LT_INLINE
+void lt_vec4_add(lt_vec4_t a, lt_vec4_t b, lt_vec4_t dst) {
+	dst[0] = a[0] + b[0];
+	dst[1] = a[1] + b[1];
+	dst[2] = a[2] + b[2];
+	dst[3] = a[3] + b[3];
+}
 
-void lt_vec4_add_f(lt_vec4_t v, float f, lt_vec4_t dst);
-void lt_vec4_sub_f(lt_vec4_t v, float f, lt_vec4_t dst);
-void lt_vec4_div_f(lt_vec4_t v, float f, lt_vec4_t dst);
-void lt_vec4_mul_f(lt_vec4_t v, float f, lt_vec4_t dst);
+static LT_INLINE
+void lt_vec4_sub(lt_vec4_t a, lt_vec4_t b, lt_vec4_t dst) {
+	dst[0] = a[0] - b[0];
+	dst[1] = a[1] - b[1];
+	dst[2] = a[2] - b[2];
+	dst[3] = a[3] - b[3];
+}
+
+static LT_INLINE
+void lt_vec4_div(lt_vec4_t a, lt_vec4_t b, lt_vec4_t dst) {
+	dst[0] = a[0] / b[0];
+	dst[1] = a[1] / b[1];
+	dst[2] = a[2] / b[2];
+	dst[3] = a[3] / b[3];
+}
+
+static LT_INLINE
+void lt_vec4_mul(lt_vec4_t a, lt_vec4_t b, lt_vec4_t dst) {
+	dst[0] = a[0] * b[0];
+	dst[1] = a[1] * b[1];
+	dst[2] = a[2] * b[2];
+	dst[3] = a[3] * b[3];
+}
+
+static LT_INLINE
+void lt_vec4_add_f(lt_vec4_t v, float f, lt_vec4_t dst) {
+	dst[0] = v[0] + f;
+	dst[1] = v[1] + f;
+	dst[2] = v[2] + f;
+	dst[3] = v[3] + f;
+}
+
+static LT_INLINE
+void lt_vec4_sub_f(lt_vec4_t v, float f, lt_vec4_t dst) {
+	dst[0] = v[0] - f;
+	dst[1] = v[1] - f;
+	dst[2] = v[2] - f;
+	dst[3] = v[3] - f;
+}
+
+static LT_INLINE
+void lt_vec4_div_f(lt_vec4_t v, float f, lt_vec4_t dst) {
+	dst[0] = v[0] / f;
+	dst[1] = v[1] / f;
+	dst[2] = v[2] / f;
+	dst[3] = v[3] / f;
+}
+
+static LT_INLINE
+void lt_vec4_mul_f(lt_vec4_t v, float f, lt_vec4_t dst) {
+	dst[0] = v[0] * f;
+	dst[1] = v[1] * f;
+	dst[2] = v[2] * f;
+	dst[3] = v[3] * f;
+}
 
 static LT_INLINE
 void lt_vec4_mul_mat4(lt_vec4_t v, lt_mat4_t m, lt_vec4_t dst) {
@@ -202,15 +314,43 @@ void lt_vec4_mul_mat4(lt_vec4_t v, lt_mat4_t m, lt_vec4_t dst) {
 	lt_vec4_copy(dst, tmp);
 }
 
-f32 lt_vec4_magnitude(lt_vec4_t v);
+static LT_INLINE
+f32 lt_vec4_magnitude(lt_vec4_t v) {
+	float h = sqrt(v[0] * v[0] + v[1] * v[1]);
+	float h2 = sqrt(v[2] * v[2] + h * h);
+	return sqrt(v[3] * v[3] + h2 * h2);
+}
 
-void lt_vec4_normalize(lt_vec4_t v);
+static LT_INLINE
+void lt_vec4_normalize(lt_vec4_t v) {
+	f32 m = lt_vec4_magnitude(v);
+
+	if (m == 0.0f)
+		v[0] = 0.0f, v[1] = 0.0f, v[2] = 0.0f, v[3] = 0.0f;
+	else
+		lt_vec4_mul_f(v, 1.0f / m, v);
+}
+
 
 // matrix.c
 
-void lt_mat2_identity(lt_mat2_t mat);
-void lt_mat3_identity(lt_mat3_t mat);
-void lt_mat4_identity(lt_mat4_t mat);
+static LT_INLINE
+void lt_mat2_identity(lt_mat2_t mat) {
+	static lt_mat2_t src = LT_MAT2_IDENTITY_INIT;
+	memcpy(mat, &src, sizeof(lt_mat2_t));
+}
+
+static LT_INLINE
+void lt_mat3_identity(lt_mat3_t mat) {
+	static lt_mat3_t src = LT_MAT3_IDENTITY_INIT;
+	memcpy(mat, &src, sizeof(lt_mat3_t));
+}
+
+static LT_INLINE
+void lt_mat4_identity(lt_mat4_t mat) {
+	static lt_mat4_t src = LT_MAT4_IDENTITY_INIT;
+	memcpy(mat, &src, sizeof(lt_mat4_t));
+}
 
 static LT_INLINE
 void lt_mat2_mul(lt_mat2_t m1, lt_mat2_t m2, lt_mat2_t dst) {
