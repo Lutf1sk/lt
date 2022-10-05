@@ -75,7 +75,7 @@ void* lt_amrealloc(lt_arena_t* arena, void* ptr, usz new_size) {
 		if (new_top > arena->base + arena->size)
 			return NULL;
 		*psize = new_size;
-		arena->top = psize;
+		arena->top = new_top;
 		return ptr;
 	}
 
