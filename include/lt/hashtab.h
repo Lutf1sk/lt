@@ -20,7 +20,7 @@ void lt_hashtab_insert(lt_hashtab_t* htab, u32 hash, void* val, lt_alloc_t* allo
 	usz _count = (htab)->counts[_idx]; \
 	void** _vals = (htab)->values[_idx]; \
 	if (_count == 1) { \
-		(it) = (void*)_vals; \
+		it = (void*)_vals; \
 		if (cond) \
 			return (void*)_vals; \
 		return NULL; \
@@ -28,7 +28,7 @@ void lt_hashtab_insert(lt_hashtab_t* htab, u32 hash, void* val, lt_alloc_t* allo
 	\
 	for (usz _i = 0; _i < _count; ++_i) { \
 		void* _val = _vals[_i]; \
-		(it) = _val; \
+		it = _val; \
 		if (cond) \
 			return (void*)_val; \
 	} \
