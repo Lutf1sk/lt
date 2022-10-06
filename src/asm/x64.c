@@ -87,7 +87,7 @@ usz parse_mod00_sib(lt_instr_stream_t* stream, u8 rex) {
 		u32 dsp = 0;
 		if (!lt_instr_stream_consume(stream, &dsp, 4))
 			return 0;
-		return lt_io_printf(stream->callb, stream->usr, "[0x%hd]", dsp);;
+		return lt_io_printf(stream->callb, stream->usr, "[0x%hq]", dsp);;
 	}
 	if (base == REG_BP) {
 		i64 dsp = 0;
