@@ -546,7 +546,7 @@ lt_x64_op_t ops[] = {
 #undef NAME
 
 // ----- LEAVE -----
-	{ CLSTR("leave"), ENC_ZO, 0, 0, OPF_REXW, 1,{ 0xC9 } },
+	{ CLSTR("leave"), ENC_ZO, 0, 0, 0, 1,{ 0xC9 } },
 
 // ----- LGDT/LIDT -----
 	{ CLSTR("lgdt"), ENC_M, OSZ1(SZ_8), 2, OPF_OPXT, 1,{ 0x0F, 0x01 } },
