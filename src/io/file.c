@@ -145,11 +145,11 @@ usz lt_file_size(lt_file_t* file) {
 	return file->size;
 }
 
-isz lt_file_vprintf(lt_file_t* file, char* fmt, va_list argl) {
+isz lt_vfprintf(lt_file_t* file, char* fmt, va_list argl) {
 	return lt_io_vprintf((lt_io_callback_t)lt_file_write, file, fmt, argl);
 }
 
-isz lt_file_printf(lt_file_t* file, char* fmt, ...) {
+isz lt_fprintf(lt_file_t* file, char* fmt, ...) {
 	va_list argl;
 	va_start(argl, fmt);
 	isz bytes = lt_io_vprintf((lt_io_callback_t)lt_file_write, file, fmt, argl);

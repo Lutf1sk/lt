@@ -14,6 +14,8 @@ extern lt_file_t* lt_stderr;
 extern lt_file_t* lt_stdin;
 
 // fmt.c
+isz lt_io_dummy_callb(void* usr, void* data, usz len);
+
 isz lt_io_vprintf(lt_io_callback_t callb, void* usr, char* fmt, va_list argl);
 isz lt_io_printf(lt_io_callback_t callb, void* usr, char* fmt, ...);
 
@@ -40,8 +42,8 @@ isz lt_file_write(lt_file_t* file, void* data, usz size);
 
 usz lt_file_size(lt_file_t* file);
 
-isz lt_file_vprintf(lt_file_t* file, char* fmt, va_list args);
-isz lt_file_printf(lt_file_t* file, char* fmt, ...);
+isz lt_vfprintf(lt_file_t* file, char* fmt, va_list args);
+isz lt_fprintf(lt_file_t* file, char* fmt, ...);
 
 // cli.c
 isz lt_printf(char* fmt, ...);
@@ -49,7 +51,14 @@ isz lt_printf(char* fmt, ...);
 // str.c
 isz lt_str_io_callb(char** str, void* data, usz len);
 
-isz lt_str_vprintf(char* str, char* fmt, va_list args);
-isz lt_str_printf(char* str, char* fmt, ...);
+isz lt_vsprintf(char* str, char* fmt, va_list args);
+isz lt_sprintf(char* str, char* fmt, ...);
+
+// alloc.c
+typedef struct lt_io_alloc_ctx lt_io_alloc_ctx_t;
+isz lt_alloc_io_callb(lt_io_alloc_ctx_t* cx, void* data, usz len);
+
+isz lt_vaprintf(lstr_t* out, lt_alloc_t* alc, char* fmt, va_list args);
+isz lt_aprintf(lstr_t* out, lt_alloc_t* alc, char* fmt, ...);
 
 #endif

@@ -17,6 +17,7 @@ OBJS = \
 	src/img/bmp.o \
 	src/img/img.o \
 	src/img/tga.o \
+	src/io/alloc.o \
 	src/io/cli.o \
 	src/io/file.o \
 	src/io/fmt.o \

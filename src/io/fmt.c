@@ -1,6 +1,10 @@
 #include <lt/io.h>
 // #include <lt/mem.h>
 
+isz lt_io_dummy_callb(void* usr, void* data, usz len) {
+	return len;
+}
+
 static LT_FLATTEN LT_INLINE
 isz lt_io_printuq(lt_io_callback_t callb, void* usr, u64 n) {
 	char buf[32], *end = buf + sizeof(buf) - 1, *it = end;
