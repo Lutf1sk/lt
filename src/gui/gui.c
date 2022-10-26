@@ -2,7 +2,8 @@
 #include <lt/mem.h>
 #include <lt/str.h>
 
-lt_gui_style_t lt_gui_default_style = {
+static
+lt_gui_style_t lt_gui_default_style_ = {
 	.panel_bg_clr = 0xFF282828,
 	.panel_border_clr = 0xFF404040,
 
@@ -18,6 +19,8 @@ lt_gui_style_t lt_gui_default_style = {
 	.spacing = 2,
 	.border = 1,
 };
+
+lt_gui_style_t* lt_gui_default_style = &lt_gui_default_style_;
 
 static
 b8 is_hovered(lt_gui_ctx_t* cx, lt_gui_rect_t* r) {
