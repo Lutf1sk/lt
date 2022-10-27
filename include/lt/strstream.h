@@ -21,4 +21,9 @@ b8 lt_strstream_writels(lt_strstream_t* s, lstr_t str) {
 	return lt_strstream_write(s, str.str, str.len);
 }
 
+LT_INLINE
+b8 lt_strstream_writec(lt_strstream_t* s, char c) {
+	return lt_strstream_write(s, &c, 1);
+}
+
 #endif
