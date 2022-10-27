@@ -35,7 +35,13 @@ int lt_perms_to_posix(lt_file_perms_t perms) {
 
 #endif
 
-lt_file_t* lt_file_open(char* path, lt_file_mode_t mode, lt_file_perms_t perms, lt_alloc_t* alloc) {
+lt_file_t* lt_file_open(lstr_t path_, lt_file_mode_t mode, lt_file_perms_t perms, lt_alloc_t* alloc) {
+	if (path_.len > LT_PATH_MAX)
+		return 0;
+	char path[LT_PATH_MAX + 1];
+	memcpy(path, path_.str, path_.len);
+	path[path_.len] = 0;
+
 #if defined(LT_UNIX)
 	mode_t posix_mode = lt_perms_to_posix(perms);
 	if (mode == LT_FILE_W)
@@ -85,7 +91,7 @@ lt_file_t* lt_file_open(char* path, lt_file_mode_t mode, lt_file_perms_t perms, 
 #endif
 }
 
-b8 lt_file_read_entire(char* path, lstr_t* out, lt_alloc_t* alloc) {
+b8 lt_file_read_entire(lstr_t path, lstr_t* out, lt_alloc_t* alloc) {
 	lt_file_t* file = lt_file_open(path, LT_FILE_R, 0, alloc);
 	if (!file)
 		return 0;

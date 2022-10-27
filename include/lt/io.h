@@ -34,10 +34,10 @@ enum lt_file_perms {
 	LT_FILE_PERMIT_X,
 } lt_file_perms_t;
 
-lt_file_t* lt_file_open(char* path, lt_file_mode_t access, lt_file_perms_t perms, lt_alloc_t* alloc);
+lt_file_t* lt_file_open(lstr_t path, lt_file_mode_t access, lt_file_perms_t perms, lt_alloc_t* alloc);
 void lt_file_close(lt_file_t* file, lt_alloc_t* alloc);
 
-b8 lt_file_read_entire(char* path, lstr_t* out, lt_alloc_t* alloc);
+b8 lt_file_read_entire(lstr_t path, lstr_t* out, lt_alloc_t* alloc);
 
 isz lt_file_read(lt_file_t* file, void* data, usz size);
 isz lt_file_write(lt_file_t* file, void* data, usz size);
