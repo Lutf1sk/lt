@@ -20,6 +20,8 @@ isz lt_io_vprintf(lt_io_callback_t callb, void* usr, char* fmt, va_list argl);
 isz lt_io_printf(lt_io_callback_t callb, void* usr, char* fmt, ...);
 
 // file.c
+#define LT_PATH_MAX 512
+
 typedef
 enum lt_file_mode {
 	LT_FILE_R,
