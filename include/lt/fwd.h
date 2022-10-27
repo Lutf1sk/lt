@@ -39,4 +39,7 @@ typedef struct lt_gui_point lt_gui_point_t;
 // hashtab.h
 typedef struct lt_hashtab lt_hashtab_t;
 
+// strstream.h
+typedef struct lt_strstream lt_strstream_t;
+
 #endif
