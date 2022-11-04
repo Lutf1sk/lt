@@ -7,6 +7,7 @@ OBJS = \
 	src/base64/base64.o \
 	src/conf/conf.o \
 	src/ctype/ctype.o \
+	src/darr/darr.o \
 	src/elf/elf.o \
 	src/font/font.o \
 	src/font/psf.o \
