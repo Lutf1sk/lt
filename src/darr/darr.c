@@ -1,8 +1,6 @@
 #include <lt/darr.h>
 #include <lt/mem.h>
 
-#include <stdarg.h>
-
 void* lt_darr_create_(usz elem_size, usz initial_count, lt_alloc_t* alloc) {
 	LT_ASSERT(elem_size && initial_count);
 
@@ -36,6 +34,38 @@ void* lt_darr_make_space(void* arr, usz count) {
 		arr = (u8*)head + LT_DARR_ALIGNED_SIZE;
 		LT_ASSERT(arr);
 	}
+	return arr;
+}
+
+void lt_darr_erase(void* arr, usz start_idx, usz count) {
+	lt_darr_t* head = lt_darr_head(arr);
+	LT_ASSERT(start_idx < head->count && start_idx + count <= head->count);
+
+	void* start_ptr = (u8*)arr + start_idx * head->elem_size;
+	void* end_ptr = (u8*)start_ptr + count * head->elem_size;
+	void* arr_end_ptr = (u8*)arr + head->count * head->elem_size;
+
+	memmove(start_ptr, end_ptr, arr_end_ptr - end_ptr);
+
+	head->count -= count;
+}
+
+void* lt_darr_insert_(void* arr, usz idx, void* data, usz count) {
+	lt_darr_t* head = lt_darr_head(arr);
+	LT_ASSERT(idx <= head->count);
+
+	usz old_count = head->count;
+	arr = lt_darr_make_space(arr, count);
+	head = lt_darr_head(arr);
+
+	usz size = count * head->elem_size;
+	void* start_ptr = (u8*)arr + idx * head->elem_size;
+	void* end_ptr = (u8*)start_ptr + size;
+	void* arr_end_ptr = (u8*)arr + old_count * head->elem_size;
+
+	memmove(end_ptr, start_ptr, arr_end_ptr - start_ptr);
+	memcpy(start_ptr, data, size);
+
 	return arr;
 }
 

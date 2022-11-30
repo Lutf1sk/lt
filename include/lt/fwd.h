@@ -42,4 +42,7 @@ typedef struct lt_hashtab lt_hashtab_t;
 // strstream.h
 typedef struct lt_strstream lt_strstream_t;
 
+// darr.h
+#define lt_darr(T) T*
+
 #endif

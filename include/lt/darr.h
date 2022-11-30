@@ -31,4 +31,9 @@ void lt_darr_pop(void* arr) {
 	lt_darr_head(arr)->count--;
 }
 
+void lt_darr_erase(void* arr, usz start_idx, usz count);
+
+void* lt_darr_insert_(void* arr, usz idx, void* data, usz count);
+#define lt_darr_insert(arr, idx, data, count) ((arr) = lt_darr_insert_((arr), (idx), (data), (count)))
+
 #endif
