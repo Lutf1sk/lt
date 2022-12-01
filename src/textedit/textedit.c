@@ -67,6 +67,10 @@ b8 lt_lineedit_create(lt_lineedit_t* ed, lt_alloc_t* alloc) {
 	return ed->str != NULL;
 }
 
+void lt_lineedit_destroy(lt_lineedit_t* ed) {
+	lt_darr_destroy(ed->str);
+}
+
 void lt_lineedit_input_str(lt_lineedit_t* ed, lstr_t str) {
 	lt_darr_insert(ed->str, ed->cursor_pos, str.str, str.len);
 	ed->cursor_pos += str.len;
@@ -162,6 +166,12 @@ b8 lt_textedit_create(lt_textedit_t* ed, lt_alloc_t* alloc) {
 	ed->lines = lt_darr_create(lt_lineedit_t, 16, alloc);
 	lt_darr_push(ed->lines, first_line);
 	return ed->lines != NULL;
+}
+
+void lt_textedit_destroy(lt_textedit_t* ed) {
+	for (usz i = 0; i < lt_darr_count(ed->lines); ++i)
+		lt_darr_destroy(ed->lines[i].str);
+	lt_darr_destroy(ed->lines);
 }
 
 isz lt_textedit_write_contents(lt_textedit_t* ed, void* usr, lt_io_callback_t callb) {
