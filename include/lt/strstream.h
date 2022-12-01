@@ -12,7 +12,7 @@ struct lt_strstream {
 } lt_strstream_t;
 
 b8 lt_strstream_create(lt_strstream_t* s, lt_alloc_t* alc);
-void lt_strstream_destroy(lt_strstream_t* s, lt_alloc_t* alc);
+void lt_strstream_destroy(lt_strstream_t* s);
 
 isz lt_strstream_write(lt_strstream_t* s, void* data, usz size);
 
