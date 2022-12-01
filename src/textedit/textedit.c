@@ -72,8 +72,18 @@ void lt_lineedit_destroy(lt_lineedit_t* ed) {
 }
 
 void lt_lineedit_input_str(lt_lineedit_t* ed, lstr_t str) {
-	lt_darr_insert(ed->str, ed->cursor_pos, str.str, str.len);
-	ed->cursor_pos += str.len;
+	char* it = str.str;
+	char* end = str.str + str.len;
+	while (it < end) {
+		if ((u8)*it < 0x20) { // Ignore control characters
+			++it;
+			continue;
+		}
+		usz len = lt_utf8_decode_len(*it);
+		lt_darr_insert(ed->str, ed->cursor_pos, it, len);
+		ed->cursor_pos += len;
+		it += len;
+	}
 }
 
 void lt_lineedit_cursor_left(lt_lineedit_t* ed) {
@@ -152,6 +162,26 @@ void merge_fwd(lt_textedit_t* ed) {
 }
 
 static
+void newline(lt_textedit_t* ed, usz posy) {
+	lt_lineedit_t new_line;
+	LT_ASSERT(lt_lineedit_create(&new_line, lt_darr_head(ed->lines)->alloc));
+	lt_darr_insert(ed->lines, posy, &new_line, 1);
+}
+
+static
+void split(lt_textedit_t* ed, usz posy, usz posx) {
+	usz src_idx = posy;
+	usz dst_idx = posy + 1;
+
+	newline(ed, dst_idx);
+
+	char* move_start_src = &ed->lines[src_idx].str[posx];
+	usz move_count = lt_darr_count(ed->lines[src_idx].str) - posx;
+	lt_darr_insert(ed->lines[dst_idx].str, 0, move_start_src, move_count);
+	lt_darr_erase(ed->lines[src_idx].str, posx, move_count);
+}
+
+static
 void sync_tx(lt_textedit_t* ed) {
 	ed->target_x = ed->lines[ed->cursor_pos].cursor_pos;
 }
@@ -191,7 +221,18 @@ isz lt_textedit_write_contents(lt_textedit_t* ed, void* usr, lt_io_callback_t ca
 }
 
 void lt_textedit_input_str(lt_textedit_t* ed, lstr_t str) {
-	lt_lineedit_input_str(&ed->lines[ed->cursor_pos], str);
+	char* it = str.str;
+	char* end = str.str + str.len;
+	while (it < end) {
+		if (*it == '\n') {
+			newline(ed, ++ed->cursor_pos);
+			++it;
+			continue;
+		}
+		usz len = lt_utf8_decode_len(*it);
+		lt_lineedit_input_str(&ed->lines[ed->cursor_pos], LSTR(it, len));
+		it += len;
+	}
 	sync_tx(ed);
 }
 
@@ -336,21 +377,8 @@ void lt_textedit_delete_word_fwd(lt_textedit_t* ed) {
 }
 
 void lt_textedit_break_line(lt_textedit_t* ed) {
-	usz src_idx = ed->cursor_pos;
-	usz dst_idx = ed->cursor_pos + 1;
-
-	lt_lineedit_t new_line;
-	LT_ASSERT(lt_lineedit_create(&new_line, lt_darr_head(ed->lines)->alloc));
-	lt_darr_insert(ed->lines, dst_idx, &new_line, 1);
-
-	usz move_start_idx = ed->lines[src_idx].cursor_pos;
-	char* move_start_src = &ed->lines[src_idx].str[move_start_idx];
-	usz move_count = lt_darr_count(ed->lines[src_idx].str) - move_start_idx;
-	lt_darr_insert(ed->lines[dst_idx].str, 0, move_start_src, move_count);
-	lt_darr_erase(ed->lines[src_idx].str, move_start_idx, move_count);
-
-	ed->cursor_pos = dst_idx;
-	ed->lines[dst_idx].cursor_pos = 0;
+	split(ed, ed->cursor_pos, ed->lines[ed->cursor_pos].cursor_pos);
+	ed->lines[++ed->cursor_pos].cursor_pos = 0;
 
 	sync_tx(ed);
 }
