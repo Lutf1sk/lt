@@ -66,3 +66,14 @@ usz lt_utf8_decode_len(char v) {
 		return 1;
 }
 
+usz lt_utf8_glyph_count(lstr_t str) {
+	usz count = 0;
+	char* it = str.str;
+	char* end = str.str + str.len;
+	while (it < end) {
+		it += lt_utf8_decode_len(*it);
+		++count;
+	}
+	return count;
+}
+
