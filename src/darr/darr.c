@@ -39,7 +39,7 @@ void* lt_darr_make_space(void* arr, usz count) {
 
 void lt_darr_erase(void* arr, usz start_idx, usz count) {
 	lt_darr_t* head = lt_darr_head(arr);
-	LT_ASSERT(start_idx < head->count && start_idx + count <= head->count);
+	LT_ASSERT(start_idx <= head->count && start_idx + count <= head->count);
 
 	void* start_ptr = (u8*)arr + start_idx * head->elem_size;
 	void* end_ptr = (u8*)start_ptr + count * head->elem_size;
