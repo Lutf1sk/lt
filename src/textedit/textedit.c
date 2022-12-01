@@ -73,13 +73,17 @@ void lt_lineedit_input_str(lt_lineedit_t* ed, lstr_t str) {
 }
 
 void lt_lineedit_cursor_left(lt_lineedit_t* ed) {
-	if (ed->cursor_pos > 0)
+	if (ed->cursor_pos > 0) {
 		--ed->cursor_pos;
+		// Skip extending UTF-8 bytes
+		while (ed->cursor_pos > 0 && (ed->str[ed->cursor_pos] & 0xC0) == 0x80)
+			--ed->cursor_pos;
+	}
 }
 
 void lt_lineedit_cursor_right(lt_lineedit_t* ed) {
 	if (ed->cursor_pos < lt_darr_count(ed->str))
-		++ed->cursor_pos;
+		lt_lineedit_gotox(ed, ed->cursor_pos + lt_utf8_decode_len(ed->str[ed->cursor_pos]));
 }
 
 void lt_lineedit_step_left(lt_lineedit_t* ed) {
@@ -91,13 +95,18 @@ void lt_lineedit_step_right(lt_lineedit_t* ed) {
 }
 
 void lt_lineedit_delete_bwd(lt_lineedit_t* ed) {
-	if (ed->cursor_pos > 0)
-		lt_darr_erase(ed->str, --ed->cursor_pos, 1);
+	if (ed->cursor_pos > 0) {
+		usz start_pos = ed->cursor_pos--;
+		while (ed->cursor_pos > 0 && (ed->str[ed->cursor_pos] & 0xC0) == 0x80)
+			--ed->cursor_pos;
+
+		lt_darr_erase(ed->str, ed->cursor_pos, start_pos - ed->cursor_pos);
+	}
 }
 
 void lt_lineedit_delete_fwd(lt_lineedit_t* ed) {
 	if (ed->cursor_pos < lt_darr_count(ed->str))
-		lt_darr_erase(ed->str, ed->cursor_pos, 1);
+		lt_darr_erase(ed->str, ed->cursor_pos, lt_utf8_decode_len(ed->str[ed->cursor_pos]));
 }
 
 void lt_lineedit_delete_word_bwd(lt_lineedit_t* ed) {
