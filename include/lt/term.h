@@ -67,6 +67,8 @@ enum lt_term_key {
 	LT_TERM_KEY_MB3_DN	= 0x08000054,
 	LT_TERM_KEY_MB3_UP	= 0x08000055,
 	LT_TERM_KEY_MPOS	= 0x08000056,
+
+	LT_TERM_KEY_SPECIAL_BIT = 0x08000000,
 } lt_term_key;
 
 extern u32 lt_term_width, lt_term_height;
