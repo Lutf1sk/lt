@@ -16,9 +16,9 @@ void lt_strstream_destroy(lt_strstream_t* s, lt_alloc_t* alc) {
 		lt_mfree(alc, s->str.str);
 }
 
-b8 lt_strstream_write(lt_strstream_t* s, void* data, usz size) {
+isz lt_strstream_write(lt_strstream_t* s, void* data, usz size) {
 	if (!size)
-		return 1;
+		return size;
 
 	if (s->str.len + size > s->asize) {
 		while (s->str.len + size > s->asize)
@@ -26,11 +26,11 @@ b8 lt_strstream_write(lt_strstream_t* s, void* data, usz size) {
 
 		s->str.str = lt_mrealloc(s->alloc, s->str.str, s->asize); // !!
 		if (!s->str.str)
-			return 0;
+			return -1;
 	}
 
 	memcpy(s->str.str + s->str.len, data, size);
 	s->str.len += size;
-	return 1;
+	return size;
 }
 
