@@ -46,6 +46,23 @@ XPFN_DEF(xcb_void_cookie_t, xcb_poly_fill_rectangle, (xcb_connection_t*, xcb_dra
 XPFN_DEF(xcb_intern_atom_cookie_t, xcb_intern_atom, (xcb_connection_t*, u8, u16, char*));
 XPFN_DEF(xcb_intern_atom_reply_t*, xcb_intern_atom_reply, (xcb_connection_t*, xcb_intern_atom_cookie_t, xcb_generic_error_t**));
 
+XPFN_DEF(xcb_void_cookie_t, xcb_convert_selection, (xcb_connection_t*, xcb_window_t, xcb_atom_t, xcb_atom_t, xcb_atom_t, xcb_timestamp_t));
+
+XPFN_DEF(xcb_get_selection_owner_cookie_t, xcb_get_selection_owner, (xcb_connection_t*, xcb_atom_t));
+XPFN_DEF(xcb_get_selection_owner_reply_t*, xcb_get_selection_owner_reply,
+		(xcb_connection_t*, xcb_get_selection_owner_cookie_t, xcb_generic_error_t**));
+XPFN_DEF(xcb_void_cookie_t, xcb_set_selection_owner, (xcb_connection_t*, xcb_window_t, xcb_atom_t, xcb_timestamp_t));
+
+XPFN_DEF(xcb_get_property_cookie_t, xcb_get_property, (xcb_connection_t*, u8, xcb_window_t, xcb_atom_t, xcb_atom_t, u32, u32));
+XPFN_DEF(xcb_get_property_reply_t*, xcb_get_property_reply, (xcb_connection_t*, xcb_get_property_cookie_t, xcb_generic_error_t**));
+XPFN_DEF(void*, xcb_get_property_value, (const xcb_get_property_reply_t*));
+XPFN_DEF(int, xcb_get_property_value_length, (const xcb_get_property_reply_t*));
+
+XPFN_DEF(xcb_get_atom_name_cookie_t, xcb_get_atom_name, (xcb_connection_t*, xcb_atom_t));
+XPFN_DEF(xcb_get_atom_name_reply_t*, xcb_get_atom_name_reply, (xcb_connection_t*, xcb_get_atom_name_cookie_t, xcb_generic_error_t**));
+XPFN_DEF(char*, xcb_get_atom_name_name, (const xcb_get_atom_name_reply_t*));
+XPFN_DEF(int, xcb_get_atom_name_name_length, (const xcb_get_atom_name_reply_t*));
+
 // XCB-EWMH
 
 XPFN_DEF(xcb_intern_atom_cookie_t*, xcb_ewmh_init_atoms, (xcb_connection_t*, xcb_ewmh_connection_t*));
@@ -107,6 +124,26 @@ XPFN_DEF(void, XkbFreeKeyboard, (XkbDescPtr, unsigned int, Bool));
 
 XPFN_DEF(void, XkbFreeNames, (XkbDescPtr, unsigned int, Bool));
 
+XPFN_DEF(Atom, XInternAtom, (Display*, char*, Bool));
+
+XPFN_DEF(Window, XCreateSimpleWindow, (Display*, Window, int, int, unsigned int, unsigned int, unsigned int, unsigned long, unsigned long));
+
+XPFN_DEF(int, XDestroyWindow, (Display*, Window));
+
+XPFN_DEF(int, XConvertSelection, (Display*, Atom, Atom, Atom, Window, Time));
+
+XPFN_DEF(int, XGetWindowProperty, (Display*, Window, Atom, long, long, Bool, Atom, Atom*, int*, unsigned long*, unsigned long*, unsigned char**));
+
+XPFN_DEF(int, XDeleteProperty, (Display*, Window, Atom));
+
+XPFN_DEF(int, XFree, (void*));
+
+XPFN_DEF(int, XNextEvent, (Display*, XEvent*));
+
+XPFN_DEF(Atom, XGetSelectionOwner, (Display*, Atom));
+
+XPFN_DEF(int, XGetErrorText, (Display*, int, char*, int));
+
 // XLib-XCB
 
 XPFN_DEF(xcb_connection_t*, XGetXCBConnection, (Display*));
@@ -152,6 +189,18 @@ void lt_xproto_init(void) {
 		XPFN_LOAD(xcb_poly_fill_rectangle);
 		XPFN_LOAD(xcb_intern_atom);
 		XPFN_LOAD(xcb_intern_atom_reply);
+		XPFN_LOAD(xcb_convert_selection);
+		XPFN_LOAD(xcb_get_selection_owner);
+		XPFN_LOAD(xcb_get_selection_owner_reply);
+		XPFN_LOAD(xcb_set_selection_owner);
+		XPFN_LOAD(xcb_get_property);
+		XPFN_LOAD(xcb_get_property_reply);
+		XPFN_LOAD(xcb_get_property_value);
+		XPFN_LOAD(xcb_get_property_value_length);
+		XPFN_LOAD(xcb_get_atom_name);
+		XPFN_LOAD(xcb_get_atom_name_reply);
+		XPFN_LOAD(xcb_get_atom_name_name);
+		XPFN_LOAD(xcb_get_atom_name_name_length);
 	}
 
 	{
@@ -197,6 +246,16 @@ void lt_xproto_init(void) {
 		XPFN_LOAD(XkbGetMap);
 		XPFN_LOAD(XkbFreeKeyboard);
 		XPFN_LOAD(XkbFreeNames);
+		XPFN_LOAD(XInternAtom);
+		XPFN_LOAD(XCreateSimpleWindow)
+		XPFN_LOAD(XDestroyWindow);
+		XPFN_LOAD(XConvertSelection);
+		XPFN_LOAD(XGetWindowProperty);
+		XPFN_LOAD(XDeleteProperty);
+		XPFN_LOAD(XFree);
+		XPFN_LOAD(XNextEvent);
+		XPFN_LOAD(XGetSelectionOwner);
+		XPFN_LOAD(XGetErrorText);
 	}
 
 	{

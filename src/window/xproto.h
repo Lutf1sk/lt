@@ -75,6 +75,43 @@ XPFN_FWD(xcb_intern_atom_cookie_t, xcb_intern_atom, (xcb_connection_t*, u8, u16,
 XPFN_FWD(xcb_intern_atom_reply_t*, xcb_intern_atom_reply, (xcb_connection_t*, xcb_intern_atom_cookie_t, xcb_generic_error_t**));
 #define xcb_intern_atom_reply(...) lt_xproto_xcb_intern_atom_reply(__VA_ARGS__)
 
+XPFN_FWD(xcb_void_cookie_t, xcb_convert_selection, (xcb_connection_t*, xcb_window_t, xcb_atom_t, xcb_atom_t, xcb_atom_t, xcb_timestamp_t));
+#define xcb_convert_selection(...) lt_xproto_xcb_convert_selection(__VA_ARGS__)
+
+XPFN_FWD(xcb_get_selection_owner_cookie_t, xcb_get_selection_owner, (xcb_connection_t*, xcb_atom_t));
+#define xcb_get_selection_owner(...) lt_xproto_xcb_get_selection_owner(__VA_ARGS__)
+
+XPFN_FWD(xcb_get_selection_owner_reply_t*, xcb_get_selection_owner_reply,
+		(xcb_connection_t*, xcb_get_selection_owner_cookie_t, xcb_generic_error_t**));
+#define xcb_get_selection_owner_reply(...) lt_xproto_xcb_get_selection_owner_reply(__VA_ARGS__)
+
+XPFN_FWD(xcb_void_cookie_t, xcb_set_selection_owner, (xcb_connection_t*, xcb_window_t, xcb_atom_t, xcb_timestamp_t));
+#define xcb_set_selection_owner(...) lt_xproto_xcb_set_selection_owner(__VA_ARGS__)
+
+XPFN_FWD(xcb_get_property_cookie_t, xcb_get_property, (xcb_connection_t*, u8, xcb_window_t, xcb_atom_t, xcb_atom_t, u32, u32));
+#define xcb_get_property(...) lt_xproto_xcb_get_property(__VA_ARGS__)
+
+XPFN_FWD(xcb_get_property_reply_t*, xcb_get_property_reply, (xcb_connection_t*, xcb_get_property_cookie_t, xcb_generic_error_t**));
+#define xcb_get_property_reply(...) lt_xproto_xcb_get_property_reply(__VA_ARGS__)
+
+XPFN_FWD(void*, xcb_get_property_value, (const xcb_get_property_reply_t*));
+#define xcb_get_property_value(...) lt_xproto_xcb_get_property_value(__VA_ARGS__)
+
+XPFN_FWD(int, xcb_get_property_value_length, (const xcb_get_property_reply_t*));
+#define xcb_get_property_value_length(...) lt_xproto_xcb_get_property_value_length(__VA_ARGS__)
+
+XPFN_FWD(xcb_get_atom_name_cookie_t, xcb_get_atom_name, (xcb_connection_t*, xcb_atom_t));
+#define xcb_get_atom_name(...) lt_xproto_xcb_get_atom_name(__VA_ARGS__)
+
+XPFN_FWD(xcb_get_atom_name_reply_t*, xcb_get_atom_name_reply, (xcb_connection_t*, xcb_get_atom_name_cookie_t, xcb_generic_error_t**));
+#define xcb_get_atom_name_reply(...) lt_xproto_xcb_get_atom_name_reply(__VA_ARGS__)
+
+XPFN_FWD(char*, xcb_get_atom_name_name, (const xcb_get_atom_name_reply_t*));
+#define xcb_get_atom_name_name(...) lt_xproto_xcb_get_atom_name_name(__VA_ARGS__)
+
+XPFN_FWD(int, xcb_get_atom_name_name_length, (const xcb_get_atom_name_reply_t*));
+#define xcb_get_atom_name_name_length(...) lt_xproto_xcb_get_atom_name_name_length(__VA_ARGS__)
+
 // XCB-EWMH
 
 XPFN_FWD(xcb_intern_atom_cookie_t*, xcb_ewmh_init_atoms, (xcb_connection_t*, xcb_ewmh_connection_t*));
@@ -150,6 +187,36 @@ XPFN_FWD(Colormap, XFreeColormap, (Display*, Colormap));
 
 XPFN_FWD(Bool, XkbSetDetectableAutoRepeat, (Display*, Bool, Bool*));
 #define XkbSetDetectableAutoRepeat(...) lt_xproto_XkbSetDetectableAutoRepeat(__VA_ARGS__)
+
+XPFN_FWD(Atom, XInternAtom, (Display*, char*, Bool));
+#define XInternAtom(...) lt_xproto_XInternAtom(__VA_ARGS__)
+
+XPFN_FWD(Window, XCreateSimpleWindow, (Display*, Window, int, int, unsigned int, unsigned int, unsigned int, unsigned long, unsigned long));
+#define XCreateSimpleWindow(...) lt_xproto_XCreateSimpleWindow(__VA_ARGS__)
+
+XPFN_FWD(int, XDestroyWindow, (Display*, Window));
+#define XDestroyWindow(...) lt_xproto_XDestroyWindow(__VA_ARGS__)
+
+XPFN_FWD(int, XConvertSelection, (Display*, Atom, Atom, Atom, Window, Time));
+#define XConvertSelection(...) lt_xproto_XConvertSelection(__VA_ARGS__)
+
+XPFN_FWD(int, XGetWindowProperty, (Display*, Window, Atom, long, long, Bool, Atom, Atom*, int*, unsigned long*, unsigned long*, unsigned char**));
+#define XGetWindowProperty(...) lt_xproto_XGetWindowProperty(__VA_ARGS__)
+
+XPFN_FWD(int, XDeleteProperty, (Display*, Window, Atom));
+#define XDeleteProperty(...) lt_xproto_XDeleteProperty(__VA_ARGS__)
+
+XPFN_FWD(int, XFree, (void*));
+#define XFree(...) lt_xproto_XFree(__VA_ARGS__)
+
+XPFN_FWD(int, XNextEvent, (Display*, XEvent*));
+#define XNextEvent(...) lt_xproto_XNextEvent(__VA_ARGS__)
+
+XPFN_FWD(Atom, XGetSelectionOwner, (Display*, Atom));
+#define XGetSelectionOwner(...) lt_xproto_XGetSelectionOwner(__VA_ARGS__)
+
+XPFN_FWD(int, XGetErrorText, (Display*, int, char*, int));
+#define XGetErrorText(...) lt_xproto_XGetErrorText(__VA_ARGS__)
 
 XPFN_FWD(Status, XkbGetNames, (Display*, unsigned int, XkbDescPtr));
 #define XkbGetNames(...) lt_xproto_XkbGetNames(__VA_ARGS__)

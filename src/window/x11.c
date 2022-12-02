@@ -26,6 +26,12 @@ xcb_atom_t WM_DELETE_WINDOW;
 int lt_output_count = 0;
 lt_output_t* lt_outputs = NULL;
 
+static xcb_atom_t CLIPBOARD, UTF8_STRING, __CLIP, TARGETS;
+static b8 clipboard_initialized = 0;
+static xcb_window_t clipboard_window = XCB_WINDOW_NONE;
+
+#define CLIPBOARD_REPLY_MAXLEN LT_MB(8)
+
 static
 double mode_rate(xcb_randr_mode_info_t* mode) {
 	double vtotal = mode->vtotal;
@@ -82,6 +88,7 @@ b8 lt_window_init(lt_alloc_t* alloc) {
 	xcb_intern_atom_reply_t* delwin_reply = xcb_intern_atom_reply(lt_conn, delwin_cookie, &error);
 
 	if (error) {
+		free(error);
 		XCloseDisplay(lt_display);
 		return 0;
 	}
@@ -164,11 +171,198 @@ b8 lt_window_init(lt_alloc_t* alloc) {
 }
 
 void lt_window_terminate(lt_alloc_t* alloc) {
+	if (clipboard_initialized)
+		clipboard_initialized = 0;
+
 	for (usz i = 0; i < lt_output_count; ++i)
 		lt_mfree(alloc, lt_outputs[i].name.str);
 	lt_mfree(alloc, lt_outputs);
 
 	XCloseDisplay(lt_display);
+}
+
+static
+xcb_atom_t get_atom(lstr_t atom_name) {
+	xcb_intern_atom_cookie_t atom_cookie = xcb_intern_atom(lt_conn, 1, atom_name.len, atom_name.str);
+	xcb_intern_atom_reply_t* atom_reply = xcb_intern_atom_reply(lt_conn, atom_cookie, NULL);
+	if (!atom_reply) {
+		lt_werrf("atom reply is null\n");
+		return XCB_ATOM_NONE;
+	}
+
+	xcb_atom_t atom = atom_reply->atom;
+	if (atom == XCB_ATOM_NONE)
+		lt_werrf("atom '%S' not found\n", atom_name);
+
+	free(atom_reply);
+	return atom;
+}
+
+static
+void clipboard_initialize(void) {
+	clipboard_initialized = 1;
+
+	CLIPBOARD = get_atom(CLSTR("CLIPBOARD"));
+	UTF8_STRING = get_atom(CLSTR("UTF8_STRING"));
+	__CLIP = get_atom(CLSTR("__CLIP"));
+	TARGETS = get_atom(CLSTR("TARGETS"));
+
+	u32 win_mask = XCB_CW_EVENT_MASK;
+	u32 win_list[] = { XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY };
+	int visual = lt_screen->root_visual, depth = XCB_COPY_FROM_PARENT;
+
+	clipboard_window = xcb_generate_id(lt_conn);
+	xcb_void_cookie_t window_cookie = xcb_create_window(
+		lt_conn, depth, clipboard_window, lt_screen->root, -10, -10, 1, 1, 0,
+		XCB_WINDOW_CLASS_INPUT_OUTPUT, visual, win_mask, win_list
+	);
+	if (xcb_request_check(lt_conn, window_cookie))
+		lt_werrf("failed to create clipboard window\n");
+}
+
+/*
+void lt_window_set_clipboard(lstr_t str) {
+	if (!clipboard_initialized)
+		clipboard_initialize();
+
+	xcb_void_cookie_t owner_cookie = xcb_set_selection_owner(lt_conn, clipboard_window, CLIPBOARD, XCB_CURRENT_TIME);
+	if (xcb_request_check(lt_conn, owner_cookie)) {
+		lt_werrf("failed to claim clipboard ownership\n");
+		return;
+	}
+
+	for (;;) {
+		xcb_generic_event_t* gev = xcb_wait_for_event(lt_conn);
+		if (!gev)
+			continue;
+
+		switch (gev->response_type & ~0x80) {
+		case XCB_SELECTION_CLEAR:
+			lt_werrf("lost clipboard ownership\n");
+			return;
+		case XCB_SELECTION_REQUEST: {
+			xcb_selection_request_event_t* ev = (xcb_selection_request_event_t*)gev;
+			xcb_selection_notify_event_t sev;
+			sev.response_type = XCB_SELECTION_NOTIFY;
+			sev.requestor = ev->requestor;
+			sev.selection = ev->selection;
+			sev.target = ev->target;
+			sev.property = ev->property;
+			sev.time = ev->time;
+
+			if (ev->target == TARGETS) {
+				xcb_atom_t targets[] = {
+					TARGETS,
+					get_atom(CLSTR("MULTIPLE")),
+					UTF8_STRING,
+					get_atom(CLSTR("STRING")),
+					get_atom(CLSTR("TEXT")),
+				};
+				usz target_count = sizeof(targets) / sizeof(*targets);
+
+				xcb_void_cookie_t prop_cookie = xcb_change_property(lt_conn, XCB_PROP_MODE_REPLACE, ev->requestor, ev->property, TARGETS, 32, target_count, targets);
+				if (xcb_request_check(lt_conn, prop_cookie))
+					lt_werrf("failed to change property\n");
+
+				lt_printf("TARGETS\n");
+
+				u32 ev_mask = XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY;
+				xcb_send_event(lt_conn, 0, ev->requestor, ev_mask, (const char*)&sev);
+
+				xcb_flush(lt_conn);
+				continue;
+			}
+
+			if (ev->target != UTF8_STRING || ev->property == XCB_ATOM_NONE) {
+				sev.property = XCB_ATOM_NONE;
+
+				xcb_get_atom_name_cookie_t name_cookie = xcb_get_atom_name(lt_conn, ev->target);
+				xcb_get_atom_name_reply_t* name_reply = xcb_get_atom_name_reply(lt_conn, name_cookie, NULL);
+				if (!name_reply) {
+					lt_werrf("atom name reply is null\n");
+					return;
+				}
+				char* name = xcb_get_atom_name_name(name_reply);
+				usz length = xcb_get_atom_name_name_length(name_reply);
+
+				lt_printf("denying request of type '%S'\n", LSTR(name, length));
+				free(name_reply);
+
+				u32 ev_mask = XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY;
+				xcb_send_event(lt_conn, 0, ev->requestor, ev_mask, (const char*)&sev);
+			}
+			else {
+				xcb_void_cookie_t prop_cookie = xcb_change_property(lt_conn, XCB_PROP_MODE_REPLACE, ev->requestor, ev->property, ev->target, 8, str.len, str.str);
+				if (xcb_request_check(lt_conn, prop_cookie))
+					lt_werrf("failed to change property\n");
+
+				lt_printf("UTF8_STRING\n");
+
+				u32 ev_mask = XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY;
+				xcb_send_event(lt_conn, 0, ev->requestor, ev_mask, (const char*)&sev);
+			}
+			xcb_flush(lt_conn);
+			return;
+		}
+		}
+	}
+}*/
+
+lstr_t lt_window_get_clipboard(lt_alloc_t* alloc) {
+	if (!clipboard_initialized)
+		clipboard_initialize();
+
+	xcb_get_selection_owner_cookie_t owner_cookie = xcb_get_selection_owner(lt_conn, CLIPBOARD);
+	xcb_get_selection_owner_reply_t* owner_reply = xcb_get_selection_owner_reply(lt_conn, owner_cookie, NULL);
+	if (owner_reply) {
+		xcb_window_t owner = owner_reply->owner;
+		free(owner_reply);
+		if (owner == XCB_WINDOW_NONE)
+			return NLSTR();
+	}
+
+	xcb_void_cookie_t convert_cookie = xcb_convert_selection(lt_conn, clipboard_window, CLIPBOARD, UTF8_STRING, __CLIP, XCB_CURRENT_TIME);
+	if (xcb_request_check(lt_conn, convert_cookie))
+		return NLSTR();
+
+	// TODO: ew
+	for (;;) {
+		xcb_generic_event_t* gev = xcb_wait_for_event(lt_conn);
+		if (!gev)
+			continue;
+
+		switch (gev->response_type & ~0x80) {
+		case XCB_SELECTION_NOTIFY: {
+			xcb_selection_notify_event_t* ev = (xcb_selection_notify_event_t*)gev;
+			if (ev->property == XCB_ATOM_NONE)
+				lt_werrf("conversion failed\n");
+
+			LT_ASSERT(ev->requestor == clipboard_window);
+			LT_ASSERT(ev->selection == CLIPBOARD);
+			LT_ASSERT(ev->target == UTF8_STRING);
+
+			xcb_get_property_cookie_t prop_cookie = xcb_get_property(lt_conn, 0, clipboard_window, __CLIP, XCB_ATOM_ANY, 0, CLIPBOARD_REPLY_MAXLEN/4);
+			xcb_get_property_reply_t* prop_reply = xcb_get_property_reply(lt_conn, prop_cookie, NULL);
+			if (!prop_reply)
+				return NLSTR();
+
+			void* value = xcb_get_property_value(prop_reply);
+			int length = xcb_get_property_value_length(prop_reply);
+
+			char* ret_value = lt_malloc(alloc, length);
+			if (!ret_value) {
+				free(prop_reply);
+				return NLSTR();
+			}
+			memcpy(ret_value, value, length);
+
+			free(prop_reply);
+			return LSTR(ret_value, length);
+		}
+		}
+
+		free(gev);
+	}
 }
 
 int lt_window_output_count(void) {

@@ -130,6 +130,9 @@ struct lt_window_event {
 b8 lt_window_init(lt_alloc_t* alloc);
 void lt_window_terminate(lt_alloc_t* alloc);
 
+/*void lt_window_set_clipboard(lstr_t str);*/
+lstr_t lt_window_get_clipboard(lt_alloc_t* alloc);
+
 int lt_window_output_count(void);
 lt_output_t* lt_window_outputs(void);
 
