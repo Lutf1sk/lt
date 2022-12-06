@@ -49,6 +49,13 @@ lt_conf_t* lt_conf_find_int(lt_conf_t* parent, lstr_t key_path, i64* out);
 lt_conf_t* lt_conf_find_uint(lt_conf_t* parent, lstr_t key_path, u64* out);
 lt_conf_t* lt_conf_find_bool(lt_conf_t* parent, lstr_t key_path, b8* out);
 lt_conf_t* lt_conf_find_str(lt_conf_t* parent, lstr_t key_path, lstr_t* out);
+lt_conf_t* lt_conf_find_float(lt_conf_t* parent, lstr_t key_path, f64* out);
+
+i64 lt_conf_find_int_default(lt_conf_t* parent, lstr_t key_path, i64 default_);
+u64 lt_conf_find_uint_default(lt_conf_t* parent, lstr_t key_path, u64 default_);
+b8 lt_conf_find_bool_default(lt_conf_t* parent, lstr_t key_path, b8 default_);
+lstr_t lt_conf_find_str_default(lt_conf_t* parent, lstr_t key_path, lstr_t default_);
+f64 lt_conf_find_float_default(lt_conf_t* parent, lstr_t key_path, f64 default_);
 
 b8 lt_conf_write(lt_conf_t* cf, lt_file_t* file);
 

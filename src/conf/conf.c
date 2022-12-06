@@ -210,6 +210,49 @@ lt_conf_t* lt_conf_find_str(lt_conf_t* cf, lstr_t key_path, lstr_t* out) {
 	return cf;
 }
 
+lt_conf_t* lt_conf_find_float(lt_conf_t* cf, lstr_t key_path, f64* out) {
+	cf = lt_conf_find(cf, key_path);
+	if (!cf || cf->stype != LT_CONF_FLOAT)
+		return NULL;
+	*out = cf->float_val;
+	return cf;
+}
+
+i64 lt_conf_find_int_default(lt_conf_t* cf, lstr_t key_path, i64 default_) {
+	cf = lt_conf_find(cf, key_path);
+	if (!cf || cf->stype != LT_CONF_INT)
+		return default_;
+	return cf->int_val;
+}
+
+u64 lt_conf_find_uint_default(lt_conf_t* cf, lstr_t key_path, u64 default_) {
+	cf = lt_conf_find(cf, key_path);
+	if (!cf || cf->stype != LT_CONF_INT)
+		return default_;
+	return cf->uint_val;
+}
+
+b8 lt_conf_find_bool_default(lt_conf_t* cf, lstr_t key_path, b8 default_) {
+	cf = lt_conf_find(cf, key_path);
+	if (!cf || cf->stype != LT_CONF_BOOL)
+		return default_;
+	return cf->bool_val;
+}
+
+lstr_t lt_conf_find_str_default(lt_conf_t* cf, lstr_t key_path, lstr_t default_) {
+	cf = lt_conf_find(cf, key_path);
+	if (!cf || cf->stype != LT_CONF_STRING)
+		return default_;
+	return LSTR(cf->str_val, cf->count);
+}
+
+f64 lt_conf_find_float_default(lt_conf_t* cf, lstr_t key_path, f64 default_) {
+	cf = lt_conf_find(cf, key_path);
+	if (!cf || cf->stype != LT_CONF_FLOAT)
+		return default_;
+	return cf->float_val;
+}
+
 static
 void lt_conf_write_indent(lt_file_t* file, isz indent) {
 	for (isz i = 0; i < indent; ++i) // TODO: Optimize this
