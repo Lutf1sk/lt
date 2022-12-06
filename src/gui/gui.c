@@ -33,14 +33,19 @@ b8 mb_pressed(lt_gui_ctx_t* cx, isz btn) {
 	return (cx->mouse_state >> btn) == 1 && (cx->prev_mouse_state >> btn) == 0;
 }
 
-static
+static LT_INLINE
 lt_gui_cont_t* cont_top(lt_gui_ctx_t* cx) {
 	return &cx->conts[cx->cont_top - 1];
 }
 
-static
+static LT_INLINE
 lt_gui_cont_t cont_pop(lt_gui_ctx_t* cx) {
 	return cx->conts[--cx->cont_top];
+}
+
+static LT_INLINE
+void set_scissor(lt_gui_ctx_t* cx, lt_gui_rect_t* r) {
+	cx->scissor(cx->user_data, r);
 }
 
 b8 lt_gui_ctx_init(lt_gui_ctx_t* cx, lt_alloc_t* alloc) {
@@ -173,7 +178,7 @@ void lt_gui_panel_begin(lt_gui_ctx_t* cx, isz w, isz h, u32 flags) {
 	make_space(cx, &c.r, flags);
 	seta_padded(cx, &c);
 
-// 	set_scissor(cx, &c.r);
+	set_scissor(cx, &c.r);
 
 	cx->conts[cx->cont_top++] = c;
 	lt_gui_draw_rect(cx, &c.r, cx->style->panel_bg_clr);
@@ -182,7 +187,7 @@ void lt_gui_panel_begin(lt_gui_ctx_t* cx, isz w, isz h, u32 flags) {
 
 void lt_gui_panel_end(lt_gui_ctx_t* cx) {
 	cont_pop(cx);
-// 	set_scissor(cx, &cont_top(cx)->r);
+	set_scissor(cx, &cont_top(cx)->r);
 }
 
 void lt_gui_row(lt_gui_ctx_t* cx, usz cols) {
@@ -380,7 +385,7 @@ void lt_gui_dropdown_end(lt_gui_ctx_t* cx) {
 	cont_pop(cx);
 	cx->mouse_x = -1;
 	cx->mouse_y = -1;
-// 	set_scissor(cx, &cont_top(cx)->r);
+	set_scissor(cx, &cont_top(cx)->r);
 }
 
 b8 lt_gui_checkbox(lt_gui_ctx_t* cx, lstr_t text, b8* state, u32 flags) {
