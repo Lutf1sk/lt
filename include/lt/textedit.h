@@ -18,8 +18,11 @@ void lt_lineedit_cursor_left(lt_lineedit_t* ed);
 void lt_lineedit_cursor_right(lt_lineedit_t* ed);
 void lt_lineedit_step_left(lt_lineedit_t* ed);
 void lt_lineedit_step_right(lt_lineedit_t* ed);
+
 void lt_lineedit_delete_bwd(lt_lineedit_t* ed);
 void lt_lineedit_delete_fwd(lt_lineedit_t* ed);
+void lt_lineedit_delete_word_bwd(lt_lineedit_t* ed);
+void lt_lineedit_delete_word_fwd(lt_lineedit_t* ed);
 
 void lt_lineedit_gotox(lt_lineedit_t* ed, usz x);
 
