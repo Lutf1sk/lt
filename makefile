@@ -11,6 +11,7 @@ OBJS = \
 	src/elf/elf.o \
 	src/font/font.o \
 	src/font/psf.o \
+	src/gfx/gl.o \
 	src/gl/gl.o \
 	src/gl/glad.o \
 	src/gui/gui.o \

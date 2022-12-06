@@ -42,7 +42,16 @@ typedef struct lt_hashtab lt_hashtab_t;
 // strstream.h
 typedef struct lt_strstream lt_strstream_t;
 
+// img.h
+typedef struct lt_img lt_img_t;
+
 // darr.h
 #define lt_darr(T) T*
+
+// gfx.h
+typedef struct lt_gfx lt_gfx_t;
+typedef struct lt_pipeline lt_pipeline_t;
+typedef struct lt_mesh lt_mesh_t;
+typedef struct lt_texture lt_texture_t;
 
 #endif
