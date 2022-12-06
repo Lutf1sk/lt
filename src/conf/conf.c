@@ -157,43 +157,53 @@ b8 lt_conf_parse(lt_conf_t* cf, lstr_t data) {
 	return parse_obj_body(&cx, cf);
 }
 
-lt_conf_t* lt_conf_find(lt_conf_t* parent, lstr_t key) {
-	if (!parent || parent->stype != LT_CONF_OBJECT)
-		return NULL;
+lt_conf_t* lt_conf_find(lt_conf_t* parent, lstr_t key_path) {
+	char* it = key_path.str, *end = it + key_path.len;
+	while (it < end) {
+		if (!parent || parent->stype != LT_CONF_OBJECT)
+			return NULL;
 
-	for (usz i = 0; i < parent->count; ++i) {
-		if (lt_lstr_eq(parent->children[i].key, key))
-			return &parent->children[i];
+		lstr_t key = LSTR(it, lt_lstr_split(LSTR(it, end - it), '.'));
+
+		for (usz i = 0; i < parent->count; ++i) {
+			if (lt_lstr_eq(parent->children[i].key, key)) {
+				parent = &parent->children[i];
+				it += key.len + 1;
+				goto found;
+			}
+		}
+		return NULL;
+	found:
 	}
-	return NULL;
+	return parent;
 }
 
-lt_conf_t* lt_conf_find_int(lt_conf_t* cf, lstr_t key, i64* out) {
-	cf = lt_conf_find(cf, key);
+lt_conf_t* lt_conf_find_int(lt_conf_t* cf, lstr_t key_path, i64* out) {
+	cf = lt_conf_find(cf, key_path);
 	if (!cf || cf->stype != LT_CONF_INT)
 		return NULL;
 	*out = cf->int_val;
 	return cf;
 }
 
-lt_conf_t* lt_conf_find_uint(lt_conf_t* cf, lstr_t key, u64* out) {
-	cf = lt_conf_find(cf, key);
+lt_conf_t* lt_conf_find_uint(lt_conf_t* cf, lstr_t key_path, u64* out) {
+	cf = lt_conf_find(cf, key_path);
 	if (!cf || cf->stype != LT_CONF_INT)
 		return NULL;
 	*out = cf->uint_val;
 	return cf;
 }
 
-lt_conf_t* lt_conf_find_bool(lt_conf_t* cf, lstr_t key, b8* out) {
-	cf = lt_conf_find(cf, key);
+lt_conf_t* lt_conf_find_bool(lt_conf_t* cf, lstr_t key_path, b8* out) {
+	cf = lt_conf_find(cf, key_path);
 	if (!cf || cf->stype != LT_CONF_BOOL)
 		return NULL;
 	*out = cf->bool_val;
 	return cf;
 }
 
-lt_conf_t* lt_conf_find_str(lt_conf_t* cf, lstr_t key, lstr_t* out) {
-	cf = lt_conf_find(cf, key);
+lt_conf_t* lt_conf_find_str(lt_conf_t* cf, lstr_t key_path, lstr_t* out) {
+	cf = lt_conf_find(cf, key_path);
 	if (!cf || cf->stype != LT_CONF_STRING)
 		return NULL;
 	*out = LSTR(cf->str_val, cf->count);
@@ -236,7 +246,7 @@ b8 lt_conf_write_unsafe(lt_conf_t* cf, lt_file_t* file, isz indent) {
 
 	case LT_CONF_INT: return lt_fprintf(file, "%iq\n", cf->int_val) != -1;
 	case LT_CONF_STRING: return lt_fprintf(file, "\"%S\"\n", LSTR(cf->str_val, cf->count)) != -1;
-	case LT_CONF_FLOAT: return 0; // TODO
+	case LT_CONF_FLOAT: return 0; // TODO: Write float values
 	case LT_CONF_BOOL: return lt_fprintf(file, "%S\n", cf->bool_val ? CLSTR("true") : CLSTR("false")) != -1;
 	}
 

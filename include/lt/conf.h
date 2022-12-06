@@ -43,12 +43,12 @@ lstr_t conf_type_str(lt_conf_stype_t stype);
 
 b8 lt_conf_parse(lt_conf_t* cf, lstr_t data);
 
-lt_conf_t* lt_conf_find(lt_conf_t* parent, lstr_t key);
+lt_conf_t* lt_conf_find(lt_conf_t* parent, lstr_t key_path);
 
-lt_conf_t* lt_conf_find_int(lt_conf_t* parent, lstr_t key, i64* out);
-lt_conf_t* lt_conf_find_uint(lt_conf_t* parent, lstr_t key, u64* out);
-lt_conf_t* lt_conf_find_bool(lt_conf_t* parent, lstr_t key, b8* out);
-lt_conf_t* lt_conf_find_str(lt_conf_t* parent, lstr_t key, lstr_t* out);
+lt_conf_t* lt_conf_find_int(lt_conf_t* parent, lstr_t key_path, i64* out);
+lt_conf_t* lt_conf_find_uint(lt_conf_t* parent, lstr_t key_path, u64* out);
+lt_conf_t* lt_conf_find_bool(lt_conf_t* parent, lstr_t key_path, b8* out);
+lt_conf_t* lt_conf_find_str(lt_conf_t* parent, lstr_t key_path, lstr_t* out);
 
 b8 lt_conf_write(lt_conf_t* cf, lt_file_t* file);
 
