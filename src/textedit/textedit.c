@@ -71,6 +71,11 @@ void lt_lineedit_destroy(lt_lineedit_t* ed) {
 	lt_darr_destroy(ed->str);
 }
 
+void lt_lineedit_clear(lt_lineedit_t* ed) {
+	lt_darr_clear(ed->str);
+	ed->cursor_pos = 0;
+}
+
 void lt_lineedit_input_str(lt_lineedit_t* ed, lstr_t str) {
 	char* it = str.str;
 	char* end = str.str + str.len;
@@ -202,6 +207,13 @@ void lt_textedit_destroy(lt_textedit_t* ed) {
 	for (usz i = 0; i < lt_darr_count(ed->lines); ++i)
 		lt_darr_destroy(ed->lines[i].str);
 	lt_darr_destroy(ed->lines);
+}
+
+void lt_textedit_clear(lt_textedit_t* ed) {
+	for (usz i = 1; i < lt_darr_count(ed->lines); ++i)
+		lt_darr_destroy(ed->lines[i].str);
+	lt_lineedit_clear(&ed->lines[0]);
+	ed->cursor_pos = 0;
 }
 
 isz lt_textedit_write_contents(lt_textedit_t* ed, void* usr, lt_io_callback_t callb) {

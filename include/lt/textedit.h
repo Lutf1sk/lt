@@ -13,6 +13,8 @@ struct lt_lineedit {
 b8 lt_lineedit_create(lt_lineedit_t* ed, lt_alloc_t* alloc);
 void lt_lineedit_destroy(lt_lineedit_t* ed);
 
+void lt_lineedit_clear(lt_lineedit_t* ed);
+
 void lt_lineedit_input_str(lt_lineedit_t* ed, lstr_t str);
 void lt_lineedit_cursor_left(lt_lineedit_t* ed);
 void lt_lineedit_cursor_right(lt_lineedit_t* ed);
@@ -35,6 +37,8 @@ struct lt_textedit {
 
 b8 lt_textedit_create(lt_textedit_t* ed, lt_alloc_t* alloc);
 void lt_textedit_destroy(lt_textedit_t* ed);
+
+void lt_textedit_clear(lt_textedit_t* ed);
 
 isz lt_textedit_write_contents(lt_textedit_t* ed, void* usr, lt_io_callback_t callb);
 
