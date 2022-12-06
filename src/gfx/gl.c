@@ -53,6 +53,7 @@ b8 lt_gfx_create(lt_gfx_t* gfx, lt_window_t* win, lt_alloc_t* alloc) {
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_FRONT);
 	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
 	glEnable(GL_SCISSOR_TEST);
 
 	lt_img_t white_img;
