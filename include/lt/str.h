@@ -29,6 +29,14 @@ b8 lt_lstr_endswith(lstr_t str, lstr_t substr) {
 	return memcmp(end - substr.len, substr.str, substr.len) == 0;
 }
 
+static LT_INLINE
+usz lt_lstr_split(lstr_t str, char delim) {
+	for (usz i = 0; i < str.len; ++i)
+		if (str.str[i] == delim)
+			return i;
+	return str.len;
+}
+
 f64 lt_lstr_float(lstr_t);
 i64 lt_lstr_int(lstr_t);
 u64 lt_lstr_uint(lstr_t);
