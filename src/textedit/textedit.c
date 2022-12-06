@@ -155,6 +155,7 @@ void merge_bwd(lt_textedit_t* ed) {
 	usz dst_idx = ed->cursor_pos - 1;
 	usz src_idx = ed->cursor_pos;
 	lt_darr_insert(ed->lines[dst_idx].str, lt_darr_count(ed->lines[dst_idx].str), ed->lines[src_idx].str, lt_darr_count(ed->lines[src_idx].str));
+	lt_lineedit_destroy(&ed->lines[src_idx]);
 	lt_darr_erase(ed->lines, src_idx, 1);
 }
 
@@ -163,6 +164,7 @@ void merge_fwd(lt_textedit_t* ed) {
 	usz dst_idx = ed->cursor_pos;
 	usz src_idx = ed->cursor_pos + 1;
 	lt_darr_insert(ed->lines[dst_idx].str, lt_darr_count(ed->lines[dst_idx].str), ed->lines[src_idx].str, lt_darr_count(ed->lines[src_idx].str));
+	lt_lineedit_destroy(&ed->lines[src_idx]);
 	lt_darr_erase(ed->lines, src_idx, 1);
 }
 
