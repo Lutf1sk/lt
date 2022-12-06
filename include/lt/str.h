@@ -37,6 +37,14 @@ usz lt_lstr_split(lstr_t str, char delim) {
 	return str.len;
 }
 
+static LT_INLINE
+lstr_t lt_lstr_split_bwd(lstr_t str, char delim) {
+	for (isz i = str.len - 1; i >= 0; --i)
+		if (str.str[i] == delim)
+			return LSTR(str.str + i + 1, str.len - i - 1);
+	return str;
+}
+
 f64 lt_lstr_float(lstr_t);
 i64 lt_lstr_int(lstr_t);
 u64 lt_lstr_uint(lstr_t);
