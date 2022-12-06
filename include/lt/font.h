@@ -22,4 +22,6 @@ void lt_font_destroy(lt_font_t* font, lt_alloc_t* alloc);
 
 void lt_font_render(lt_font_t* font, lstr_t text, u32* buf);
 
+usz lt_font_text_width(lt_font_t* font, lstr_t text);
+
 #endif

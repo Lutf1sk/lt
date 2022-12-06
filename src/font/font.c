@@ -15,15 +15,9 @@ void lt_font_render(lt_font_t* font, lstr_t text, u32* buf) {
 	usz w = font->width, h = font->height;
 	usz dwords = w * h;
 
-	usz total_w = 0;
-	char* txt_it = text.str, *end = text.str + text.len;
-	while (txt_it < end) {
-		txt_it += lt_utf8_decode_len(*txt_it);
-		LT_ASSERT(txt_it <= end);
-		total_w += w;
-	}
+	usz total_w = lt_font_text_width(font, text);
 
-	txt_it = text.str;
+	char* txt_it = text.str, *end = text.str + text.len;
 	for (usz i = 0; txt_it < end; ++i) {
 		u32 c = 0;
 		txt_it += lt_utf8_decode(&c, txt_it);
@@ -40,5 +34,9 @@ void lt_font_render(lt_font_t* font, lstr_t text, u32* buf) {
 			glyph += w;
 		}
 	}
+}
+
+usz lt_font_text_width(lt_font_t* font, lstr_t text) {
+	return lt_utf8_glyph_count(text) * font->width;
 }
 
