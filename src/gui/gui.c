@@ -48,10 +48,10 @@ b8 lt_gui_ctx_init(lt_gui_ctx_t* cx, lt_alloc_t* alloc) {
 	if (!cx->conts)
 		return 0;
 
-	memset(&cx->cmdbufs, 0, sizeof(cx->cmdbufs));
-
 	LT_ASSERT(cx->draw_rect);
 	LT_ASSERT(cx->draw_text);
+	LT_ASSERT(cx->draw_icon);
+	LT_ASSERT(cx->scissor);
 	return 1;
 }
 
@@ -69,27 +69,9 @@ void lt_gui_begin(lt_gui_ctx_t* cx, isz x, isz y, isz w, isz h) {
 
 	c->padding = 0;
 	c->spacing = cx->style->spacing;
-
-	cx->cbuf = &cx->cmdbufs[0];
 }
 
 void lt_gui_end(lt_gui_ctx_t* cx) {
-	for (usz i = 0; i < 2; ++i) {
-		lt_gui_command_buffer_t* cbuf = &cx->cmdbufs[i];
-
-		cx->draw_rect(cx->user_data, cbuf->box_count, cbuf->box_rects, cbuf->box_clrs);
-
-		for (usz i = 0; i < cbuf->icon_count; ++i)
-			cx->draw_icon(cx->user_data, cbuf->icon_ids[i], &cbuf->icon_rects[i], cbuf->icon_clrs[i]);
-
-		cx->draw_text(cx->user_data, cbuf->text_count, cbuf->text_points, cbuf->text_strs, cbuf->text_clrs);
-
-		cbuf->box_count = 0;
-		cbuf->icon_count = 0;
-		cbuf->text_count = 0;
-		cbuf->text_data_idx = 0;
-	}
-
 	LT_ASSERT(cx->cont_top == 1);
 	cx->prev_mouse_state = cx->mouse_state;
 }
@@ -107,49 +89,29 @@ void lt_gui_draw_border(lt_gui_ctx_t* cx, lt_gui_rect_t* r, u32 clr, u32 flags) 
 	if (flags & LT_GUI_BORDER_INSET)
 		br_clr += 0x202020;
 
-	usz count = cx->cbuf->box_count;
-	u32* clrs = cx->cbuf->box_clrs;
-	lt_gui_rect_t* rects = cx->cbuf->box_rects;
+	lt_gui_rect_t rects[4] = {
+		{ r->x + r->w - cx->style->border, r->y, cx->style->border, r->h },
+		{ r->x, r->y + r->h - cx->style->border, r->w, cx->style->border },
+		{ r->x, r->y, cx->style->border, r->h },
+		{ r->x, r->y, r->w, cx->style->border },
+	};
 
-	clrs[count + 0] = br_clr;
-	clrs[count + 1] = br_clr;
-	clrs[count + 2] = tl_clr;
-	clrs[count + 3] = tl_clr;
-
-	rects[count + 0] = (lt_gui_rect_t){ r->x + r->w - cx->style->border, r->y, cx->style->border, r->h };
-	rects[count + 1] = (lt_gui_rect_t){ r->x, r->y + r->h - cx->style->border, r->w, cx->style->border };
-	rects[count + 2] = (lt_gui_rect_t){ r->x, r->y, cx->style->border, r->h };
-	rects[count + 3] = (lt_gui_rect_t){ r->x, r->y, r->w, cx->style->border };
-
-	cx->cbuf->box_count += 4;
+	cx->draw_rect(cx->user_data, &rects[0], br_clr);
+	cx->draw_rect(cx->user_data, &rects[1], br_clr);
+	cx->draw_rect(cx->user_data, &rects[2], tl_clr);
+	cx->draw_rect(cx->user_data, &rects[3], tl_clr);
 }
 
 void lt_gui_draw_rect(lt_gui_ctx_t* cx, lt_gui_rect_t* r, u32 clr) {
-	usz count = cx->cbuf->box_count;
-	cx->cbuf->box_clrs[count] = clr;
-	cx->cbuf->box_rects[count] = *r;
-	++cx->cbuf->box_count;
+	cx->draw_rect(cx->user_data, r, clr);
 }
 
-void lt_gui_draw_icon(lt_gui_ctx_t* cx, u32 icon, lt_gui_rect_t* r, u32 clr) {
-	usz count = cx->cbuf->icon_count;
-	cx->cbuf->icon_clrs[count] = clr;
-	cx->cbuf->icon_rects[count] = *r;
-	cx->cbuf->icon_ids[count] = icon;
-	++cx->cbuf->icon_count;
+void lt_gui_draw_icon(lt_gui_ctx_t* cx, lt_gui_rect_t* r, u32 clr, u32 icon) {
+	cx->draw_icon(cx->user_data, r, clr, icon);
 }
 
 void lt_gui_draw_text(lt_gui_ctx_t* cx, i32 x, i32 y, lstr_t str, u32 clr) {
-	char* cmd_str = &cx->cbuf->text_data[cx->cbuf->text_data_idx];
-	memcpy(cmd_str, str.str, str.len);
-
-	cx->cbuf->text_data_idx += str.len;
-
-	usz count = cx->cbuf->text_count;
-	cx->cbuf->text_clrs[count] = clr;
-	cx->cbuf->text_points[count] = LT_GUI_POINT(x, y);
-	cx->cbuf->text_strs[count] = LSTR(cmd_str, str.len);
-	++cx->cbuf->text_count;
+	cx->draw_text(cx->user_data, x, y, str, clr);
 }
 
 static
@@ -356,7 +318,7 @@ u8 lt_gui_expandable(lt_gui_ctx_t* cx, lstr_t text, b8* expanded, u32 flags) {
 	lt_gui_draw_text(cx, r.x + r.w/2 - (text.len * cx->glyph_width)/2, r.y + 1, text, cx->style->ctrl_text_clr);
 
 	lt_gui_rect_t ir = { r.x + 1, r.y + 1, cx->glyph_height, cx->glyph_height };
-	lt_gui_draw_icon(cx, icon, &ir, cx->style->ctrl_text_clr);
+	lt_gui_draw_icon(cx, &ir, cx->style->ctrl_text_clr, icon);
 
 	return *expanded;
 }
@@ -402,11 +364,10 @@ b8 lt_gui_dropdown_begin(lt_gui_ctx_t* cx, lstr_t text, isz ew, isz eh, u32* sta
 	lt_gui_draw_text(cx, r.x + cx->style->padding, r.y + 1, text, cx->style->ctrl_text_clr);
 
 	lt_gui_rect_t ir = { r.x + r.w - cx->glyph_height - cx->style->padding, r.y + 1, cx->glyph_height, cx->glyph_height };
-	lt_gui_draw_icon(cx, LT_GUI_ICON_EXPANDED, &ir, cx->style->ctrl_text_clr);
+	lt_gui_draw_icon(cx, &ir, cx->style->ctrl_text_clr, LT_GUI_ICON_EXPANDED);
 
 	if (*state) {
 		cx->conts[cx->cont_top++] = c;
-		++cx->cbuf;
 
 		lt_gui_draw_rect(cx, &c.r, cx->style->panel_bg_clr);
 		lt_gui_draw_border(cx, &c.r, cx->style->panel_border_clr, 0);
@@ -416,7 +377,6 @@ b8 lt_gui_dropdown_begin(lt_gui_ctx_t* cx, lstr_t text, isz ew, isz eh, u32* sta
 }
 
 void lt_gui_dropdown_end(lt_gui_ctx_t* cx) {
-	--cx->cbuf;
 	cont_pop(cx);
 	cx->mouse_x = -1;
 	cx->mouse_y = -1;
@@ -444,7 +404,7 @@ b8 lt_gui_checkbox(lt_gui_ctx_t* cx, lstr_t text, b8* state, u32 flags) {
 	lt_gui_draw_border(cx, &cr, cx->style->border_clr, flags);
 
 	if (*state)
-		lt_gui_draw_icon(cx, LT_GUI_ICON_CHECK, &cr, cx->style->ctrl_text_clr);
+		lt_gui_draw_icon(cx, &cr, cx->style->ctrl_text_clr, LT_GUI_ICON_CHECK);
 
 	return *state;
 }
