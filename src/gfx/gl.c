@@ -135,7 +135,10 @@ void lt_gfx_bind_texture(lt_gfx_t* gfx, lt_texture_t* tex) {
 }
 
 void lt_gfx_set_scissor(lt_gfx_t* gfx, isz x, isz y, isz w, isz h) {
-	glScissor(x, y, w, h);
+	// Flip the Y axis, since OpenGL's origin is in the bottom left
+	int winw, winh;
+	lt_window_get_size(gfx->window, &winw, &winh);
+	glScissor(x, winh - (y + h), w, h);
 }
 
 void lt_gfx_draw_mesh(lt_gfx_t* gfx, lt_mesh_t* mesh) {
