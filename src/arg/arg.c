@@ -87,6 +87,18 @@ b8 lt_arg_str(lt_arg_iterator_t* it, char short_key, lstr_t long_key, char** out
 	return !!arg;
 }
 
+b8 lt_arg_lstr(lt_arg_iterator_t* it, char short_key, lstr_t long_key, lstr_t* out) {
+	if (it->end_of_opt)
+		return 0;
+
+	char* arg = find_short_val(it, short_key);
+	if (!arg)
+		arg = find_long_val(it, long_key);
+	if (arg)
+		*out = LSTR(arg, strlen(arg));
+	return !!arg;
+}
+
 b8 lt_arg_int(lt_arg_iterator_t* it, char short_key, lstr_t long_key, i64* out) {
 	// !!
 	return 0;

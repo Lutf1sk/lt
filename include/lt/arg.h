@@ -17,6 +17,7 @@ b8 lt_arg_next(lt_arg_iterator_t* it);
 
 b8 lt_arg_flag(lt_arg_iterator_t* it, char short_key, lstr_t long_key);
 b8 lt_arg_str(lt_arg_iterator_t* it, char short_key, lstr_t long_key, char** out);
+b8 lt_arg_lstr(lt_arg_iterator_t* it, char short_key, lstr_t long_key, lstr_t* out);
 b8 lt_arg_int(lt_arg_iterator_t* it, char short_key, lstr_t long_key, i64* out);
 b8 lt_arg_uint(lt_arg_iterator_t* it, char short_key, lstr_t long_key, u64* out);
 
