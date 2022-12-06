@@ -4,14 +4,14 @@
 
 static
 lt_gui_style_t lt_gui_default_style_ = {
-	.panel_bg_clr = 0xFF282828,
-	.panel_border_clr = 0xFF404040,
+	.panel_bg_clr = 0x282828FF,
+	.panel_border_clr = 0x404040FF,
 
-	.text_clr = 0xFFE0E0E0,
-	.border_clr = 0xFF000000,
+	.text_clr = 0xE0E0E0FF,
+	.border_clr = 0x000000FF,
 
-	.ctrl_bg_clr = 0xFF505050,
-	.ctrl_text_clr = 0xFFE0E0E0,
+	.ctrl_bg_clr = 0x505050FF,
+	.ctrl_text_clr = 0xE0E0E0FF,
 
 	.button_hpad = 8,
 
@@ -85,9 +85,9 @@ void lt_gui_draw_border(lt_gui_ctx_t* cx, lt_gui_rect_t* r, u32 clr, u32 flags) 
 	u32 br_clr = clr;
 
 	if (flags & LT_GUI_BORDER_OUTSET)
-		tl_clr += 0x202020;
+		tl_clr += 0x20202000;
 	if (flags & LT_GUI_BORDER_INSET)
-		br_clr += 0x202020;
+		br_clr += 0x20202000;
 
 	lt_gui_rect_t rects[4] = {
 		{ r->x + r->w - cx->style->border, r->y, cx->style->border, r->h },
@@ -247,10 +247,10 @@ b8 lt_gui_textbox(lt_gui_ctx_t* cx, isz ew, isz eh, lt_gui_textbox_state_t* stat
 	lt_gui_rect_t r = {0, 0, ew, eh};
 	make_space(cx, &r, flags);
 
-	u32 bg = cx->style->panel_bg_clr - 0x1A1A1A;
+	u32 bg = cx->style->panel_bg_clr - 0x1A1A1A00;
 	b8 hovered = is_hovered(cx, &r);
 	if (hovered || state->selected)
-		bg += 0x101010;
+		bg += 0x10101000;
 
 	if (mb_pressed(cx, 0))
 		state->selected = hovered;
@@ -286,7 +286,7 @@ u8 lt_gui_button(lt_gui_ctx_t* cx, lstr_t text, u32 flags) {
 	u32 bg = cx->style->ctrl_bg_clr;
 	b8 hovered = is_hovered(cx, &r);
 	if (hovered)
-		bg += 0x202020;
+		bg += 0x20202000;
 
 	lt_gui_draw_rect(cx, &r, bg);
 	lt_gui_draw_border(cx, &r, cx->style->border_clr, flags);
@@ -303,7 +303,7 @@ u8 lt_gui_expandable(lt_gui_ctx_t* cx, lstr_t text, b8* expanded, u32 flags) {
 	u32 bg = cx->style->ctrl_bg_clr;
 	b8 hovered = is_hovered(cx, &r);
 	if (hovered) {
-		bg += 0x202020;
+		bg += 0x20202000;
 		if (mb_pressed(cx, 0))
 			*expanded = !*expanded;
 	}
@@ -350,7 +350,7 @@ b8 lt_gui_dropdown_begin(lt_gui_ctx_t* cx, lstr_t text, isz ew, isz eh, u32* sta
 	c.spacing = 0;
 
 	if (hovered) {
-		bg += 0x202020;
+		bg += 0x20202000;
 		if (mb_pressed(cx, 0))
 			*state = !*state;
 	}
@@ -389,10 +389,10 @@ b8 lt_gui_checkbox(lt_gui_ctx_t* cx, lstr_t text, b8* state, u32 flags) {
 	lt_gui_rect_t r = { 0, 0, text_w + cx->style->padding*2 + cx->glyph_height, cx->glyph_height };
 	make_space(cx, &r, flags);
 
-	u32 bg = cx->style->panel_bg_clr - 0x1A1A1A;
+	u32 bg = cx->style->panel_bg_clr - 0x1A1A1A00;
 	b8 hovered = is_hovered(cx, &r);
 	if (hovered) {
-		bg += 0x101010;
+		bg += 0x10101000;
 		if (mb_pressed(cx, 0))
 			*state = !*state;
 	}
