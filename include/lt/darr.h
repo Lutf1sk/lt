@@ -36,4 +36,9 @@ void lt_darr_erase(void* arr, usz start_idx, usz count);
 void* lt_darr_insert_(void* arr, usz idx, void* data, usz count);
 #define lt_darr_insert(arr, idx, data, count) ((arr) = lt_darr_insert_((arr), (idx), (data), (count)))
 
+static LT_INLINE
+void lt_darr_clear(void* arr) {
+	lt_darr_head(arr)->count = 0;
+}
+
 #endif
