@@ -67,15 +67,6 @@ b8 lt_lineedit_create(lt_lineedit_t* ed, lt_alloc_t* alloc) {
 	return ed->str != NULL;
 }
 
-void lt_lineedit_destroy(lt_lineedit_t* ed) {
-	lt_darr_destroy(ed->str);
-}
-
-void lt_lineedit_clear(lt_lineedit_t* ed) {
-	lt_darr_clear(ed->str);
-	ed->cursor_pos = 0;
-}
-
 void lt_lineedit_input_str(lt_lineedit_t* ed, lstr_t str) {
 	char* it = str.str;
 	char* end = str.str + str.len;

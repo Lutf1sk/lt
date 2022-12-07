@@ -3,6 +3,7 @@
 
 #include <lt/lt.h>
 #include <lt/fwd.h>
+#include <lt/darr.h>
 
 typedef
 struct lt_lineedit {
@@ -11,9 +12,22 @@ struct lt_lineedit {
 } lt_lineedit_t;
 
 b8 lt_lineedit_create(lt_lineedit_t* ed, lt_alloc_t* alloc);
-void lt_lineedit_destroy(lt_lineedit_t* ed);
 
-void lt_lineedit_clear(lt_lineedit_t* ed);
+static LT_INLINE
+void lt_lineedit_destroy(lt_lineedit_t* ed) {
+	lt_darr_destroy(ed->str);
+}
+
+static LT_INLINE
+lstr_t lt_lineedit_getstr(lt_lineedit_t* ed) {
+	return LSTR(ed->str, lt_darr_count(ed->str));
+}
+
+static LT_INLINE
+void lt_lineedit_clear(lt_lineedit_t* ed) {
+	lt_darr_clear(ed->str);
+	ed->cursor_pos = 0;
+}
 
 void lt_lineedit_input_str(lt_lineedit_t* ed, lstr_t str);
 void lt_lineedit_cursor_left(lt_lineedit_t* ed);
@@ -27,6 +41,8 @@ void lt_lineedit_delete_word_bwd(lt_lineedit_t* ed);
 void lt_lineedit_delete_word_fwd(lt_lineedit_t* ed);
 
 void lt_lineedit_gotox(lt_lineedit_t* ed, usz x);
+
+
 
 typedef
 struct lt_textedit {
