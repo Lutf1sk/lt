@@ -188,8 +188,9 @@ b8 lt_gfx_render_text(lt_gfx_t* gfx, lstr_t text, lt_font_t* font, usz flags, lt
 		return 0;
 
 	lt_font_render(font, text, img.data);
+	b8 success = lt_texture_create(gfx, out_tex, flags, &img);
 	lt_mfree(gfx->alloc, img.data);
-	return lt_texture_create(gfx, out_tex, flags, &img);
+	return success;
 }
 
 void lt_gfx_wait_idle(lt_gfx_t* gfx) {
