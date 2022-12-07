@@ -16,6 +16,8 @@ struct lt_font {
 } lt_font_t;
 
 lt_font_t* lt_font_load_psf(void* data, usz len, lt_alloc_t* alloc);
+b8 lt_font_write_psf(lt_font_t* font, lt_file_t* file, lt_alloc_t* alloc);
+
 lt_font_t* lt_font_load(void* data, usz len, lt_alloc_t* alloc);
 
 void lt_font_destroy(lt_font_t* font, lt_alloc_t* alloc);

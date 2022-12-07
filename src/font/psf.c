@@ -1,5 +1,6 @@
 #include <lt/font.h>
 #include <lt/mem.h>
+#include <lt/io.h>
 
 #define PSF1_MODE512    0x01
 #define PSF1_MODEHASTAB 0x02
@@ -358,4 +359,49 @@ lt_font_t* lt_font_load_psf(void* data, usz len, lt_alloc_t* alloc) {
 	}
 
 	return font;
+}
+
+b8 lt_font_write_psf(lt_font_t* font, lt_file_t* file, lt_alloc_t* alloc) {
+	usz w_bytes = font->width / 8;
+	if (font->width % 8)
+		++w_bytes;
+	usz glyph_bytes = w_bytes * font->height;
+
+	lt_psf2_header_t head;
+	head.magic = LT_FONT_PSF2_MAGIC;
+	head.version = 0;
+	head.header_size = sizeof(lt_psf2_header_t);
+	head.flags = 0;
+	head.glyph_bytes = glyph_bytes;
+	head.glyph_count = font->glyph_count;
+	head.height = font->height;
+	head.width = font->width;
+
+	if (lt_file_write(file, &head, sizeof(head)) != sizeof(head))
+		return 0;
+
+	usz glyphtab_size = glyph_bytes * font->glyph_count;
+	u8* glyphtab = lt_malloc(alloc, glyphtab_size);
+
+	u8* out_it = glyphtab;
+	u32* in_it = font->glyph_data;
+	for (usz i = 0; i < font->glyph_count; ++i) {
+		for (usz i = 0; i < font->height; ++i) {
+			u8 byte = 0;
+			u8 mask = 7;
+			for (usz i = 0; i < font->width; ++i) {
+				u8 i_masked = i & mask;
+				if (i && !i_masked) {
+					*out_it++ = byte;
+					byte = 0;
+				}
+				byte |= !!(*in_it++) << (mask - i_masked);
+			}
+			*out_it++ = byte;
+		}
+	}
+
+	isz res = lt_file_write(file, glyphtab, glyphtab_size);
+	lt_mfree(alloc, glyphtab);
+	return res == glyphtab_size;
 }
