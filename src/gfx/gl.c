@@ -162,7 +162,7 @@ void lt_gfx_draw_rectctd(lt_gfx_t* gfx, isz x, isz y, isz w, isz h, u32 color, l
 		w, 0, 0, 0,
 		0, h, 0, 0,
 		0, 0, 1, 0,
-		x, y, (float)depth / (float)LT_MAX_DEPTH, 1
+		x, y, (float)(LT_MAX_DEPTH - depth) / (float)LT_MAX_DEPTH, 1
 	);
 	lt_pipeline_uniform_mat4(&gfx->default_pipeline, DEFAULT_LOCATION_MODEL, (float*)&model);
 
