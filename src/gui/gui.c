@@ -88,6 +88,7 @@ void lt_gui_begin(lt_gui_ctx_t* cx, isz x, isz y, isz w, isz h) {
 	c->r = LT_GUI_RECT(x, y, w, h);
 	c->a = c->r;
 	c->cols = 0;
+	c->depth = 0;
 
 	c->padding = 0;
 	c->spacing = cx->style->spacing;
