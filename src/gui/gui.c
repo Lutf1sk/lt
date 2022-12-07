@@ -22,6 +22,11 @@ lt_gui_style_t lt_gui_default_style_ = {
 
 lt_gui_style_t* lt_gui_default_style = &lt_gui_default_style_;
 
+#define DEPTH_RECT_OFFS 1
+#define DEPTH_ICON_OFFS 2
+#define DEPTH_TEXT_OFFS 3
+#define DEPTH_WINDOW_STEP 5
+
 static
 b8 is_hovered(lt_gui_ctx_t* cx, lt_gui_rect_t* r) {
 	return	cx->mouse_x >= r->x && cx->mouse_x < r->x + r->w &&
@@ -34,18 +39,25 @@ b8 mb_pressed(lt_gui_ctx_t* cx, isz btn) {
 }
 
 static LT_INLINE
+void set_scissor(lt_gui_ctx_t* cx, lt_gui_rect_t* r) {
+	cx->scissor(cx->user_data, r);
+}
+
+static LT_INLINE
 lt_gui_cont_t* cont_top(lt_gui_ctx_t* cx) {
 	return &cx->conts[cx->cont_top - 1];
 }
 
 static LT_INLINE
-lt_gui_cont_t cont_pop(lt_gui_ctx_t* cx) {
-	return cx->conts[--cx->cont_top];
+void cont_pop(lt_gui_ctx_t* cx) {
+	--cx->cont_top;
+	set_scissor(cx, &cont_top(cx)->r);
 }
 
 static LT_INLINE
-void set_scissor(lt_gui_ctx_t* cx, lt_gui_rect_t* r) {
-	cx->scissor(cx->user_data, r);
+void cont_push(lt_gui_ctx_t* cx, lt_gui_cont_t c) {
+	cx->conts[cx->cont_top++] = c;
+	set_scissor(cx, &cont_top(cx)->r);
 }
 
 static LT_INLINE
@@ -106,22 +118,23 @@ void lt_gui_draw_border(lt_gui_ctx_t* cx, lt_gui_rect_t* r, u32 clr, u32 flags) 
 		{ r->x, r->y, r->w, cx->style->border },
 	};
 
-	cx->draw_rect(cx->user_data, &rects[0], br_clr);
-	cx->draw_rect(cx->user_data, &rects[1], br_clr);
-	cx->draw_rect(cx->user_data, &rects[2], tl_clr);
-	cx->draw_rect(cx->user_data, &rects[3], tl_clr);
+	lt_gui_cont_t* c = cont_top(cx);
+	cx->draw_rect(cx->user_data, &rects[0], br_clr, c->depth + DEPTH_RECT_OFFS);
+	cx->draw_rect(cx->user_data, &rects[1], br_clr, c->depth + DEPTH_RECT_OFFS);
+	cx->draw_rect(cx->user_data, &rects[2], tl_clr, c->depth + DEPTH_RECT_OFFS);
+	cx->draw_rect(cx->user_data, &rects[3], tl_clr, c->depth + DEPTH_RECT_OFFS);
 }
 
 void lt_gui_draw_rect(lt_gui_ctx_t* cx, lt_gui_rect_t* r, u32 clr) {
-	cx->draw_rect(cx->user_data, r, clr);
+	cx->draw_rect(cx->user_data, r, clr, cont_top(cx)->depth + DEPTH_RECT_OFFS);
 }
 
 void lt_gui_draw_icon(lt_gui_ctx_t* cx, lt_gui_rect_t* r, u32 clr, u32 icon) {
-	cx->draw_icon(cx->user_data, r, clr, icon);
+	cx->draw_icon(cx->user_data, r, clr, icon, cont_top(cx)->depth + DEPTH_ICON_OFFS);
 }
 
 void lt_gui_draw_text(lt_gui_ctx_t* cx, i32 x, i32 y, lstr_t str, u32 clr) {
-	cx->draw_text(cx->user_data, x, y, str, clr);
+	cx->draw_text(cx->user_data, x, y, str, clr, cont_top(cx)->depth + DEPTH_TEXT_OFFS);
 }
 
 static
@@ -180,19 +193,17 @@ void lt_gui_panel_begin(lt_gui_ctx_t* cx, isz w, isz h, u32 flags) {
 	c.cols = 0;
 	c.padding = cx->style->padding;
 	c.spacing = cx->style->spacing;
+	c.depth = cont_top(cx)->depth;
 	make_space(cx, &c.r, flags);
 	seta_padded(cx, &c);
 
-	set_scissor(cx, &c.r);
-
-	cx->conts[cx->cont_top++] = c;
+	cont_push(cx, c);
 	lt_gui_draw_rect(cx, &c.r, cx->style->panel_bg_clr);
 	lt_gui_draw_border(cx, &c.r, cx->style->panel_border_clr, flags);
 }
 
 void lt_gui_panel_end(lt_gui_ctx_t* cx) {
 	cont_pop(cx);
-	set_scissor(cx, &cont_top(cx)->r);
 }
 
 void lt_gui_row(lt_gui_ctx_t* cx, usz cols) {
@@ -209,7 +220,7 @@ void lt_gui_label(lt_gui_ctx_t* cx, lstr_t text, u32 flags) {
 }
 
 void lt_gui_text(lt_gui_ctx_t* cx, lstr_t text, u32 flags) {
-	lt_gui_cont_t* c = lt_gui_get_container(cx);
+	lt_gui_cont_t* c = cont_top(cx);
 	lt_gui_rect_t r = c->a;
 	r.h = 0;
 
@@ -358,6 +369,7 @@ b8 lt_gui_dropdown_begin(lt_gui_ctx_t* cx, lstr_t text, isz ew, isz eh, u32* sta
 	c.a = c.r;
 	c.padding = 0;
 	c.spacing = 0;
+	c.depth = cont_top(cx)->depth + DEPTH_WINDOW_STEP;
 
 	if (hovered) {
 		bg += 0x20202000;
@@ -377,7 +389,7 @@ b8 lt_gui_dropdown_begin(lt_gui_ctx_t* cx, lstr_t text, isz ew, isz eh, u32* sta
 	lt_gui_draw_icon(cx, &ir, cx->style->ctrl_text_clr, LT_GUI_ICON_EXPANDED);
 
 	if (*state) {
-		cx->conts[cx->cont_top++] = c;
+		cont_push(cx, c);
 
 		lt_gui_draw_rect(cx, &c.r, cx->style->panel_bg_clr);
 		lt_gui_draw_border(cx, &c.r, cx->style->panel_border_clr, 0);
@@ -390,7 +402,6 @@ void lt_gui_dropdown_end(lt_gui_ctx_t* cx) {
 	cont_pop(cx);
 	cx->mouse_x = -1;
 	cx->mouse_y = -1;
-	set_scissor(cx, &cont_top(cx)->r);
 }
 
 b8 lt_gui_checkbox(lt_gui_ctx_t* cx, lstr_t text, b8* state, u32 flags) {

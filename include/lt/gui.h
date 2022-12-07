@@ -26,15 +26,16 @@ struct lt_gui_cont {
 	lt_gui_rect_t a; // Available
 	isz ymax;
 	usz cols;
+	u32 depth;
 
 	isz padding, spacing;
 } lt_gui_cont_t;
 
 #define LT_GUI_RECT(x, y, w, h) ((lt_gui_rect_t){ (x), (y), (w), (h) })
 
-typedef void (*lt_gui_rect_callback_t)(void* usr, lt_gui_rect_t* r, u32 clr);
-typedef void (*lt_gui_text_callback_t)(void* usr, i32 x, i32 y, lstr_t str, u32 clr);
-typedef void (*lt_gui_icon_callback_t)(void* usr, lt_gui_rect_t* r, u32 clr, usz icon);
+typedef void (*lt_gui_rect_callback_t)(void* usr, lt_gui_rect_t* r, u32 clr, u32 depth);
+typedef void (*lt_gui_text_callback_t)(void* usr, i32 x, i32 y, lstr_t str, u32 clr, u32 depth);
+typedef void (*lt_gui_icon_callback_t)(void* usr, lt_gui_rect_t* r, u32 clr, usz icon, u32 depth);
 typedef void (*lt_gui_scissor_callback_t)(void* usr, lt_gui_rect_t* r);
 typedef usz (*lt_gui_text_width_callback_t)(void* usr, lstr_t text);
 
