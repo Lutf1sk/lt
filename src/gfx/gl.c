@@ -177,7 +177,7 @@ void lt_gfx_draw_textured_rect(lt_gfx_t* gfx, isz x, isz y, isz w, isz h, lt_tex
 	lt_gfx_draw_colored_textured_rect(gfx, x, y, w, h, 0xFFFFFFFF, tex);
 }
 
-b8 lt_gfx_render_text(lt_gfx_t* gfx, lstr_t text, lt_font_t* font, lt_texture_t* out_tex) {
+b8 lt_gfx_render_text(lt_gfx_t* gfx, lstr_t text, lt_font_t* font, usz flags, lt_texture_t* out_tex) {
 	lt_img_t img;
 	img.format = LT_IMG_RGBA;
 	img.flags = 0;
@@ -189,7 +189,7 @@ b8 lt_gfx_render_text(lt_gfx_t* gfx, lstr_t text, lt_font_t* font, lt_texture_t*
 
 	lt_font_render(font, text, img.data);
 	lt_mfree(gfx->alloc, img.data);
-	return lt_texture_create(gfx, out_tex, LT_TEXTURE_FILTERED, &img);
+	return lt_texture_create(gfx, out_tex, flags, &img);
 }
 
 void lt_gfx_wait_idle(lt_gfx_t* gfx) {

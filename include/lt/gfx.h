@@ -94,7 +94,7 @@ void lt_gfx_draw_mesh(lt_gfx_t* gfx, lt_mesh_t* mesh);
 void lt_gfx_draw_colored_rect(lt_gfx_t* gfx, isz x, isz y, isz w, isz h, u32 color);
 void lt_gfx_draw_textured_rect(lt_gfx_t* gfx, isz x, isz y, isz w, isz h, lt_texture_t* tex);
 void lt_gfx_draw_colored_textured_rect(lt_gfx_t* gfx, isz x, isz y, isz w, isz h, u32 color, lt_texture_t* tex);
-b8 lt_gfx_render_text(lt_gfx_t* gfx, lstr_t text, lt_font_t* font, lt_texture_t* out_tex);
+b8 lt_gfx_render_text(lt_gfx_t* gfx, lstr_t text, lt_font_t* font, usz flags, lt_texture_t* out_tex);
 
 void lt_gfx_wait_idle(lt_gfx_t* gfx);
 
