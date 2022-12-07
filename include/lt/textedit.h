@@ -29,7 +29,7 @@ void lt_lineedit_clear(lt_lineedit_t* ed) {
 	ed->cursor_pos = 0;
 }
 
-void lt_lineedit_input_str(lt_lineedit_t* ed, lstr_t str);
+b8 lt_lineedit_input_str(lt_lineedit_t* ed, lstr_t str);
 void lt_lineedit_cursor_left(lt_lineedit_t* ed);
 void lt_lineedit_cursor_right(lt_lineedit_t* ed);
 void lt_lineedit_step_left(lt_lineedit_t* ed);
@@ -58,7 +58,7 @@ void lt_textedit_clear(lt_textedit_t* ed);
 
 isz lt_textedit_write_contents(lt_textedit_t* ed, void* usr, lt_io_callback_t callb);
 
-void lt_textedit_input_str(lt_textedit_t* ed, lstr_t str);
+b8 lt_textedit_input_str(lt_textedit_t* ed, lstr_t str);
 
 void lt_textedit_cursor_left(lt_textedit_t* ed);
 void lt_textedit_cursor_right(lt_textedit_t* ed);

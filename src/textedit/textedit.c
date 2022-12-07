@@ -67,9 +67,10 @@ b8 lt_lineedit_create(lt_lineedit_t* ed, lt_alloc_t* alloc) {
 	return ed->str != NULL;
 }
 
-void lt_lineedit_input_str(lt_lineedit_t* ed, lstr_t str) {
+b8 lt_lineedit_input_str(lt_lineedit_t* ed, lstr_t str) {
 	char* it = str.str;
 	char* end = str.str + str.len;
+	b8 changed = 0;
 	while (it < end) {
 		if ((u8)*it < 0x20) { // Ignore control characters
 			++it;
@@ -79,7 +80,9 @@ void lt_lineedit_input_str(lt_lineedit_t* ed, lstr_t str) {
 		lt_darr_insert(ed->str, ed->cursor_pos, it, len);
 		ed->cursor_pos += len;
 		it += len;
+		changed = 1;
 	}
+	return changed;
 }
 
 void lt_lineedit_cursor_left(lt_lineedit_t* ed) {
@@ -225,9 +228,10 @@ isz lt_textedit_write_contents(lt_textedit_t* ed, void* usr, lt_io_callback_t ca
 	return bytes;
 }
 
-void lt_textedit_input_str(lt_textedit_t* ed, lstr_t str) {
+b8 lt_textedit_input_str(lt_textedit_t* ed, lstr_t str) {
 	char* it = str.str;
 	char* end = str.str + str.len;
+	b8 changed = 0;
 	while (it < end) {
 		if (*it == '\n') {
 			newline(ed, ++ed->cursor_pos);
@@ -237,8 +241,10 @@ void lt_textedit_input_str(lt_textedit_t* ed, lstr_t str) {
 		usz len = lt_utf8_decode_len(*it);
 		lt_lineedit_input_str(&ed->lines[ed->cursor_pos], LSTR(it, len));
 		it += len;
+		changed = 1;
 	}
 	sync_tx(ed);
+	return changed;
 }
 
 void lt_textedit_cursor_left(lt_textedit_t* ed) {
