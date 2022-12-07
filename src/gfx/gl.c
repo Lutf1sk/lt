@@ -146,7 +146,7 @@ void lt_gfx_draw_mesh(lt_gfx_t* gfx, lt_mesh_t* mesh) {
 	glDrawElements(GL_TRIANGLES, mesh->index_count, GL_UNSIGNED_INT, NULL);
 }
 
-void lt_gfx_draw_colored_textured_rect(lt_gfx_t* gfx, isz x, isz y, isz w, isz h, u32 color, lt_texture_t* tex) {
+void lt_gfx_draw_rectctd(lt_gfx_t* gfx, isz x, isz y, isz w, isz h, u32 color, lt_texture_t* tex, u32 depth) {
 	lt_gfx_bind_pipeline(gfx, &gfx->default_pipeline);
 	lt_gfx_bind_texture(gfx, tex);
 
@@ -162,19 +162,15 @@ void lt_gfx_draw_colored_textured_rect(lt_gfx_t* gfx, isz x, isz y, isz w, isz h
 		w, 0, 0, 0,
 		0, h, 0, 0,
 		0, 0, 1, 0,
-		x, y, 0, 1
+		x, y, (float)depth / (float)LT_MAX_DEPTH, 1
 	);
 	lt_pipeline_uniform_mat4(&gfx->default_pipeline, DEFAULT_LOCATION_MODEL, (float*)&model);
 
 	lt_gfx_draw_mesh(gfx, &gfx->rect_mesh);
 }
 
-void lt_gfx_draw_colored_rect(lt_gfx_t* gfx, isz x, isz y, isz w, isz h, u32 color) {
-	lt_gfx_draw_colored_textured_rect(gfx, x, y, w, h, color, &gfx->white_texture);
-}
-
-void lt_gfx_draw_textured_rect(lt_gfx_t* gfx, isz x, isz y, isz w, isz h, lt_texture_t* tex) {
-	lt_gfx_draw_colored_textured_rect(gfx, x, y, w, h, 0xFFFFFFFF, tex);
+void lt_gfx_draw_rectcd(lt_gfx_t* gfx, isz x, isz y, isz w, isz h, u32 color, u32 depth) {
+	lt_gfx_draw_rectctd(gfx, x, y, w, h, color, &gfx->white_texture, depth);
 }
 
 b8 lt_gfx_render_text(lt_gfx_t* gfx, lstr_t text, lt_font_t* font, usz flags, lt_texture_t* out_tex) {

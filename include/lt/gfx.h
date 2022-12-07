@@ -91,9 +91,18 @@ void lt_gfx_bind_texture(lt_gfx_t* gfx, lt_texture_t* tex);
 void lt_gfx_set_scissor(lt_gfx_t* gfx, isz x, isz y, isz w, isz h);
 
 void lt_gfx_draw_mesh(lt_gfx_t* gfx, lt_mesh_t* mesh);
-void lt_gfx_draw_colored_rect(lt_gfx_t* gfx, isz x, isz y, isz w, isz h, u32 color);
-void lt_gfx_draw_textured_rect(lt_gfx_t* gfx, isz x, isz y, isz w, isz h, lt_texture_t* tex);
-void lt_gfx_draw_colored_textured_rect(lt_gfx_t* gfx, isz x, isz y, isz w, isz h, u32 color, lt_texture_t* tex);
+
+#define LT_DEFAULT_DEPTH 0
+#define LT_MAX_DEPTH 65535
+
+void lt_gfx_draw_rectctd(lt_gfx_t* gfx, isz x, isz y, isz w, isz h, u32 color, lt_texture_t* tex, u32 depth);
+void lt_gfx_draw_rectcd(lt_gfx_t* gfx, isz x, isz y, isz w, isz h, u32 color, u32 depth);
+#define lt_gfx_draw_recttd(gfx, x, y, w, h, tex, depth) lt_gfx_draw_rectctd((gfx), (x), (y), (w), (h), 0xFFFFFFFF, (tex), (depth))
+
+#define lt_gfx_draw_rectct(gfx, x, y, w, h, clr, tex) lt_gfx_draw_rectctd((gfx), (x), (y), (w), (h), (clr), (tex), LT_DEFAULT_DEPTH)
+#define lt_gfx_draw_rectc(gfx, x, y, w, h, clr) lt_gfx_draw_rectcd((gfx), (x), (y), (w), (h), (clr), LT_DEFAULT_DEPTH)
+#define lt_gfx_draw_rectt(gfx, x, y, w, h, tex) lt_gfx_draw_rectctd((gfx), (x), (y), (w), (h), 0xFFFFFFFF, (tex), LT_DEFAULT_DEPTH)
+
 b8 lt_gfx_render_text(lt_gfx_t* gfx, lstr_t text, lt_font_t* font, usz flags, lt_texture_t* out_tex);
 
 void lt_gfx_wait_idle(lt_gfx_t* gfx);
