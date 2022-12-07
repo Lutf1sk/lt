@@ -48,6 +48,11 @@ void set_scissor(lt_gui_ctx_t* cx, lt_gui_rect_t* r) {
 	cx->scissor(cx->user_data, r);
 }
 
+static LT_INLINE
+usz text_width(lt_gui_ctx_t* cx, lstr_t text) {
+	return cx->text_width(cx->user_data, text);
+}
+
 b8 lt_gui_ctx_init(lt_gui_ctx_t* cx, lt_alloc_t* alloc) {
 	cx->conts = lt_malloc(alloc, sizeof(lt_gui_cont_t) * cx->cont_max);
 	if (!cx->conts)
@@ -197,7 +202,7 @@ void lt_gui_row(lt_gui_ctx_t* cx, usz cols) {
 }
 
 void lt_gui_label(lt_gui_ctx_t* cx, lstr_t text, u32 flags) {
-	lt_gui_rect_t r = { 0, 0, text.len * cx->glyph_width, cx->glyph_height };
+	lt_gui_rect_t r = { 0, 0, text_width(cx, text), cx->glyph_height };
 	make_space(cx, &r, flags);
 
 	lt_gui_draw_text(cx, r.x, r.y, text, cx->style->text_clr);
@@ -210,7 +215,7 @@ void lt_gui_text(lt_gui_ctx_t* cx, lstr_t text, u32 flags) {
 
 	char* end = text.str + text.len;
 
-	usz max_chars = r.w / cx->glyph_width;
+	usz max_chars = r.w / text_width(cx, CLSTR(" ")); // !!
 	if (!max_chars)
 		max_chars = 1;
 
@@ -262,7 +267,7 @@ b8 lt_gui_textbox(lt_gui_ctx_t* cx, isz ew, isz eh, lt_gui_textbox_state_t* stat
 
 	lstr_t text = LSTR(state->buf, strnlen(state->buf, state->maxlen));
 
-	usz max_chars = (r.w - cx->style->padding*2) / cx->glyph_width;;
+	usz max_chars = (r.w - cx->style->padding*2) / text_width(cx, CLSTR(" ")); // !!
 	if (text.len > max_chars) {
 		usz offs = text.len - max_chars;
 		text = LSTR(text.str + offs, text.len - offs);
@@ -275,7 +280,7 @@ b8 lt_gui_textbox(lt_gui_ctx_t* cx, isz ew, isz eh, lt_gui_textbox_state_t* stat
 	lt_gui_draw_border(cx, &r, cx->style->border_clr, flags);
 
 	if (state->selected) {
-		lt_gui_rect_t cr = { x + text.len * cx->glyph_width, r.y + 1, 1, cx->glyph_height - 1 };
+		lt_gui_rect_t cr = { x + text_width(cx, text), r.y + 1, 1, cx->glyph_height - 1 };
 		lt_gui_draw_rect(cx, &cr, cx->style->text_clr);
 	}
 
@@ -283,7 +288,7 @@ b8 lt_gui_textbox(lt_gui_ctx_t* cx, isz ew, isz eh, lt_gui_textbox_state_t* stat
 }
 
 u8 lt_gui_button(lt_gui_ctx_t* cx, lstr_t text, u32 flags) {
-	isz text_w = text.len * cx->glyph_width;
+	isz text_w = text_width(cx, text);
 
 	lt_gui_rect_t r = {0, 0, text_w + cx->style->button_hpad*2, cx->glyph_height + 2};
 	make_space(cx, &r, flags);
@@ -320,7 +325,7 @@ u8 lt_gui_expandable(lt_gui_ctx_t* cx, lstr_t text, b8* expanded, u32 flags) {
 	lt_gui_draw_rect(cx, &r, bg);
 	lt_gui_draw_border(cx, &r, cx->style->border_clr, flags);
 
-	lt_gui_draw_text(cx, r.x + r.w/2 - (text.len * cx->glyph_width)/2, r.y + 1, text, cx->style->ctrl_text_clr);
+	lt_gui_draw_text(cx, r.x + r.w/2 - text_width(cx, text)/2, r.y + 1, text, cx->style->ctrl_text_clr);
 
 	lt_gui_rect_t ir = { r.x + 1, r.y + 1, cx->glyph_height, cx->glyph_height };
 	lt_gui_draw_icon(cx, &ir, cx->style->ctrl_text_clr, icon);
@@ -339,7 +344,7 @@ void lt_gui_hspace(lt_gui_ctx_t* cx, usz space, u32 flags) {
 }
 
 b8 lt_gui_dropdown_begin(lt_gui_ctx_t* cx, lstr_t text, isz ew, isz eh, u32* state, u32 flags) {
-	i32 text_w = text.len * cx->glyph_width;
+	i32 text_w = text_width(cx, text);
 
 	lt_gui_rect_t r = { 0, 0, text_w + cx->style->padding*3 + cx->glyph_height, cx->glyph_height + 2 };
 	make_space(cx, &r, flags);
@@ -389,7 +394,7 @@ void lt_gui_dropdown_end(lt_gui_ctx_t* cx) {
 }
 
 b8 lt_gui_checkbox(lt_gui_ctx_t* cx, lstr_t text, b8* state, u32 flags) {
-	i32 text_w = text.len * cx->glyph_width;
+	i32 text_w = text_width(cx, text);
 
 	lt_gui_rect_t r = { 0, 0, text_w + cx->style->padding*2 + cx->glyph_height, cx->glyph_height };
 	make_space(cx, &r, flags);

@@ -36,6 +36,7 @@ typedef void (*lt_gui_rect_callback_t)(void* usr, lt_gui_rect_t* r, u32 clr);
 typedef void (*lt_gui_text_callback_t)(void* usr, i32 x, i32 y, lstr_t str, u32 clr);
 typedef void (*lt_gui_icon_callback_t)(void* usr, lt_gui_rect_t* r, u32 clr, usz icon);
 typedef void (*lt_gui_scissor_callback_t)(void* usr, lt_gui_rect_t* r);
+typedef usz (*lt_gui_text_width_callback_t)(void* usr, lstr_t text);
 
 typedef
 struct lt_gui_style {
@@ -70,8 +71,8 @@ struct lt_gui_ctx {
 	lt_gui_text_callback_t draw_text;
 	lt_gui_icon_callback_t draw_icon;
 	lt_gui_scissor_callback_t scissor;
+	lt_gui_text_width_callback_t text_width;
 
-	isz glyph_width;
 	isz glyph_height;
 
 	int mouse_x, mouse_y;
