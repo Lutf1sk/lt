@@ -27,14 +27,14 @@ void* lt_darr_make_space(void* arr, usz count) {
 
 	head->count += count;
 	usz new_size = head->count * head->elem_size;
-	if (new_size > head->alloced_size) {
-		while (new_size > head->alloced_size)
-			head->alloced_size <<= 1;
-		head = lt_mrealloc(head->alloc, head, LT_DARR_ALIGNED_SIZE + new_size);
-		arr = (u8*)head + LT_DARR_ALIGNED_SIZE;
-		LT_ASSERT(arr);
-	}
-	return arr;
+	if (new_size <= head->alloced_size)
+		return arr;
+
+	while (head->alloced_size < new_size)
+		head->alloced_size <<= 1;
+	head = lt_mrealloc(head->alloc, head, LT_DARR_ALIGNED_SIZE + head->alloced_size);
+	LT_ASSERT(head);
+	return (u8*)head + LT_DARR_ALIGNED_SIZE;
 }
 
 void lt_darr_erase(void* arr, usz start_idx, usz count) {
@@ -59,7 +59,7 @@ void* lt_darr_insert_(void* arr, usz idx, void* data, usz count) {
 	head = lt_darr_head(arr);
 
 	usz size = count * head->elem_size;
-	void* start_ptr = (u8*)arr + idx * head->elem_size;
+	void* start_ptr = (u8*)arr + (idx * head->elem_size);
 	void* end_ptr = (u8*)start_ptr + size;
 	void* arr_end_ptr = (u8*)arr + old_count * head->elem_size;
 

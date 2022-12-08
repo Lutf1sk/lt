@@ -19,7 +19,7 @@ struct lt_darr {
 #define lt_darr_count(arr) (lt_darr_head(arr)->count)
 
 void* lt_darr_create_(usz elem_size, usz initial_count, lt_alloc_t* alloc);
-#define lt_darr_create(type, initial_count, alloc) ((type*)lt_darr_create_(sizeof(type), (initial_count), (alloc)))
+#define lt_darr_create(T, initial_count, alloc) ((T*)lt_darr_create_(sizeof(T), (initial_count), (alloc)))
 
 void lt_darr_destroy(void* arr);
 void* lt_darr_make_space(void* arr, usz count);

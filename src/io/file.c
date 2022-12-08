@@ -91,20 +91,24 @@ lt_file_t* lt_file_open(lstr_t path_, lt_file_mode_t mode, lt_file_perms_t perms
 #endif
 }
 
-b8 lt_file_read_entire(lstr_t path, lstr_t* out, lt_alloc_t* alloc) {
+lt_err_t lt_file_read_entire(lstr_t path, lstr_t* out, lt_alloc_t* alloc) {
 	lt_file_t* file = lt_file_open(path, LT_FILE_R, 0, alloc);
 	if (!file)
-		return 0;
+		return LT_ERR_UNKNOWN; // !!
+
 	usz size = lt_file_size(file);
 	char* data = lt_malloc(alloc, size);
+	if (!data)
+		return LT_ERR_OUT_OF_MEMORY;
+
 	isz res = lt_file_read(file, data, size);
 	lt_file_close(file, alloc);
-	if (res == -1) {
+	if (res < 0) {
 		lt_mfree(alloc, data);
-		return 0;
+		return -res;
 	}
 	*out = LSTR(data, res);
-	return 1;
+	return LT_SUCCESS;
 }
 
 void lt_file_close(lt_file_t* file, lt_alloc_t* alloc) {
@@ -120,6 +124,8 @@ isz lt_file_read(lt_file_t* file, void* data, usz size) {
 #if defined(LT_UNIX)
 
 	isz read_bytes = read(file->fd, data, size);
+	if (read_bytes < 0)
+		return -LT_ERR_UNKNOWN; // !!
 	return read_bytes;
 
 #elif defined(LT_WINDOWS)
@@ -127,7 +133,7 @@ isz lt_file_read(lt_file_t* file, void* data, usz size) {
 	DWORD read_bytes = 0;
 	BOOL err = ReadFile(file->hnd, data, size, &read_bytes, NULL);
 	if (err == FALSE)
-		return -1;
+		return -LT_ERR_UNKNOWN; // !!
 	return read_bytes;
 
 #endif
@@ -136,13 +142,15 @@ isz lt_file_read(lt_file_t* file, void* data, usz size) {
 isz lt_file_write(lt_file_t* file, void* data, usz size) {
 #if defined(LT_UNIX)
 	isz write_bytes = write(file->fd, data, size);
+	if (write_bytes < 0)
+		return -LT_ERR_UNKNOWN; // !!
 	return write_bytes;
 
 #elif defined(LT_WINDOWS)
 	DWORD write_bytes = 0;
 	BOOL err = WriteFile(file->hnd, data, size, &write_bytes, NULL);
 	if (err == FALSE)
-		return -1;
+		return -LT_ERR_UNKNOWN; // !!
 	return write_bytes;
 #endif
 }
@@ -158,8 +166,8 @@ isz lt_vfprintf(lt_file_t* file, char* fmt, va_list argl) {
 isz lt_fprintf(lt_file_t* file, char* fmt, ...) {
 	va_list argl;
 	va_start(argl, fmt);
-	isz bytes = lt_io_vprintf((lt_io_callback_t)lt_file_write, file, fmt, argl);
+	isz res = lt_io_vprintf((lt_io_callback_t)lt_file_write, file, fmt, argl);
 	va_end(argl);
-	return bytes;
+	return res;
 }
 

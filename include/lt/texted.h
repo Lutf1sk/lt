@@ -1,7 +1,7 @@
 #ifndef LT_TEXTEDIT_H
 #define LT_TEXTEDIT_H 1
 
-#include <lt/lt.h>
+#include <lt/err.h>
 #include <lt/fwd.h>
 #include <lt/darr.h>
 
@@ -11,7 +11,7 @@ struct lt_led {
 	lt_darr(char) str;
 } lt_led_t;
 
-b8 lt_led_create(lt_led_t* ed, lt_alloc_t* alloc);
+lt_err_t lt_led_create(lt_led_t* ed, lt_alloc_t* alloc);
 
 static LT_INLINE
 void lt_led_destroy(lt_led_t* ed) {
@@ -51,7 +51,7 @@ struct lt_texted {
 	lt_darr(lt_led_t) lines;
 } lt_texted_t;
 
-b8 lt_texted_create(lt_texted_t* ed, lt_alloc_t* alloc);
+lt_err_t lt_texted_create(lt_texted_t* ed, lt_alloc_t* alloc);
 void lt_texted_destroy(lt_texted_t* ed);
 
 void lt_texted_clear(lt_texted_t* ed);

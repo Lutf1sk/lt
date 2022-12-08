@@ -2,7 +2,7 @@
 #define LT_WINDOW_H 1
 
 #include <lt/fwd.h>
-#include <lt/lt.h>
+#include <lt/err.h>
 
 typedef struct lt_window lt_window_t;
 
@@ -127,7 +127,7 @@ struct lt_window_event {
 } lt_window_event_t;
 
 // x11.c / win32.c
-b8 lt_window_init(lt_alloc_t* alloc);
+lt_err_t lt_window_init(lt_alloc_t* alloc);
 void lt_window_terminate(lt_alloc_t* alloc);
 
 /*void lt_window_set_clipboard(lstr_t str);*/

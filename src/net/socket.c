@@ -24,7 +24,7 @@ static WSADATA wsadata;
 	if (!ws_initialized) { \
 		int res = WSAStartup(MAKEWORD(2, 2), &wsadata); \
 		if (res != 0) \
-			return 0; \
+			return LT_ERR_UNKNOWN; /* // !! */\
 		ws_initialized = 1; \
 	} \
 }
@@ -50,7 +50,7 @@ int lt_socktype_to_native(lt_socktype_t type) {
 	}
 }
 
-b8 lt_sockaddr_resolve(char* addr, char* port, lt_socktype_t type, lt_sockaddr_t* out_addr_) {
+lt_err_t lt_sockaddr_resolve(char* addr, char* port, lt_socktype_t type, lt_sockaddr_t* out_addr_) {
 	INIT_IF_NECESSARY();
 	lt_sockaddr_impl_t* out_addr = (lt_sockaddr_impl_t*)out_addr_;
 
@@ -61,14 +61,14 @@ b8 lt_sockaddr_resolve(char* addr, char* port, lt_socktype_t type, lt_sockaddr_t
 
 	struct addrinfo* resolved;
 	if (getaddrinfo(addr, port, &hints, &resolved) != 0)
-		return 0;
+		return LT_ERR_UNKNOWN; // !!
 	if (!resolved)
-		return 0;
+		return LT_ERR_UNKNOWN; // !!
 
 	out_addr->addr_len = resolved->ai_addrlen;
 	out_addr->addr = *resolved->ai_addr;
 	freeaddrinfo(resolved);
-	return 1;
+	return LT_SUCCESS;
 }
 
 lt_socket_t* lt_socket_create(lt_socktype_t type, lt_alloc_t* alloc) {
@@ -91,15 +91,17 @@ void lt_socket_destroy(lt_socket_t* sock, lt_alloc_t* alloc) {
 	lt_mfree(alloc, sock);
 }
 
-b8 lt_socket_connect(lt_socket_t* sock, lt_sockaddr_t* addr_) {
+lt_err_t lt_socket_connect(lt_socket_t* sock, lt_sockaddr_t* addr_) {
 	lt_sockaddr_impl_t* addr = (lt_sockaddr_impl_t*)addr_;
-	return connect(sock->fd, &addr->addr, addr->addr_len) >= 0;
+	if (connect(sock->fd, &addr->addr, addr->addr_len) < 0)
+		return LT_ERR_UNKNOWN; // !!
+	return LT_SUCCESS;
 }
 
-b8 lt_socket_server(lt_socket_t* sock, u16 port) {
+lt_err_t lt_socket_server(lt_socket_t* sock, u16 port) {
 	int reuse_addr = 1;
 	if (setsockopt(sock->fd, SOL_SOCKET, SO_REUSEADDR, (void*)&reuse_addr, sizeof(int)) < 0)
-		return 0;
+		return LT_ERR_UNKNOWN; // !!
 
 	struct sockaddr_in server_addr;
 	server_addr.sin_family = AF_INET;
@@ -107,13 +109,13 @@ b8 lt_socket_server(lt_socket_t* sock, u16 port) {
 	server_addr.sin_port = htons(port);
 
 	if (bind(sock->fd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0)
-		return 0;
+		return LT_ERR_UNKNOWN; // !!
 	if (listen(sock->fd, 10) < 0)
-		return 0;
-	return 1;
+		return LT_ERR_UNKNOWN; // !!
+	return LT_SUCCESS;
 }
 
-lt_socket_t* lt_socket_accept(lt_alloc_t* alloc, lt_socket_t* sock) {
+lt_socket_t* lt_socket_accept(lt_socket_t* sock, lt_alloc_t* alloc) {
 	struct sockaddr_in new_addr;
 	usz new_size = sizeof(new_addr);
 	SOCKET new_fd = accept(sock->fd, (struct sockaddr*)&new_addr, (socklen_t*)&new_size);
@@ -121,15 +123,28 @@ lt_socket_t* lt_socket_accept(lt_alloc_t* alloc, lt_socket_t* sock) {
 		return NULL;
 
 	lt_socket_t* new_sock = lt_malloc(alloc, sizeof(lt_socket_t));
+	if (!new_sock)
+		return NULL;
+
 	new_sock->fd = new_fd;
 	return new_sock;
 }
 
 isz lt_socket_send(lt_socket_t* sock, void* data, usz size) {
-	return send(sock->fd, data, size, MSG_NOSIGNAL);
+	isz res = send(sock->fd, data, size, MSG_NOSIGNAL);
+	if (res == 0)
+		return -LT_ERR_CLOSED;
+	if (res < 0)
+		return -LT_ERR_UNKNOWN; // !!
+	return res;
 }
 
 isz lt_socket_recv(lt_socket_t* sock, void* data, usz size) {
-	return recv(sock->fd, data, size, 0);
+	isz res = recv(sock->fd, data, size, 0);
+	if (res == 0)
+		return -LT_ERR_CLOSED;
+	if (res < 0)
+		return -LT_ERR_UNKNOWN; // !!
+	return res;
 }
 

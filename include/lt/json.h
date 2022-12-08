@@ -4,6 +4,8 @@
 #include <lt/lt.h>
 #include <lt/fwd.h>
 
+// TODO: Rewrite JSON parser
+
 typedef
 enum lt_json_stype {
 	LT_JSON_ARRAY,

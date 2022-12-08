@@ -1,7 +1,7 @@
 #ifndef LT_TERM_H
 #define LT_TERM_H 1
 
-#include <lt/primitives.h>
+#include <lt/err.h>
 
 typedef
 enum lt_term_flags {
@@ -74,7 +74,7 @@ enum lt_term_key {
 extern u32 lt_term_width, lt_term_height;
 extern i32 lt_term_mouse_x, lt_term_mouse_y;
 
-void lt_term_init(lt_term_flags_t flags);
+lt_err_t lt_term_init(lt_term_flags_t flags);
 void lt_term_restore(void);
 
 u32 lt_term_getkey(void);

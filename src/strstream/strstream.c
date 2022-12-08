@@ -3,12 +3,14 @@
 
 #define INITIAL_BUFSIZE 32
 
-b8 lt_strstream_create(lt_strstream_t* s, lt_alloc_t* alc) {
+lt_err_t lt_strstream_create(lt_strstream_t* s, lt_alloc_t* alc) {
 	s->str.str = lt_malloc(alc, INITIAL_BUFSIZE);
 	s->str.len = 0;
 	s->asize = INITIAL_BUFSIZE;
 	s->alloc = alc;
-	return !!s->str.str;
+	if (!s->str.str)
+		return LT_ERR_OUT_OF_MEMORY;
+	return LT_SUCCESS;
 }
 
 void lt_strstream_destroy(lt_strstream_t* s) {
@@ -24,9 +26,10 @@ isz lt_strstream_write(lt_strstream_t* s, void* data, usz size) {
 		while (s->str.len + size > s->asize)
 			s->asize <<= 1;
 
-		s->str.str = lt_mrealloc(s->alloc, s->str.str, s->asize); // !!
-		if (!s->str.str)
-			return -1;
+		void* res = lt_mrealloc(s->alloc, s->str.str, s->asize);
+		if (!res)
+			return -LT_ERR_OUT_OF_MEMORY;
+		s->str.str = res;
 	}
 
 	memcpy(s->str.str + s->str.len, data, size);

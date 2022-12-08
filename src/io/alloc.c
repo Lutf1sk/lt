@@ -5,7 +5,7 @@
 
 typedef
 struct lt_io_alloc_ctx {
-	lt_alloc_t* alc;
+	lt_alloc_t* alloc;
 	char* str;
 	usz len;
 	usz asize;
@@ -19,7 +19,10 @@ isz lt_alloc_io_callb(lt_io_alloc_ctx_t* cx, void* data, usz len) {
 		while (cx->len + len > cx->asize)
 			cx->asize <<= 1;
 
-		cx->str = lt_mrealloc(cx->alc, cx->str, cx->asize); // !!
+		void* res = lt_mrealloc(cx->alloc, cx->str, cx->asize);
+		if (!res)
+			return -LT_ERR_OUT_OF_MEMORY;
+		cx->str = res;
 	}
 
 	memcpy(cx->str + cx->len, data, len);
@@ -27,33 +30,32 @@ isz lt_alloc_io_callb(lt_io_alloc_ctx_t* cx, void* data, usz len) {
 	return len;
 }
 
-isz lt_vaprintf(lstr_t* out, lt_alloc_t* alc, char* fmt, va_list argl) {
+isz lt_vaprintf(lstr_t* out, lt_alloc_t* alloc, char* fmt, va_list argl) {
 	lt_io_alloc_ctx_t ctx;
-	ctx.alc = alc;
-	ctx.str = lt_malloc(alc, INITIAL_SIZE);
+	ctx.alloc = alloc;
+	ctx.str = lt_malloc(alloc, INITIAL_SIZE);
 	ctx.len = 0;
 	ctx.asize = INITIAL_SIZE;
+
 	if (!ctx.str)
-		goto err0;
+		return -LT_ERR_OUT_OF_MEMORY;
 
 	isz res = lt_io_vprintf((lt_io_callback_t)lt_alloc_io_callb, &ctx, fmt, argl);
-	if (res < 0)
-		goto err1;
+	if (res < 0) {
+		lt_mfree(alloc, ctx.str);
+		return res;
+	}
 
 	*out = LSTR(ctx.str, ctx.len);
 	return res;
-
-err1:	lt_mfree(alc, ctx.str);
-err0:	*out = NLSTR();
-		return -1;
 }
 
 LT_FLATTEN
-isz lt_aprintf(lstr_t* out, lt_alloc_t* alc, char* fmt, ...) {
+isz lt_aprintf(lstr_t* out, lt_alloc_t* alloc, char* fmt, ...) {
 	va_list argl;
 	va_start(argl, fmt);
-	isz bytes = lt_vaprintf(out, alc, fmt, argl);
+	isz res = lt_vaprintf(out, alloc, fmt, argl);
 	va_end(argl);
-	return bytes;
+	return res;
 }
 

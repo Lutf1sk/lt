@@ -76,7 +76,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param)
 
 static void lt_generate_keytab(lt_alloc_t* alloc);
 
-b8 lt_window_init(lt_alloc_t* alloc) {
+lt_err_t lt_window_init(lt_alloc_t* alloc) {
 	lt_hinst = GetModuleHandle(NULL);
 
 	WNDCLASSEX wc;
@@ -94,7 +94,7 @@ b8 lt_window_init(lt_alloc_t* alloc) {
 	wc.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
 
 	if (!RegisterClassEx(&wc))
-		return 0;
+		return LT_ERR_UNKNOWN; // !!
 
 
 	DISPLAY_DEVICE dev;
@@ -135,7 +135,7 @@ b8 lt_window_init(lt_alloc_t* alloc) {
 	}
 
 	lt_generate_keytab(alloc);
-	return 1;
+	return LT_SUCCESS;
 }
 
 void lt_window_terminate(lt_alloc_t* alloc) {

@@ -2,7 +2,7 @@
 #define LT_STRSTREAM_H 1
 
 #include <lt/fwd.h>
-#include <lt/lt.h>
+#include <lt/err.h>
 
 typedef
 struct lt_strstream {
@@ -11,7 +11,7 @@ struct lt_strstream {
 	lt_alloc_t* alloc;
 } lt_strstream_t;
 
-b8 lt_strstream_create(lt_strstream_t* s, lt_alloc_t* alc);
+lt_err_t lt_strstream_create(lt_strstream_t* s, lt_alloc_t* alc);
 void lt_strstream_destroy(lt_strstream_t* s);
 
 isz lt_strstream_write(lt_strstream_t* s, void* data, usz size);

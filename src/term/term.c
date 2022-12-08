@@ -19,12 +19,14 @@ i32 lt_term_mouse_x = 0, lt_term_mouse_y = 0;
 static volatile u8 resized = 0;
 
 static
-void lt_update_term_dimensions(void) {
+lt_err_t lt_update_term_dimensions(void) {
 	struct winsize wsz;
-	ioctl(STDOUT_FILENO, TIOCGWINSZ, &wsz);
+	if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &wsz) < 0)
+		return LT_ERR_UNKNOWN; // !!
 
 	lt_term_width = wsz.ws_col;
 	lt_term_height = wsz.ws_row;
+	return LT_SUCCESS;
 }
 
 static
@@ -32,11 +34,12 @@ void lt_handle_winch(int sig) {
 	resized = 1;
 }
 
-void lt_term_init(lt_term_flags_t flags) {
+lt_err_t lt_term_init(lt_term_flags_t flags) {
 	term_flags = flags;
 
 	struct termios term;
-	tcgetattr(STDOUT_FILENO, &term);
+	if (tcgetattr(STDOUT_FILENO, &term) < 0)
+		goto err0;
 	old_term = term;
 
 	if (!(flags & LT_TERM_ECHO))
@@ -46,23 +49,27 @@ void lt_term_init(lt_term_flags_t flags) {
 	if (!(flags & LT_TERM_SIGNAL))
 		term.c_lflag &= ~ISIG;
 
-	tcsetattr(STDOUT_FILENO, TCSANOW, &term);
-	tcflush(STDOUT_FILENO, TCIOFLUSH);
+	if (tcsetattr(STDOUT_FILENO, TCSANOW, &term) < 0)
+		goto err1;
+	if (tcflush(STDOUT_FILENO, TCIOFLUSH) < 0)
+		goto err1;
 
-	if (flags & LT_TERM_MOUSE)
-		write(STDOUT_FILENO, "\x1B[?1003h", 8);
-	if (flags & LT_TERM_BPASTE)
-		write(STDOUT_FILENO, "\x1b[?2004h", 8);
-	if (flags & LT_TERM_ALTBUF)
-		write(STDOUT_FILENO, "\x1b[?1049h", 8);
-
-	fsync(STDOUT_FILENO);
+	if ((flags & LT_TERM_MOUSE) && write(STDOUT_FILENO, "\x1B[?1003h", 8) < 0)
+		goto err1;
+	if ((flags & LT_TERM_BPASTE) && write(STDOUT_FILENO, "\x1b[?2004h", 8) < 0)
+		goto err1;
+	if ((flags & LT_TERM_ALTBUF) && write(STDOUT_FILENO, "\x1b[?1049h", 8) < 0)
+		goto err1;
 
 	struct sigaction sact = {0};
 	sact.sa_handler = lt_handle_winch;
-	sigaction(SIGWINCH, &sact, NULL);
+	if (sigaction(SIGWINCH, &sact, NULL) < 0)
+		goto err1;
 
-	lt_update_term_dimensions();
+	return lt_update_term_dimensions();
+
+err1:	lt_term_restore();
+err0:	return LT_ERR_UNKNOWN; // !!
 }
 
 void lt_term_restore(void) {
@@ -75,8 +82,6 @@ void lt_term_restore(void) {
 		write(STDOUT_FILENO, "\x1b[?2004l", 8);
 	if (term_flags & LT_TERM_ALTBUF)
 		write(STDOUT_FILENO, "\x1b[?1049l", 8);
-
-	fsync(STDOUT_FILENO);
 }
 
 static

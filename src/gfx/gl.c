@@ -9,6 +9,8 @@
 #define LT_LINALG_SHORTEN_NAMES
 #include <lt/linalg.h>
 
+#include <lt/internal.h>
+
 // gfx
 
 static lstr_t vert_src = CLSTR(
@@ -40,11 +42,15 @@ static lstr_t frag_src = CLSTR(
 #define DEFAULT_LOCATION_TEX 2
 #define DEFAULT_LOCATION_COLOR 3
 
-b8 lt_gfx_init(void) {
-	return lt_gl_initialize_loader();
+lt_err_t lt_gfx_init(void) {
+	if (!lt_gl_initialize_loader())
+		return LT_ERR_UNKNOWN; // !!
+	return LT_SUCCESS;
 }
 
-b8 lt_gfx_create(lt_gfx_t* gfx, lt_window_t* win, lt_alloc_t* alloc) {
+lt_err_t lt_gfx_create(lt_gfx_t* gfx, lt_window_t* win, lt_alloc_t* alloc) {
+	lt_err_t err;
+
 	gfx->window = win;
 	gfx->alloc = alloc;
 
@@ -63,7 +69,7 @@ b8 lt_gfx_create(lt_gfx_t* gfx, lt_window_t* win, lt_alloc_t* alloc) {
 	white_img.height = 1;
 	white_img.data = (u32[]) { 0xFFFFFFFF };
 
-	if (!lt_texture_create(gfx, &gfx->white_texture, 0, &white_img))
+	if ((err = lt_texture_create(gfx, &gfx->white_texture, 0, &white_img)))
 		goto err0;
 
 	lt_model_t rect_model;
@@ -83,18 +89,18 @@ b8 lt_gfx_create(lt_gfx_t* gfx, lt_window_t* win, lt_alloc_t* alloc) {
 	rect_model.index_count = 6;
 	rect_model.indices = (u32[]) { 0, 1, 2, 3, 2, 1 };
 
-	if (!lt_mesh_create(gfx, &gfx->rect_mesh, &rect_model))
+	if ((err = lt_mesh_create(gfx, &gfx->rect_mesh, &rect_model)))
 		goto err1;
 
-	if (!lt_pipeline_create(gfx, &gfx->default_pipeline, LT_SHADER_FMT_GLSL, vert_src, frag_src))
+	if ((err = lt_pipeline_create(gfx, &gfx->default_pipeline, LT_SHADER_FMT_GLSL, vert_src, frag_src)))
 		goto err2;
 
 	lt_pipeline_uniform_u32(&gfx->default_pipeline, DEFAULT_LOCATION_TEX, 0);
-	return 1;
+	return LT_SUCCESS;
 
 err2:	lt_mesh_destroy(&gfx->rect_mesh);
 err1:	lt_texture_destroy(&gfx->white_texture);
-err0:	return 0;
+err0:	return err;
 }
 
 void lt_gfx_destroy(lt_gfx_t* gfx) {
@@ -103,7 +109,7 @@ void lt_gfx_destroy(lt_gfx_t* gfx) {
 	lt_pipeline_destroy(&gfx->default_pipeline);
 }
 
-b8 lt_gfx_begin(lt_gfx_t* gfx) {
+lt_err_t lt_gfx_begin(lt_gfx_t* gfx) {
 	int w, h;
 	lt_window_get_size(gfx->window, &w, &h);
 
@@ -116,13 +122,13 @@ b8 lt_gfx_begin(lt_gfx_t* gfx) {
 	mat4 proj = lt_m4ortho(0.0f, w, h, 0.0f, 0.0f, 1.0f);
 	lt_pipeline_uniform_mat4(&gfx->default_pipeline, DEFAULT_LOCATION_PROJ, (float*)&proj);
 
-	return 1;
+	return LT_SUCCESS;
 }
 
-b8 lt_gfx_end(lt_gfx_t* gfx) {
+lt_err_t lt_gfx_end(lt_gfx_t* gfx) {
 	lt_window_gl_swap_buffers(gfx->window);
 
-	return 1;
+	return LT_SUCCESS;
 }
 
 void lt_gfx_bind_pipeline(lt_gfx_t* gfx, lt_pipeline_t* pl) {
@@ -173,7 +179,7 @@ void lt_gfx_draw_rectcd(lt_gfx_t* gfx, isz x, isz y, isz w, isz h, u32 color, u3
 	lt_gfx_draw_rectctd(gfx, x, y, w, h, color, &gfx->white_texture, depth);
 }
 
-b8 lt_gfx_render_text(lt_gfx_t* gfx, lstr_t text, lt_font_t* font, usz flags, lt_texture_t* out_tex) {
+lt_err_t lt_gfx_render_text(lt_gfx_t* gfx, lstr_t text, lt_font_t* font, usz flags, lt_texture_t* out_tex) {
 	lt_img_t img;
 	img.format = LT_IMG_RGBA;
 	img.flags = 0;
@@ -181,12 +187,12 @@ b8 lt_gfx_render_text(lt_gfx_t* gfx, lstr_t text, lt_font_t* font, usz flags, lt
 	img.height = font->height;
 	img.data = lt_malloc(gfx->alloc, img.width * img.height * sizeof(u32));
 	if (!img.data)
-		return 0;
+		return LT_ERR_OUT_OF_MEMORY;
 
 	lt_font_render(font, text, img.data);
-	b8 success = lt_texture_create(gfx, out_tex, flags, &img);
+	lt_err_t err = lt_texture_create(gfx, out_tex, flags, &img);
 	lt_mfree(gfx->alloc, img.data);
-	return success;
+	return err;
 }
 
 void lt_gfx_wait_idle(lt_gfx_t* gfx) {
@@ -231,23 +237,25 @@ b8 check_program_link_error(int prog, lt_alloc_t* alloc) {
 	return 0;
 }
 
-b8 lt_pipeline_create(lt_gfx_t* gfx, lt_pipeline_t* pl, int source_fmt, lstr_t vert_source, lstr_t frag_source) {
+lt_err_t lt_pipeline_create(lt_gfx_t* gfx, lt_pipeline_t* pl, int source_fmt, lstr_t vert_source, lstr_t frag_source) {
+	lt_err_t err;
+
 	if (source_fmt != LT_SHADER_FMT_GLSL)
-		goto err0;
+		fail_to(err = LT_ERR_UNSUPPORTED, err0);
 
 	int vert_shader = glCreateShader(GL_VERTEX_SHADER);
 	int len = vert_source.len;
 	glShaderSource(vert_shader, 1, (const char* const*)&vert_source.str, &len);
 	glCompileShader(vert_shader);
 	if (!check_shader_compile_error(vert_shader, gfx->alloc))
-		goto err1;
+		fail_to(err = LT_ERR_INVALID_SYNTAX, err1);
 
 	int frag_shader = glCreateShader(GL_FRAGMENT_SHADER);
 	len = frag_source.len;
 	glShaderSource(frag_shader, 1, (const char* const*)&frag_source.str, &len);
 	glCompileShader(frag_shader);
 	if (!check_shader_compile_error(frag_shader, gfx->alloc))
-		goto err2;
+		fail_to(err = LT_ERR_INVALID_SYNTAX, err2);
 
 	pl->gl_prog = glCreateProgram();
 	glAttachShader(pl->gl_prog, vert_shader);
@@ -255,16 +263,16 @@ b8 lt_pipeline_create(lt_gfx_t* gfx, lt_pipeline_t* pl, int source_fmt, lstr_t v
 
 	glLinkProgram(pl->gl_prog);
 	if (!check_program_link_error(pl->gl_prog, gfx->alloc))
-		goto err3;
+		fail_to(err = LT_ERR_INVALID_SYNTAX, err3);
 
 	glDeleteShader(vert_shader);
 	glDeleteShader(frag_shader);
-	return 1;
+	return LT_SUCCESS;
 
 err3:	glDeleteProgram(pl->gl_prog);
 err2:	glDeleteShader(frag_shader);
 err1:	glDeleteShader(vert_shader);
-err0:	return 0;
+err0:	return err;
 }
 
 void lt_pipeline_destroy(lt_pipeline_t* pl) {
@@ -313,7 +321,7 @@ void lt_pipeline_uniform_vec4(lt_pipeline_t* pl, u32 location, float* v) {
 
 // mesh
 
-b8 lt_mesh_create(lt_gfx_t* gfx, lt_mesh_t* mesh, lt_model_t* model) {
+lt_err_t lt_mesh_create(lt_gfx_t* gfx, lt_mesh_t* mesh, lt_model_t* model) {
 	glGenVertexArrays(1, &mesh->gl_vao);
 	glBindVertexArray(mesh->gl_vao);
 
@@ -332,11 +340,12 @@ b8 lt_mesh_create(lt_gfx_t* gfx, lt_mesh_t* mesh, lt_model_t* model) {
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), NULL);
 	glEnableVertexAttribArray(1);
 
-	if (model && !lt_mesh_upload(gfx, mesh, model)) {
+	lt_err_t err;
+	if (model && (err = lt_mesh_upload(gfx, mesh, model))) {
 		lt_mesh_destroy(mesh);
-		return 0;
+		return err;
 	}
-	return 1;
+	return LT_SUCCESS;
 }
 
 void lt_mesh_destroy(lt_mesh_t* mesh) {
@@ -346,7 +355,7 @@ void lt_mesh_destroy(lt_mesh_t* mesh) {
 	glDeleteVertexArrays(1, &mesh->gl_vao);
 }
 
-b8 lt_mesh_upload(lt_gfx_t* gfx, lt_mesh_t* mesh, lt_model_t* model) {
+lt_err_t lt_mesh_upload(lt_gfx_t* gfx, lt_mesh_t* mesh, lt_model_t* model) {
 	mesh->index_count = model->index_count;
 
 	glBindVertexArray(mesh->gl_vao);
@@ -364,12 +373,12 @@ b8 lt_mesh_upload(lt_gfx_t* gfx, lt_mesh_t* mesh, lt_model_t* model) {
 		glBufferData(GL_ARRAY_BUFFER, model->vertex_count * sizeof(float) * 2, model->uvs, GL_STATIC_DRAW);
 	}
 
-	return 1;
+	return LT_SUCCESS;
 }
 
 // texture
 
-b8 lt_texture_create(lt_gfx_t* gfx, lt_texture_t* tex, usz flags, lt_img_t* img) {
+lt_err_t lt_texture_create(lt_gfx_t* gfx, lt_texture_t* tex, usz flags, lt_img_t* img) {
 	glActiveTexture(GL_TEXTURE0);
 	glGenTextures(1, &tex->gl_tex);
 
@@ -383,22 +392,23 @@ b8 lt_texture_create(lt_gfx_t* gfx, lt_texture_t* tex, usz flags, lt_img_t* img)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	}
 
-	if (img && !lt_texture_upload(gfx, tex, img)) {
+	lt_err_t err;
+	if (img && (err = lt_texture_upload(gfx, tex, img))) {
 		glDeleteTextures(1, &tex->gl_tex);
-		return 0;
+		return err;
 	}
-	return 1;
+	return LT_SUCCESS;
 }
 
 void lt_texture_destroy(lt_texture_t* tex) {
 	glDeleteTextures(1, &tex->gl_tex);
 }
 
-b8 lt_texture_upload(lt_gfx_t* gfx, lt_texture_t* tex, lt_img_t* img) {
+lt_err_t lt_texture_upload(lt_gfx_t* gfx, lt_texture_t* tex, lt_img_t* img) {
 	if (img->format != LT_IMG_RGBA)
-		return 0;
+		return LT_ERR_UNSUPPORTED;
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img->width, img->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, img->data);
 	glGenerateMipmap(GL_TEXTURE_2D);
-	return 1;
+	return LT_SUCCESS;
 }
 

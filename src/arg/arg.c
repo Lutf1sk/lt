@@ -33,7 +33,7 @@ char* find_long_val(lt_arg_iterator_t* it, lstr_t key) {
 	lstr_t arg = LSTR(*it->it + 2, it->arg_len - 2);
 	if (lt_lstr_eq(arg, key)) {
 		if (!lt_arg_next(it))
-			lt_ferrf("missing argument to '%S'\n", key);
+			lt_ferrf("missing argument to '%S'\n", key); // !!
 		return *it->it;
 	}
 
@@ -54,7 +54,7 @@ char* find_short_val(lt_arg_iterator_t* it, char key) {
 	lstr_t arg = LSTR(*it->it + 1, it->arg_len - 1);
 	if (arg.len == 1 && arg.str[0] == key) {
 		if (!lt_arg_next(it))
-			lt_ferrf("missing argument to '%c'\n", key);
+			lt_ferrf("missing argument to '%c'\n", key); // !!
 		return *it->it;
 	}
 

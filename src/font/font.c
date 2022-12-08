@@ -2,8 +2,8 @@
 #include <lt/mem.h>
 #include <lt/utf8.h>
 
-lt_font_t* lt_font_load(void* data, usz len, lt_alloc_t* alloc) {
-	return lt_font_load_psf(data, len, alloc);
+lt_err_t lt_font_load(lt_font_t* font, void* data, usz len, lt_alloc_t* alloc) {
+	return lt_font_load_psf(font, data, len, alloc);
 }
 
 void lt_font_destroy(lt_font_t* font, lt_alloc_t* alloc) {

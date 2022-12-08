@@ -1,12 +1,12 @@
 #include <lt/img.h>
 #include <lt/mem.h>
 
-b8 lt_img_load(void* data, usz len, lt_img_t* img, lt_alloc_t* alloc) {
-	if (lt_img_load_tga(data, len, img, alloc))
-		return 1;
-	if (lt_img_load_bmp(data, len, img, alloc))
-		return 1;
-	return 0;
+lt_err_t lt_img_load(lt_img_t* img, void* data, usz len, lt_alloc_t* alloc) {
+	if (lt_img_load_tga(img, data, len, alloc) == LT_SUCCESS)
+		return LT_SUCCESS;
+	if (lt_img_load_bmp(img, data, len, alloc) == LT_SUCCESS)
+		return LT_SUCCESS;
+	return LT_ERR_UNSUPPORTED;
 }
 
 void lt_img_free(lt_img_t* img, lt_alloc_t* alloc) {

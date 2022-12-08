@@ -49,24 +49,24 @@ LT_PACKED_STRUCT(lt_bmp_infoheader2) {
 	u32 identifier;
 } lt_bmp_infoheader2_t;
 
-b8 lt_img_load_bmp(void* data, usz len, lt_img_t* img, lt_alloc_t* alloc) {
+lt_err_t lt_img_load_bmp(lt_img_t* img, void* data, usz len, lt_alloc_t* alloc) {
 	usz end = (usz)data + len;
 
 	lt_bmp_fileheader_t* fh = data;
 	if (len < sizeof(lt_bmp_fileheader_t) || fh->magic[0] != LT_IMG_BMP_MAGIC[0] || fh->magic[1] != LT_IMG_BMP_MAGIC[1])
-		return 0;
+		return LT_ERR_INVALID_FORMAT;
 
 	u32* infoheader_start = (u32*)((usz)fh + sizeof(lt_bmp_fileheader_t));
 	if ((usz)infoheader_start + sizeof(u32) > end || (usz)infoheader_start + *infoheader_start > end)
-		return 0;
+		return LT_ERR_INVALID_FORMAT;
 
 	switch (*(u32*)infoheader_start) {
 	// TODO: https://en.wikipedia.org/wiki/BMP_file_format
 
 	default:
-		return 0;
+		return LT_ERR_INVALID_FORMAT;
 	}
 
-	return 1;
+	return LT_SUCCESS;
 }
 

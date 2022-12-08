@@ -9,6 +9,7 @@ OBJS = \
 	src/ctype/ctype.o \
 	src/darr/darr.o \
 	src/elf/elf.o \
+	src/err/err.o \
 	src/font/font.o \
 	src/font/psf.o \
 	src/gfx/gl.o \

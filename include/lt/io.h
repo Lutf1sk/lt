@@ -1,7 +1,7 @@
 #ifndef LT_IO_H
 #define LT_IO_H 1
 
-#include <lt/lt.h>
+#include <lt/err.h>
 #include <lt/fwd.h>
 
 #include <stdarg.h>
@@ -37,7 +37,7 @@ enum lt_file_perms {
 lt_file_t* lt_file_open(lstr_t path, lt_file_mode_t access, lt_file_perms_t perms, lt_alloc_t* alloc);
 void lt_file_close(lt_file_t* file, lt_alloc_t* alloc);
 
-b8 lt_file_read_entire(lstr_t path, lstr_t* out, lt_alloc_t* alloc);
+lt_err_t lt_file_read_entire(lstr_t path, lstr_t* out, lt_alloc_t* alloc);
 
 isz lt_file_read(lt_file_t* file, void* data, usz size);
 isz lt_file_write(lt_file_t* file, void* data, usz size);
@@ -60,7 +60,7 @@ isz lt_sprintf(char* str, char* fmt, ...);
 typedef struct lt_io_alloc_ctx lt_io_alloc_ctx_t;
 isz lt_alloc_io_callb(lt_io_alloc_ctx_t* cx, void* data, usz len);
 
-isz lt_vaprintf(lstr_t* out, lt_alloc_t* alc, char* fmt, va_list args);
-isz lt_aprintf(lstr_t* out, lt_alloc_t* alc, char* fmt, ...);
+isz lt_vaprintf(lstr_t* out, lt_alloc_t* alloc, char* fmt, va_list args);
+isz lt_aprintf(lstr_t* out, lt_alloc_t* alloc, char* fmt, ...);
 
 #endif

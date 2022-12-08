@@ -27,5 +27,4 @@ typedef double f64;
 
 typedef u8 b8;
 
-
 #endif

@@ -61,10 +61,12 @@ usz find_word_fwd(lt_led_t* ed) {
 	return cpos;
 }
 
-b8 lt_led_create(lt_led_t* ed, lt_alloc_t* alloc) {
+lt_err_t lt_led_create(lt_led_t* ed, lt_alloc_t* alloc) {
 	ed->cursor_pos = 0;
-	ed->str = lt_darr_create(char, 16, alloc);
-	return ed->str != NULL;
+	ed->str = lt_darr_create(char, 32, alloc);
+	if (!ed->str)
+		return LT_ERR_OUT_OF_MEMORY;
+	return LT_SUCCESS;
 }
 
 b8 lt_led_input_str(lt_led_t* ed, lstr_t str) {
@@ -165,7 +167,7 @@ void merge_fwd(lt_texted_t* ed) {
 static
 void newline(lt_texted_t* ed, usz posy) {
 	lt_led_t new_line;
-	LT_ASSERT(lt_led_create(&new_line, lt_darr_head(ed->lines)->alloc));
+	LT_ASSERT(lt_led_create(&new_line, lt_darr_head(ed->lines)->alloc) == LT_SUCCESS);
 	lt_darr_insert(ed->lines, posy, &new_line, 1);
 }
 
@@ -187,16 +189,23 @@ void sync_tx(lt_texted_t* ed) {
 	ed->target_x = ed->lines[ed->cursor_pos].cursor_pos;
 }
 
-b8 lt_texted_create(lt_texted_t* ed, lt_alloc_t* alloc) {
+lt_err_t lt_texted_create(lt_texted_t* ed, lt_alloc_t* alloc) {
+	lt_err_t err;
+
 	lt_led_t first_line;
-	if (!lt_led_create(&first_line, alloc))
-		return 0;
+	if ((err = lt_led_create(&first_line, alloc)))
+		return err;
 
 	ed->cursor_pos = 0;
 	ed->target_x = 0;
-	ed->lines = lt_darr_create(lt_led_t, 16, alloc);
+	ed->lines = lt_darr_create(lt_led_t, 32, alloc);
+	if (!ed->lines) {
+		lt_led_destroy(&first_line);
+		return LT_ERR_OUT_OF_MEMORY;
+	}
+
 	lt_darr_push(ed->lines, first_line);
-	return ed->lines != NULL;
+	return LT_SUCCESS;
 }
 
 void lt_texted_destroy(lt_texted_t* ed) {

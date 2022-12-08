@@ -11,6 +11,7 @@
 #	include "xproto.h"
 
 #	include <lt/io.h>
+#	include <lt/internal.h>
 
 static lt_keycode_t lt_lookup_key(lt_window_t* win, xcb_keycode_t keycode, u16 state);
 static void lt_generate_keytab(lt_window_t* win, lt_alloc_t* alloc);
@@ -33,6 +34,23 @@ static xcb_window_t clipboard_window = XCB_WINDOW_NONE;
 #define CLIPBOARD_REPLY_MAXLEN LT_MB(8)
 
 static
+xcb_atom_t get_atom(lstr_t atom_name) {
+	xcb_intern_atom_cookie_t atom_cookie = xcb_intern_atom(lt_conn, 1, atom_name.len, atom_name.str);
+	xcb_intern_atom_reply_t* atom_reply = xcb_intern_atom_reply(lt_conn, atom_cookie, NULL);
+	if (!atom_reply) {
+		lt_werrf("atom reply is null\n");
+		return XCB_ATOM_NONE;
+	}
+
+	xcb_atom_t atom = atom_reply->atom;
+	if (atom == XCB_ATOM_NONE)
+		lt_werrf("atom '%S' not found\n", atom_name);
+
+	free(atom_reply);
+	return atom;
+}
+
+static
 double mode_rate(xcb_randr_mode_info_t* mode) {
 	double vtotal = mode->vtotal;
 	if (mode->mode_flags & XCB_RANDR_MODE_FLAG_DOUBLE_SCAN)
@@ -47,20 +65,20 @@ double mode_rate(xcb_randr_mode_info_t* mode) {
 	return (double)mode->dot_clock / ((double)mode->htotal * vtotal);
 }
 
-b8 lt_window_init(lt_alloc_t* alloc) {
+lt_err_t lt_window_init(lt_alloc_t* alloc) {
+	lt_err_t err;
+
 	lt_xproto_init();
 
 	lt_display = XOpenDisplay(NULL);
 	if (!lt_display)
-		return 0;
+		fail_to(err = LT_ERR_UNKNOWN, err0); // !!
 
 	lt_screen_index = DefaultScreen(lt_display);
 
 	lt_conn = XGetXCBConnection(lt_display);
-	if (!lt_conn) {
-		XCloseDisplay(lt_display);
-		return 0;
-	}
+	if (!lt_conn)
+		fail_to(err = LT_ERR_UNKNOWN, err1); // !!
 
 	XkbSetDetectableAutoRepeat(lt_display, True, NULL);
 	XSetEventQueueOwner(lt_display, XCBOwnsEventQueue);
@@ -71,43 +89,26 @@ b8 lt_window_init(lt_alloc_t* alloc) {
 		xcb_screen_next(&it);
 
 	lt_screen = it.data;
-	if (!lt_screen) {
-		XCloseDisplay(lt_display);
-		return 0;
-	}
-
-	xcb_generic_error_t* error = NULL;
+	if (!lt_screen)
+		fail_to(err = LT_ERR_UNKNOWN, err1); // !!
 
 	// EWMH
 	xcb_intern_atom_cookie_t* ewmh_cookie = xcb_ewmh_init_atoms(lt_conn, &lt_ewmh);
 	if (!xcb_ewmh_init_atoms_replies(&lt_ewmh, ewmh_cookie, NULL))
 		lt_werr(CLSTR("Failed to initialize EWMH atoms\n"));
 
-	lstr_t delwin_name = CLSTR("WM_DELETE_WINDOW");
-	xcb_intern_atom_cookie_t delwin_cookie = xcb_intern_atom(lt_conn, 1, delwin_name.len, delwin_name.str);
-	xcb_intern_atom_reply_t* delwin_reply = xcb_intern_atom_reply(lt_conn, delwin_cookie, &error);
-
-	if (error) {
-		free(error);
-		XCloseDisplay(lt_display);
-		return 0;
-	}
-
-	WM_DELETE_WINDOW = delwin_reply->atom;
+	WM_DELETE_WINDOW = get_atom(CLSTR("WM_DELETE_WINDOW"));
 	if (WM_DELETE_WINDOW == XCB_ATOM_NONE)
 		lt_werr(CLSTR("WM_DELETE_WINDOW not found\n"));
-
-	free(delwin_reply);
 
 	// Find outputs
 	xcb_randr_get_screen_resources_current_cookie_t scrres_cookie =
 			xcb_randr_get_screen_resources_current(lt_conn, lt_screen->root);
 	xcb_randr_get_screen_resources_current_reply_t* scrres_reply =
-			xcb_randr_get_screen_resources_current_reply(lt_conn, scrres_cookie, &error);
-	if (error) {
-		XCloseDisplay(lt_display);
-		return 0;
-	}
+			xcb_randr_get_screen_resources_current_reply(lt_conn, scrres_cookie, NULL);
+
+	if (!scrres_reply)
+		fail_to(err = LT_ERR_UNKNOWN, err1); // !!
 
 	xcb_timestamp_t timestamp = scrres_reply->config_timestamp;
 	int output_count = xcb_randr_get_screen_resources_current_outputs_length(scrres_reply);
@@ -122,10 +123,9 @@ b8 lt_window_init(lt_alloc_t* alloc) {
 
 	for (int i = 0; i < output_count; ++i) {
 		xcb_randr_get_output_info_cookie_t outinf_cookie = xcb_randr_get_output_info(lt_conn, outputs[i], timestamp);
-		xcb_randr_get_output_info_reply_t* outinf_reply = xcb_randr_get_output_info_reply(lt_conn, outinf_cookie, &error);
-		if (error || !outinf_reply) {
+		xcb_randr_get_output_info_reply_t* outinf_reply = xcb_randr_get_output_info_reply(lt_conn, outinf_cookie, NULL);
+		if (!outinf_reply)
 			continue;
-		}
 
 		if (outinf_reply->crtc == XCB_NONE || outinf_reply->connection == XCB_RANDR_CONNECTION_DISCONNECTED) {
 			free(outinf_reply);
@@ -133,9 +133,12 @@ b8 lt_window_init(lt_alloc_t* alloc) {
 		}
 
 		xcb_randr_get_crtc_info_cookie_t crtcinf_cookie = xcb_randr_get_crtc_info(lt_conn, outinf_reply->crtc, timestamp);
-		xcb_randr_get_crtc_info_reply_t* crtcinf_reply = xcb_randr_get_crtc_info_reply(lt_conn, crtcinf_cookie, &error);
-		if (error)
+		xcb_randr_get_crtc_info_reply_t* crtcinf_reply = xcb_randr_get_crtc_info_reply(lt_conn, crtcinf_cookie, NULL);
+
+		if (!crtcinf_reply) {
+			free(outinf_reply);
 			continue;
+		}
 
 		char* out_name = (char*)xcb_randr_get_output_info_name(outinf_reply);
 		int out_name_len = xcb_randr_get_output_info_name_length(outinf_reply);
@@ -167,7 +170,10 @@ b8 lt_window_init(lt_alloc_t* alloc) {
 	free(scrres_reply);
 
 	lt_output_count = crtc_count;
-	return 1;
+	return LT_SUCCESS;
+
+err1:	XCloseDisplay(lt_display);
+err0:	return err;
 }
 
 void lt_window_terminate(lt_alloc_t* alloc) {
@@ -179,23 +185,6 @@ void lt_window_terminate(lt_alloc_t* alloc) {
 	lt_mfree(alloc, lt_outputs);
 
 	XCloseDisplay(lt_display);
-}
-
-static
-xcb_atom_t get_atom(lstr_t atom_name) {
-	xcb_intern_atom_cookie_t atom_cookie = xcb_intern_atom(lt_conn, 1, atom_name.len, atom_name.str);
-	xcb_intern_atom_reply_t* atom_reply = xcb_intern_atom_reply(lt_conn, atom_cookie, NULL);
-	if (!atom_reply) {
-		lt_werrf("atom reply is null\n");
-		return XCB_ATOM_NONE;
-	}
-
-	xcb_atom_t atom = atom_reply->atom;
-	if (atom == XCB_ATOM_NONE)
-		lt_werrf("atom '%S' not found\n", atom_name);
-
-	free(atom_reply);
-	return atom;
 }
 
 static

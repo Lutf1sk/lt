@@ -1,7 +1,7 @@
 #ifndef LT_GFX_H
 #define LT_GFX_H 1
 
-#include <lt/lt.h>
+#include <lt/err.h>
 #include <lt/fwd.h>
 
 // pipeline
@@ -14,7 +14,7 @@ struct lt_pipeline {
 #define LT_SHADER_FMT_GLSL 1
 #define LT_SHADER_FMT_SPIRV 2
 
-b8 lt_pipeline_create(lt_gfx_t* gfx, lt_pipeline_t* pl, int source_fmt, lstr_t vert_source, lstr_t frag_source);
+lt_err_t lt_pipeline_create(lt_gfx_t* gfx, lt_pipeline_t* pl, int source_fmt, lstr_t vert_source, lstr_t frag_source);
 void lt_pipeline_destroy(lt_pipeline_t* pl);
 
 void lt_pipeline_uniform_u32(lt_pipeline_t* pl, u32 location, u32 v);
@@ -48,10 +48,10 @@ struct lt_mesh {
 	u32 index_count;
 } lt_mesh_t;
 
-b8 lt_mesh_create(lt_gfx_t* gfx, lt_mesh_t* mesh, lt_model_t* model);
+lt_err_t lt_mesh_create(lt_gfx_t* gfx, lt_mesh_t* mesh, lt_model_t* model);
 void lt_mesh_destroy(lt_mesh_t* mesh);
 
-b8 lt_mesh_upload(lt_gfx_t* gfx, lt_mesh_t* mesh, lt_model_t* model);
+lt_err_t lt_mesh_upload(lt_gfx_t* gfx, lt_mesh_t* mesh, lt_model_t* model);
 
 // texture
 
@@ -62,10 +62,10 @@ struct lt_texture {
 	u32 gl_tex;
 } lt_texture_t;
 
-b8 lt_texture_create(lt_gfx_t* gfx, lt_texture_t* tex, usz flags, lt_img_t* img);
+lt_err_t lt_texture_create(lt_gfx_t* gfx, lt_texture_t* tex, usz flags, lt_img_t* img);
 void lt_texture_destroy(lt_texture_t* tex);
 
-b8 lt_texture_upload(lt_gfx_t* gfx, lt_texture_t* tex, lt_img_t* img);
+lt_err_t lt_texture_upload(lt_gfx_t* gfx, lt_texture_t* tex, lt_img_t* img);
 
 // gfx
 
@@ -78,13 +78,13 @@ struct lt_gfx {
 	lt_texture_t white_texture;
 } lt_gfx_t;
 
-b8 lt_gfx_init(void);
+lt_err_t lt_gfx_init(void);
 
-b8 lt_gfx_create(lt_gfx_t* gfx, lt_window_t* win, lt_alloc_t* alloc);
+lt_err_t lt_gfx_create(lt_gfx_t* gfx, lt_window_t* win, lt_alloc_t* alloc);
 void lt_gfx_destroy(lt_gfx_t* gfx);
 
-b8 lt_gfx_begin(lt_gfx_t* gfx);
-b8 lt_gfx_end(lt_gfx_t* gfx);
+lt_err_t lt_gfx_begin(lt_gfx_t* gfx);
+lt_err_t lt_gfx_end(lt_gfx_t* gfx);
 
 void lt_gfx_bind_pipeline(lt_gfx_t* gfx, lt_pipeline_t* pl);
 void lt_gfx_bind_texture(lt_gfx_t* gfx, lt_texture_t* tex);
@@ -103,7 +103,7 @@ void lt_gfx_draw_rectcd(lt_gfx_t* gfx, isz x, isz y, isz w, isz h, u32 color, u3
 #define lt_gfx_draw_rectc(gfx, x, y, w, h, clr) lt_gfx_draw_rectcd((gfx), (x), (y), (w), (h), (clr), LT_DEFAULT_DEPTH)
 #define lt_gfx_draw_rectt(gfx, x, y, w, h, tex) lt_gfx_draw_rectctd((gfx), (x), (y), (w), (h), 0xFFFFFFFF, (tex), LT_DEFAULT_DEPTH)
 
-b8 lt_gfx_render_text(lt_gfx_t* gfx, lstr_t text, lt_font_t* font, usz flags, lt_texture_t* out_tex);
+lt_err_t lt_gfx_render_text(lt_gfx_t* gfx, lstr_t text, lt_font_t* font, usz flags, lt_texture_t* out_tex);
 
 void lt_gfx_wait_idle(lt_gfx_t* gfx);
 

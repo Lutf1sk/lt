@@ -20,7 +20,7 @@ struct parse_ctx {
 	char* end;
 } parse_ctx_t;
 
-static b8 parse_val(parse_ctx_t* cx, lt_conf_t* cf);
+static lt_err_t parse_val(parse_ctx_t* cx, lt_conf_t* cf);
 
 static
 b8 skip_whitespace(parse_ctx_t* cx) {
@@ -38,14 +38,16 @@ b8 consume_string(parse_ctx_t* cx, lstr_t str) {
 }
 
 static
-b8 parse_obj_body(parse_ctx_t* cx, lt_conf_t* cf) {
+lt_err_t parse_obj_body(parse_ctx_t* cx, lt_conf_t* cf) {
+	lt_err_t err;
+
 	cf->stype = LT_CONF_OBJECT;
 	cf->children = NULL;
 	cf->count = 0;
 
 	for (;;) {
 		if (skip_whitespace(cx) || *cx->it == '}')
-			return 1;
+			return LT_SUCCESS;
 
 		cf->children = realloc(cf->children, (cf->count + 1) * sizeof(lt_conf_t));
 		lt_conf_t* child = &cf->children[cf->count++];
@@ -55,86 +57,104 @@ b8 parse_obj_body(parse_ctx_t* cx, lt_conf_t* cf) {
 		while (cx->it < cx->end && lt_is_ident_body(*cx->it))
 			++cx->it;
 		lstr_t key = LSTR(key_start, cx->it - key_start);
-		if (!key.len)
-			goto syntax_err;
+		if (!key.len) {
+			err = LT_ERR_INVALID_SYNTAX;
+			goto err0;
+		}
 		child->key = key;
 
 		// Parse value
-		if (!parse_val(cx, child))
-			goto syntax_err;
+		if ((err = parse_val(cx, child)))
+			goto err0;
 	}
 
-syntax_err:
-	cf->count--;
-	lt_conf_free(cf);
-	return 0;
+err0:	cf->count--;
+		lt_conf_free(cf);
+		return err;
 }
 
 static
-b8 parse_arr_body(parse_ctx_t* cx, lt_conf_t* cf) {
+lt_err_t parse_arr_body(parse_ctx_t* cx, lt_conf_t* cf) {
+	lt_err_t err;
+
 	cf->stype = LT_CONF_ARRAY;
 	cf->children = NULL;
 	cf->count = 0;
 
 	for (;;) {
-		if (skip_whitespace(cx))
-			return 0;
+		if (skip_whitespace(cx)) {
+			err = LT_ERR_INVALID_SYNTAX;
+			goto err0;
+		}
 		if (*cx->it == ']')
-			return 1;
+			return LT_SUCCESS;
 
-		cf->children = realloc(cf->children, (cf->count + 1) * sizeof(lt_conf_t));
+		void* res = realloc(cf->children, (cf->count + 1) * sizeof(lt_conf_t));
+		if (!res) {
+			err = LT_ERR_OUT_OF_MEMORY;
+			goto err0;
+		}
+
+		cf->children = res;
 		lt_conf_t* child = &cf->children[cf->count++];
 
 		// Parse value
-		if (!parse_val(cx, child)) {
-			cf->count--;
-			lt_conf_free(cf);
-			return 0;
-		}
+		if ((err = parse_val(cx, child)))
+			goto err0;
 	}
+
+err0:	cf->count--;
+		lt_conf_free(cf);
+		return err;
 }
 
 static
-b8 parse_val(parse_ctx_t* cx, lt_conf_t* cf) {
+lt_err_t parse_val(parse_ctx_t* cx, lt_conf_t* cf) {
+	lt_err_t err;
+
 	if (skip_whitespace(cx))
-		return 0;
+		return LT_ERR_INVALID_SYNTAX;
 
 	char c = *cx->it++;
 	switch (c) {
 	case '{':
-		if (!parse_obj_body(cx, cf) || skip_whitespace(cx))
-			return 0;
-		return *cx->it++ == '}';
+		if ((err = parse_obj_body(cx, cf)))
+			return err;
+		if (skip_whitespace(cx) || *cx->it++ != '}')
+			return LT_ERR_INVALID_SYNTAX;
+		return LT_SUCCESS;
 
 	case '[':
-		if (!parse_arr_body(cx, cf) || skip_whitespace(cx))
-			return 0;
-		return *cx->it++ == ']';
+		if ((err = parse_arr_body(cx, cf)))
+			return err;
+		if (skip_whitespace(cx) || *cx->it++ != ']')
+			return LT_ERR_INVALID_SYNTAX;
+		return LT_SUCCESS;
 
 	case 't':
 		if (!consume_string(cx, CLSTR("rue")))
-			return 0;
+			return LT_ERR_INVALID_SYNTAX;
 		cf->stype = LT_CONF_BOOL;
 		cf->bool_val = 1;
-		return 1;
+		return LT_SUCCESS;
 
 	case 'f':
 		if (!consume_string(cx, CLSTR("alse")))
-			return 0;
+			return LT_ERR_INVALID_SYNTAX;
 		cf->stype = LT_CONF_BOOL;
 		cf->bool_val = 0;
-		return 1;
+		return LT_SUCCESS;
 
 	case '"':
 		char* start = cx->it;
 		while (*cx->it++ != '"') {
 			if (cx->it >= cx->end)
-				return 0;
+				return LT_ERR_INVALID_SYNTAX;
 		}
 		cf->stype = LT_CONF_STRING;
 		cf->str_val = start;
 		cf->count = cx->it - start - 1;
-		return 1;
+		return LT_SUCCESS;
 
 	default:
 		if (lt_is_digit(c)) {
@@ -144,13 +164,13 @@ b8 parse_val(parse_ctx_t* cx, lt_conf_t* cf) {
 			cf->stype = LT_CONF_INT;
 			// TODO: Properly parse floats and different types of integers
 			cf->int_val = lt_lstr_uint(LSTR(start, cx->it - start));
-			return 1;
+			return LT_SUCCESS;
 		}
-		return 0;
+		return LT_ERR_INVALID_SYNTAX;
 	}
 }
 
-b8 lt_conf_parse(lt_conf_t* cf, lstr_t data) {
+lt_err_t lt_conf_parse(lt_conf_t* cf, lstr_t data) {
 	parse_ctx_t cx;
 	cx.it = data.str;
 	cx.end = data.str + data.len;
@@ -260,7 +280,7 @@ void lt_conf_write_indent(lt_file_t* file, isz indent) {
 }
 
 static
-b8 lt_conf_write_unsafe(lt_conf_t* cf, lt_file_t* file, isz indent) {
+lt_err_t lt_conf_write_unsafe(lt_conf_t* cf, lt_file_t* file, isz indent) {
 	switch (cf->stype) {
 	case LT_CONF_OBJECT:
 		if (indent)
@@ -275,7 +295,7 @@ b8 lt_conf_write_unsafe(lt_conf_t* cf, lt_file_t* file, isz indent) {
 			lt_conf_write_indent(file, indent - 1);
 			lt_fprintf(file, "}\n");
 		}
-		return 1;
+		return LT_SUCCESS;
 
 	case LT_CONF_ARRAY:
 		lt_fprintf(file, "[\n");
@@ -285,18 +305,18 @@ b8 lt_conf_write_unsafe(lt_conf_t* cf, lt_file_t* file, isz indent) {
 		}
 		lt_conf_write_indent(file, indent - 1);
 		lt_fprintf(file, "]\n");
-		return 1;
+		return LT_SUCCESS;
 
 	case LT_CONF_INT: return lt_fprintf(file, "%iq\n", cf->int_val) != -1;
 	case LT_CONF_STRING: return lt_fprintf(file, "\"%S\"\n", LSTR(cf->str_val, cf->count)) != -1;
-	case LT_CONF_FLOAT: return 0; // TODO: Write float values
+	case LT_CONF_FLOAT: return LT_ERR_UNSUPPORTED; // TODO: Write float values
 	case LT_CONF_BOOL: return lt_fprintf(file, "%S\n", cf->bool_val ? CLSTR("true") : CLSTR("false")) != -1;
 	}
 
-	return 0;
+	return LT_ERR_INVALID_TYPE;
 }
 
-b8 lt_conf_write(lt_conf_t* cf, lt_file_t* file) {
+lt_err_t lt_conf_write(lt_conf_t* cf, lt_file_t* file) {
 	if (!file)
 		file = lt_stdout;
 	return lt_conf_write_unsafe(cf, file, 0);

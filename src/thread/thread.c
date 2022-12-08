@@ -21,6 +21,8 @@ void* lt_thread_start_wrapper(void* args) {
 
 lt_thread_t* lt_thread_create(lt_thread_proc_t proc, void* args, lt_alloc_t* alloc) {
 	lt_thread_t* thread = lt_malloc(alloc, sizeof(lt_thread_t));
+	if (!thread)
+		return NULL;
 	thread->proc = proc;
 	thread->args = args;
 	if (pthread_create(&thread->pthread, NULL, lt_thread_start_wrapper, thread)) {
@@ -57,6 +59,8 @@ DWORD WINAPI lt_thread_start_wrapper(void* args) {
 
 lt_thread_t* lt_thread_create(lt_thread_proc_t proc, void* args, lt_alloc_t* alloc) {
 	lt_thread_t* thread = lt_malloc(alloc, sizeof(lt_thread_t));
+	if (!thread)
+		return NULL;
 	thread->proc = proc;
 	thread->args = args;
 	thread->hnd = CreateThread(NULL, 0, lt_thread_start_wrapper, thread, 0, NULL);

@@ -4,15 +4,17 @@
 
 #include "../window/window_def.h"
 
-b8 lt_vk_initialize_loader(void) {
-	return volkInitialize() == VK_SUCCESS;
+lt_err_t lt_vk_initialize_loader(void) {
+	if (volkInitialize() != VK_SUCCESS)
+		return LT_ERR_UNKNOWN; // !!
+	return LT_SUCCESS;
 }
 
 void lt_vk_load_instance(VkInstance inst) {
 	volkLoadInstance(inst);
 }
 
-b8 lt_vk_create_window_surface(lt_window_t* win, VkInstance inst, VkAllocationCallbacks* alloc, VkSurfaceKHR* out_surface) {
+lt_err_t lt_vk_create_window_surface(lt_window_t* win, VkInstance inst, VkAllocationCallbacks* alloc, VkSurfaceKHR* out_surface) {
 #if defined(LT_X11)
 
 	VkXcbSurfaceCreateInfoKHR cinf;
@@ -22,7 +24,9 @@ b8 lt_vk_create_window_surface(lt_window_t* win, VkInstance inst, VkAllocationCa
 	cinf.flags = 0;
 	cinf.pNext = NULL;
 
-	return vkCreateXcbSurfaceKHR(inst, &cinf, alloc, out_surface) == VK_SUCCESS;
+	if (vkCreateXcbSurfaceKHR(inst, &cinf, alloc, out_surface) != VK_SUCCESS)
+		return LT_ERR_UNKNOWN; // !!
+	return LT_SUCCESS;
 
 #elif defined(LT_WIN32)
 
@@ -32,13 +36,14 @@ b8 lt_vk_create_window_surface(lt_window_t* win, VkInstance inst, VkAllocationCa
 	cinf.hwnd = win->hwnd;
 	cinf.flags = 0;
 	cinf.pNext = NULL;
-
-	return vkCreateWin32SurfaceKHR(inst, &cinf, alloc, out_surface) == VK_SUCCESS;
+	if (vkCreateWin32SurfaceKHR(inst, &cinf, alloc, out_surface) != VK_SUCCESS)
+		return LT_ERR_UNKNOWN; // !!
+	return LT_SUCCESS;
 
 #endif
 }
 
-b8 lt_vk_create_generic_instance(VkAllocationCallbacks* alloc, VkInstance* inst) {
+lt_err_t lt_vk_create_generic_instance(VkAllocationCallbacks* alloc, VkInstance* inst) {
 	VkApplicationInfo appinf;
 	appinf.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
 	appinf.pApplicationName = "LT Vulkan";
@@ -76,7 +81,9 @@ b8 lt_vk_create_generic_instance(VkAllocationCallbacks* alloc, VkInstance* inst)
 	cinf.flags = 0;
 	cinf.pNext = NULL;
 
-	return vkCreateInstance(&cinf, alloc, inst) == VK_SUCCESS;
+	if (vkCreateInstance(&cinf, alloc, inst) != VK_SUCCESS)
+		return LT_ERR_UNKNOWN; // !!
+	return LT_SUCCESS;
 }
 
 static
@@ -90,7 +97,7 @@ VkBool32 lt_vk_debug_messenger_callback(
 	return VK_FALSE;
 }
 
-b8 lt_vk_create_debug_messenger(VkInstance inst, VkAllocationCallbacks* alloc, VkDebugUtilsMessengerEXT* messenger) {
+lt_err_t lt_vk_create_debug_messenger(VkInstance inst, VkAllocationCallbacks* alloc, VkDebugUtilsMessengerEXT* messenger) {
 	VkDebugUtilsMessageSeverityFlagBitsEXT severity = 0;
 	severity |= VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
 	severity |= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT;
@@ -110,6 +117,8 @@ b8 lt_vk_create_debug_messenger(VkInstance inst, VkAllocationCallbacks* alloc, V
 	cinf.flags = 0;
 	cinf.pNext = NULL;
 
-	return vkCreateDebugUtilsMessengerEXT(inst, &cinf, alloc, messenger) == VK_SUCCESS;
+	if (vkCreateDebugUtilsMessengerEXT(inst, &cinf, alloc, messenger) != VK_SUCCESS)
+		return LT_ERR_UNKNOWN; // !!
+	return LT_SUCCESS;
 }
 

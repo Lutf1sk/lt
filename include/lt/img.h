@@ -1,7 +1,7 @@
 #ifndef LT_IMG
 #define LT_IMG 1
 
-#include <lt/primitives.h>
+#include <lt/err.h>
 #include <lt/fwd.h>
 
 #define LT_IMG_TGA_MAGIC (char[1]){ 0x00 }
@@ -19,9 +19,9 @@ struct lt_img {
 	void* data;
 } lt_img_t;
 
-b8 lt_img_load_tga(void* data, usz len, lt_img_t* img, lt_alloc_t* alloc);
-b8 lt_img_load_bmp(void* data, usz len, lt_img_t* img, lt_alloc_t* alloc);
-b8 lt_img_load(void* data, usz len, lt_img_t* img, lt_alloc_t* alloc);
+lt_err_t lt_img_load_tga(lt_img_t* img, void* data, usz len, lt_alloc_t* alloc);
+lt_err_t lt_img_load_bmp(lt_img_t* img, void* data, usz len, lt_alloc_t* alloc);
+lt_err_t lt_img_load(lt_img_t* img, void* data, usz len, lt_alloc_t* alloc);
 
 void lt_img_free(lt_img_t* img, lt_alloc_t* alloc);
 
