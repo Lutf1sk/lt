@@ -54,7 +54,7 @@ typedef struct lt_mesh lt_mesh_t;
 typedef struct lt_texture lt_texture_t;
 
 // textedit.h
-typedef struct lt_textedit lt_textedit_t;
-typedef struct lt_lineedit lt_lineedit_t;
+typedef struct lt_led lt_led_t;
+typedef struct lt_texted lt_texted_t;
 
 #endif

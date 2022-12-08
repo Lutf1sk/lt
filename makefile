@@ -41,7 +41,7 @@ OBJS = \
 	src/str/str.o \
 	src/strstream/strstream.o \
 	src/term/term.o \
-	src/textedit/textedit.o \
+	src/texted/texted.o \
 	src/thread/mutex.o \
 	src/thread/spinlock.o \
 	src/thread/thread.o \
