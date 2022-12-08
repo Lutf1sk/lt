@@ -300,73 +300,121 @@ u32 precomp_tab[256][8] = {
 #undef _
 #undef X
 
+static
+b8 read_header1(void* data, usz len, lt_font_t* out_font, u8** out_glyph_start) {
+	lt_psf1_header_t* head = data;
+
+	if (len < sizeof(lt_psf1_header_t) || head->height == 0)
+		return 0;
+
+	out_font->width = 8;
+	out_font->height = head->height;
+	out_font->glyph_count = 256;
+	if (head->mode & PSF1_MODE512)
+		out_font->glyph_count = 512;
+
+	*out_glyph_start = (u8*)data + sizeof(lt_psf1_header_t);
+	return 1;
+}
+
+static
+b8 read_header2(void* data, usz len, lt_font_t* out_font, u8** out_glyph_start) {
+	lt_psf2_header_t* head = data;
+
+	if (len < sizeof(lt_psf2_header_t) || head->version != 0)
+		return 0;
+
+	usz glyphtab_size = head->glyph_count * head->glyph_bytes;
+	if (len < head->header_size + glyphtab_size || head->width == 0 || head->height == 0)
+		return 0;
+
+	out_font->width = head->width;
+	out_font->height = head->height;
+	out_font->glyph_count = head->glyph_count;
+
+	*out_glyph_start = (u8*)data + head->header_size;
+	return 1;
+}
+
 lt_font_t* lt_font_load_psf(void* data, usz len, lt_alloc_t* alloc) {
 	if (len < sizeof(u32))
-		return NULL;
-
-	u32 w, h, glyph_count;
-	u8* it = NULL;
-
-	if (*(u16*)data == LT_FONT_PSF1_MAGIC) {
-		lt_psf1_header_t* head = data;
-
-		if (len < sizeof(lt_psf1_header_t) || head->height == 0)
-			return NULL;
-
-		w = 8;
-		h = head->height;
-		glyph_count = 256;
-		if (head->mode & PSF1_MODE512)
-			glyph_count = 512;
-		it = (u8*)data + sizeof(lt_psf1_header_t);
-	}
-	else if (*(u32*)data == LT_FONT_PSF2_MAGIC) {
-		lt_psf2_header_t* head = data;
-
-		if (len < sizeof(lt_psf2_header_t) || head->version != 0)
-			return NULL;
-
-		usz glyphtab_size = head->glyph_count * head->glyph_bytes;
-
-		if (len < head->header_size + glyphtab_size || head->width == 0 || head->height == 0)
-			return NULL;
-
-		w = head->width;
-		h = head->height;
-		glyph_count = head->glyph_count;
-		it = (u8*)data + head->header_size;
-	}
-	else
-		return NULL;
+		goto err0;
 
 	lt_font_t* font = lt_malloc(alloc, sizeof(lt_font_t));
-	font->width = w;
-	font->height = h;
-	font->glyph_count = glyph_count;
-	font->glyph_data = lt_malloc(alloc, glyph_count * w * h * sizeof(u32));
+	if (!font)
+		goto err0;
 
-	for (u32* out = font->glyph_data, i = 0; i < glyph_count; ++i) {
-		for (usz j = 0; j < h; ++j) {
-			i32 bits = w;
-			while (bits > 0) {
-				usz left = bits < 8 ? 8 - bits : 8;
+	// Read PSF header
+	u8* it = NULL;
+	if (*(u16*)data == LT_FONT_PSF1_MAGIC && !read_header1(data, len, font, &it))
+		goto err1;
+	if (*(u32*)data == LT_FONT_PSF2_MAGIC && !read_header2(data, len, font, &it))
+		goto err1;
+	if (!it)
+		goto err1;
 
-				memcpy(out, precomp_tab[*it++], left * sizeof(u32));
-				out += left;
-				bits -= left;
-			}
+	// Allocate target buffer
+	font->glyph_data = lt_malloc(alloc, font->glyph_count * font->height * font->width * sizeof(u32));
+	if (!font->glyph_data)
+		goto err1;
+
+	// Convert to RGBA image
+	u32* out = font->glyph_data;
+	usz row_count = font->glyph_count * font->height;
+	for (usz i = 0; i < row_count; ++i) {
+		i32 bits = font->width;
+
+		while (bits > 0) {
+			usz left = bits < 8 ? 8 - bits : 8;
+
+			memcpy(out, precomp_tab[*it++], left * sizeof(u32));
+			out += left;
+			bits -= left;
 		}
 	}
 
 	return font;
+
+err1:	lt_mfree(alloc, font);
+err0:	return NULL;
 }
 
 b8 lt_font_write_psf(lt_font_t* font, lt_file_t* file, lt_alloc_t* alloc) {
+	// Allocate target buffer
 	usz w_bytes = font->width / 8;
 	if (font->width % 8)
 		++w_bytes;
 	usz glyph_bytes = w_bytes * font->height;
+	usz glyphtab_size = glyph_bytes * font->glyph_count;
+	u8* glyphtab = lt_malloc(alloc, glyphtab_size);
+	if (!glyphtab)
+		goto err0;
 
+	// Convert to bitmap
+	u8* out_it = glyphtab;
+	u32* in_it = font->glyph_data;
+	usz row_count = font->glyph_count * font->height;
+	for (usz i = 0; i < row_count; ++i) {
+		u8 byte = 0;
+		u8 mask = 7;
+
+		for (usz i = 0; i < font->width; ++i) {
+			u8 i_masked = i & mask;
+
+			if (i && !i_masked) {
+				*out_it++ = byte;
+				byte = 0;
+			}
+
+			u8 bit = !!(*in_it++ & 0xFF);
+			u8 shift = mask - i_masked;
+			byte |= bit << shift;
+		}
+
+		*out_it++ = byte;
+	}
+
+	// Fill PSF header
 	lt_psf2_header_t head;
 	head.magic = LT_FONT_PSF2_MAGIC;
 	head.version = 0;
@@ -377,31 +425,15 @@ b8 lt_font_write_psf(lt_font_t* font, lt_file_t* file, lt_alloc_t* alloc) {
 	head.height = font->height;
 	head.width = font->width;
 
+	// Write to file
 	if (lt_file_write(file, &head, sizeof(head)) != sizeof(head))
-		return 0;
+		goto err1;
+	if (lt_file_write(file, glyphtab, glyphtab_size) != glyphtab_size)
+		goto err1;
 
-	usz glyphtab_size = glyph_bytes * font->glyph_count;
-	u8* glyphtab = lt_malloc(alloc, glyphtab_size);
-
-	u8* out_it = glyphtab;
-	u32* in_it = font->glyph_data;
-	for (usz i = 0; i < font->glyph_count; ++i) {
-		for (usz i = 0; i < font->height; ++i) {
-			u8 byte = 0;
-			u8 mask = 7;
-			for (usz i = 0; i < font->width; ++i) {
-				u8 i_masked = i & mask;
-				if (i && !i_masked) {
-					*out_it++ = byte;
-					byte = 0;
-				}
-				byte |= !!(*in_it++) << (mask - i_masked);
-			}
-			*out_it++ = byte;
-		}
-	}
-
-	isz res = lt_file_write(file, glyphtab, glyphtab_size);
 	lt_mfree(alloc, glyphtab);
-	return res == glyphtab_size;
+	return 1;
+
+err1:	lt_mfree(alloc, glyphtab);
+err0:	return 0;
 }
