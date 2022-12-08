@@ -58,8 +58,6 @@ OBJS = \
 CC = gcc
 LNK = gcc
 
-CC_FLAGS = -I./include/
-
 ifdef WINDOWS
 	CC = x86_64-w64-mingw32-gcc
 	LNK = x86_64-w64-mingw32-gcc
@@ -71,7 +69,7 @@ endif
 # -----
 DEPS = $(patsubst %.o,%.d,$(OBJS))
 
-CC_FLAGS += -Wall -I./ -masm=intel
+CC_FLAGS += -Wall -I./ -I./include/ -masm=intel -Ofast
 LNK_FLAGS += -L$(BASE_DIR)/bin
 
 OUT_PATH = $(LIB)
