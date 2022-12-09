@@ -42,12 +42,21 @@ lt_err_t lt_term_init(lt_term_flags_t flags) {
 		goto err0;
 	old_term = term;
 
+	if (!(flags & LT_TERM_CANON)) {
+		term.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | IXON);
+		term.c_iflag |= ICRNL;
+		term.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
+		term.c_cflag &= ~(CSIZE | PARENB);
+		term.c_cflag |= CS8;
+	}
+	else {
+		term.c_lflag |= ICANON;
+	}
+
 	if (!(flags & LT_TERM_ECHO))
 		term.c_lflag &= ~ECHO;
-	if (!(flags & LT_TERM_CANON))
-		term.c_lflag &= ~ICANON;
-	if (!(flags & LT_TERM_SIGNAL))
-		term.c_lflag &= ~ISIG;
+	else
+		term.c_lflag |= ECHO;
 
 	if (tcsetattr(STDOUT_FILENO, TCSANOW, &term) < 0)
 		goto err1;
@@ -102,6 +111,83 @@ u8 is_intermediate_byte(u8 c) {
 	return (c >= 0x20) && (c <= 0x2F);
 }
 
+static
+u32 convert_xterm_key(u32 c) {
+	switch (c) {
+	case 'A': return LT_TERM_KEY_UP;
+	case 'B': return LT_TERM_KEY_DOWN;
+	case 'C': return LT_TERM_KEY_RIGHT;
+	case 'D': return LT_TERM_KEY_LEFT;
+	case 'H': return LT_TERM_KEY_HOME;
+	case 'F': return LT_TERM_KEY_END;
+	case 'P': return LT_TERM_KEY_F1;
+	case 'Q': return LT_TERM_KEY_F2;
+	case 'R': return LT_TERM_KEY_F3;
+	case 'S': return LT_TERM_KEY_F4;
+	case 'Z': return LT_TERM_KEY_TAB | LT_TERM_MOD_SHIFT;
+	default: return 0;
+	}
+}
+
+static
+u32 convert_vt_key(u32 c) {
+	switch (c) {
+	case 1: return LT_TERM_KEY_HOME;
+	case 2: return LT_TERM_KEY_INSERT;
+	case 3: return LT_TERM_KEY_DELETE;
+	case 4: return LT_TERM_KEY_END;
+	case 5: return LT_TERM_KEY_PAGEUP;
+	case 6: return LT_TERM_KEY_PAGEDN;
+	case 7: return LT_TERM_KEY_HOME;
+	case 8: return LT_TERM_KEY_END;
+	case 9: return 0;
+	case 10: return LT_TERM_KEY_F0;
+	case 11: return LT_TERM_KEY_F1;
+	case 12: return LT_TERM_KEY_F2;
+	case 13: return LT_TERM_KEY_F3;
+	case 14: return LT_TERM_KEY_F4;
+	case 15: return LT_TERM_KEY_F5;
+	case 16: return 0;
+	case 17: return LT_TERM_KEY_F6;
+	case 18: return LT_TERM_KEY_F7;
+	case 19: return LT_TERM_KEY_F8;
+	case 20: return LT_TERM_KEY_F9;
+	case 21: return LT_TERM_KEY_F10;
+	case 22: return 0;
+	case 23: return LT_TERM_KEY_F11;
+	case 24: return LT_TERM_KEY_F12;
+	case 25: return LT_TERM_KEY_F13;
+	case 26: return LT_TERM_KEY_F14;
+	case 27: return 0;
+	case 28: return LT_TERM_KEY_F15;
+	case 29: return LT_TERM_KEY_F16;
+	case 30: return 0;
+	case 31: return LT_TERM_KEY_F17;
+	case 32: return LT_TERM_KEY_F18;
+	case 33: return LT_TERM_KEY_F19;
+	case 34: return LT_TERM_KEY_F20;
+	case 35: return 0;
+	case 200: return LT_TERM_KEY_BPASTE;
+	case 201: return LT_TERM_KEY_NBPASTE;
+	default: return 0;
+	}
+}
+
+static
+u32 convert_xterm_mod(u32 mod) {
+	switch (mod) {
+	case 1: return 0;
+	case 2: return LT_TERM_MOD_SHIFT;
+	case 3: return LT_TERM_MOD_ALT;
+	case 4: return LT_TERM_MOD_SHIFT | LT_TERM_MOD_ALT;
+	case 5: return LT_TERM_MOD_CTRL;
+	case 6: return LT_TERM_MOD_CTRL | LT_TERM_MOD_SHIFT;
+	case 7: return LT_TERM_MOD_CTRL | LT_TERM_MOD_ALT;
+	case 8: return LT_TERM_MOD_CTRL | LT_TERM_MOD_SHIFT | LT_TERM_MOD_ALT;
+	default: return 0;
+	}
+}
+
 u32 lt_term_getkey(void) {
 	if (resized) {
 		resized = 0;
@@ -121,17 +207,14 @@ u32 lt_term_getkey(void) {
 			return LT_TERM_KEY_ESC;
 
 		c = lt_getc();
+		if (c == 0x1B)
+			return LT_TERM_KEY_ESC;
+
 		if (c == 'O') { // Parse F1 - F4
 			if (!poll(&pfd, 1, 1))
 				return 'O' | LT_TERM_MOD_ALT;
 			c = lt_getc();
-			switch (c) {
-			case 'P': return LT_TERM_KEY_F1;
-			case 'Q': return LT_TERM_KEY_F2;
-			case 'R': return LT_TERM_KEY_F3;
-			case 'S': return LT_TERM_KEY_F4;
-			default: return 0;
-			}
+			return convert_xterm_key(c);
 		}
 
 		if (c != '[' || !poll(&pfd, 1, 1)) {
@@ -165,35 +248,12 @@ u32 lt_term_getkey(void) {
 			c = lt_getc();
 
 		// Convert modifiers if possible
-		if (param_count >= 2) {
-			switch (param[1]) {
-			case 1: mod = 0; break;
-			case 2: mod = LT_TERM_MOD_SHIFT; break;
-			case 3: mod = LT_TERM_MOD_ALT; break;
-			case 4: mod = LT_TERM_MOD_SHIFT | LT_TERM_MOD_ALT; break;
-			case 5: mod = LT_TERM_MOD_CTRL; break;
-			case 6: mod = LT_TERM_MOD_CTRL | LT_TERM_MOD_SHIFT; break;
-			case 7: mod = LT_TERM_MOD_CTRL | LT_TERM_MOD_ALT; break;
-			case 8: mod = LT_TERM_MOD_CTRL | LT_TERM_MOD_SHIFT | LT_TERM_MOD_ALT; break;
-			}
-		}
+		if (param_count >= 2)
+			mod = convert_xterm_mod(param[1]);
 
 		// Convert special characters
 		if (param_count < 1 || param[0] == 1) {
-			switch (c) {
-			case 'A': return LT_TERM_KEY_UP | mod;
-			case 'B': return LT_TERM_KEY_DOWN | mod;
-			case 'C': return LT_TERM_KEY_RIGHT | mod;
-			case 'D': return LT_TERM_KEY_LEFT | mod;
-			case 'H': return LT_TERM_KEY_HOME | mod;
-			case 'F': return LT_TERM_KEY_END | mod;
-			case 'P': return LT_TERM_KEY_F1 | mod;
-			case 'Q': return LT_TERM_KEY_F2 | mod;
-			case 'R': return LT_TERM_KEY_F3 | mod;
-			case 'S': return LT_TERM_KEY_F4 | mod;
-			case 'Z': return LT_TERM_KEY_TAB | LT_TERM_MOD_SHIFT | mod;
-
-			case 'M': { // Mouse event
+			if (c == 'M') { // Mouse event
 				u8 b = lt_getc() - 32;
 				u8 x = lt_getc() - 32;
 				u8 y = lt_getc() - 32;
@@ -216,31 +276,12 @@ u32 lt_term_getkey(void) {
 				if (b & 8) mod |= LT_TERM_MOD_ALT;
 				if (b & 16) mod |= LT_TERM_MOD_CTRL;
 				return c | mod;
-			}	break;
-
-			default: return 0;
 			}
+			return convert_xterm_key(c) | mod;
 		}
 
-		if (param_count >= 1 || c == '~') {
-			switch (param[0]) {
-			case 2: return LT_TERM_KEY_INSERT | mod;
-			case 3: return LT_TERM_KEY_DELETE | mod;
-			case 5: return LT_TERM_KEY_PAGEUP | mod;
-			case 6: return LT_TERM_KEY_PAGEDN | mod;
-			case 15: return LT_TERM_KEY_F5 | mod;
-			case 17: return LT_TERM_KEY_F6 | mod;
-			case 18: return LT_TERM_KEY_F7 | mod;
-			case 19: return LT_TERM_KEY_F8 | mod;
-			case 20: return LT_TERM_KEY_F9 | mod;
-			case 21: return LT_TERM_KEY_F10 | mod;
-			case 23: return LT_TERM_KEY_F11 | mod;
-			case 24: return LT_TERM_KEY_F12 | mod;
-			case 200: return LT_TERM_KEY_BPASTE;
-			case 201: return LT_TERM_KEY_NBPASTE;
-			default: return 0;
-			}
-		}
+		if (param_count >= 1 || c == '~')
+			return convert_vt_key(param[0]) | mod;
 
 		return 0;
 	}
