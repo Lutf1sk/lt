@@ -27,6 +27,11 @@ void lt_led_clear(lt_led_t* ed) {
 }
 
 static LT_INLINE
+b8 lt_led_selection_present(lt_led_t* ed) {
+	return ed->cursor_pos != ed->select_pos;
+}
+
+static LT_INLINE
 lstr_t lt_led_get_str(lt_led_t* ed) {
 	return LSTR(ed->str, lt_darr_count(ed->str));
 }
