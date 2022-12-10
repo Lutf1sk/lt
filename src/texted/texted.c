@@ -319,6 +319,8 @@ void lt_texted_clear(lt_texted_t* ed) {
 		lt_darr_destroy(ed->lines[i].str);
 	lt_led_clear(&ed->lines[0]);
 	ed->cursor_pos = 0;
+	sync_s(ed);
+	sync_tx(ed);
 }
 
 isz lt_texted_write_contents(lt_texted_t* ed, void* usr, lt_io_callback_t callb) {

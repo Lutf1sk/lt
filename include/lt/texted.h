@@ -23,6 +23,7 @@ static LT_INLINE
 void lt_led_clear(lt_led_t* ed) {
 	lt_darr_clear(ed->str);
 	ed->cursor_pos = 0;
+	ed->select_pos = 0;
 }
 
 static LT_INLINE
