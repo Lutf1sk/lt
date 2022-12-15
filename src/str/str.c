@@ -1,4 +1,24 @@
 #include <lt/str.h>
+#include <lt/ctype.h>
+
+lstr_t lt_lstr_trim_left(lstr_t str) {
+	char *it, *end;
+	for (it = str.str, end = it + str.len; it < end && lt_is_space(*it); ++it)
+		;
+	return LSTR(it, end - it);
+}
+
+lstr_t lt_lstr_trim_right(lstr_t str) {
+	char *it;
+	for (it = str.str + str.len; it > str.str && lt_is_space(*(it - 1)); --it)
+		;
+	return LSTR(str.str, it - str.str);
+}
+
+LT_FLATTEN
+lstr_t lt_lstr_trim(lstr_t str) {
+	return lt_lstr_trim_left(lt_lstr_trim_right(str));
+}
 
 f64 lt_lstr_float(lstr_t str) {
 	if (!str.len)

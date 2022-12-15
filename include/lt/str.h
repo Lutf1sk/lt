@@ -45,6 +45,10 @@ lstr_t lt_lstr_split_bwd(lstr_t str, char delim) {
 	return str;
 }
 
+lstr_t lt_lstr_trim_left(lstr_t str);
+lstr_t lt_lstr_trim_right(lstr_t str);
+lstr_t lt_lstr_trim(lstr_t str);
+
 f64 lt_lstr_float(lstr_t);
 i64 lt_lstr_int(lstr_t);
 u64 lt_lstr_uint(lstr_t);
