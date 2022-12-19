@@ -78,4 +78,14 @@ u8 lt_to_lower(u8 c) {
 	return lt_lower_table[c];
 }
 
+static LT_INLINE
+u8 lt_is_control_char(u8 c) {
+	return c < 32 || c == 0x7F;
+}
+
+static LT_INLINE
+u8 lt_is_unicode_control_char(u32 c) {
+	return (c < 32) || (c >= 0x7F && c < 0x100);
+}
+
 #endif
