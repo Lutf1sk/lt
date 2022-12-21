@@ -32,4 +32,21 @@ lt_socket_t* lt_socket_accept(lt_socket_t* sock, lt_alloc_t* alloc);
 isz lt_socket_send(lt_socket_t* sock, void* data, usz size);
 isz lt_socket_recv(lt_socket_t* sock, void* data, usz size);
 
+// sockstream.c
+
+typedef
+struct lt_sockstream {
+	u8* buffer;
+	usz buffer_size;
+	u8* it;
+	usz bytes_avail;
+	lt_socket_t* socket;
+} lt_sockstream_t;
+
+lt_err_t lt_sockstream_create(lt_sockstream_t* stream, lt_socket_t* sock, usz buffer_size, lt_alloc_t* alloc);
+void lt_sockstream_destroy(lt_sockstream_t* stream, lt_alloc_t* alloc);
+
+isz lt_sockstream_read(lt_sockstream_t* stream, void* data, usz size);
+lt_err_t lt_sockstream_read_fixed(lt_sockstream_t* stream, void* data, usz size);
+
 #endif

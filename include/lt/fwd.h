@@ -11,6 +11,7 @@ typedef struct lt_pool lt_pool_t;
 
 // net.h
 typedef struct lt_socket lt_socket_t;
+typedef struct lt_sockstream lt_sockstream_t;
 
 // window.h
 typedef struct lt_window lt_window_t;

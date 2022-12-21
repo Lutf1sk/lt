@@ -39,6 +39,7 @@ OBJS = \
 	src/mem/pool.o \
 	src/mem/vmem.o \
 	src/net/socket.o \
+	src/net/sockstream.o \
 	src/str/str.o \
 	src/strstream/strstream.o \
 	src/term/term.o \
