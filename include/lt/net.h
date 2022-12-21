@@ -47,6 +47,6 @@ lt_err_t lt_sockstream_create(lt_sockstream_t* stream, lt_socket_t* sock, usz bu
 void lt_sockstream_destroy(lt_sockstream_t* stream, lt_alloc_t* alloc);
 
 isz lt_sockstream_read(lt_sockstream_t* stream, void* data, usz size);
-lt_err_t lt_sockstream_read_fixed(lt_sockstream_t* stream, void* data, usz size);
+isz lt_sockstream_read_fixed(lt_sockstream_t* stream, void* data, usz size);
 
 #endif

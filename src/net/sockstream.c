@@ -35,7 +35,7 @@ isz lt_sockstream_read(lt_sockstream_t* stream, void* data, usz size) {
 	return size;
 }
 
-lt_err_t lt_sockstream_read_fixed(lt_sockstream_t* stream, void* data, usz size) {
+isz lt_sockstream_read_fixed(lt_sockstream_t* stream, void* data, usz size) {
 	u8 *it = data, *end = it + size;
 	while (it < end) {
 		isz res = lt_sockstream_read(stream, it, end - it);
@@ -43,5 +43,5 @@ lt_err_t lt_sockstream_read_fixed(lt_sockstream_t* stream, void* data, usz size)
 			return res;
 		it += res;
 	}
-	return LT_SUCCESS;
+	return size;
 }
