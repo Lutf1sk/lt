@@ -13,6 +13,8 @@ b8 lt_lstr_eq(lstr_t s1, lstr_t s2) {
 	return !((s1.len - s2.len) | memcmp(s1.str, s2.str, s1.len));
 }
 
+b8 lt_lstr_case_eq(lstr_t s1, lstr_t s2);
+
 static LT_INLINE
 b8 lt_lstr_startswith(lstr_t str, lstr_t substr) {
 	if (str.len < substr.len)

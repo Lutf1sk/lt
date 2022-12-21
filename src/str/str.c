@@ -1,6 +1,15 @@
 #include <lt/str.h>
 #include <lt/ctype.h>
 
+b8 lt_lstr_case_eq(lstr_t s1, lstr_t s2) {
+	if (s1.len != s2.len)
+		return 0;
+	for (usz i = 0; i < s1.len; ++i)
+		if (lt_to_upper(s1.str[i]) != lt_to_upper(s2.str[i]))
+			return 0;
+	return 1;
+}
+
 lstr_t lt_lstr_trim_left(lstr_t str) {
 	char *it, *end;
 	for (it = str.str, end = it + str.len; it < end && lt_is_space(*it); ++it)
