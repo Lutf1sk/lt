@@ -1,5 +1,7 @@
 #include <lt/lt.h>
 #include <lt/io.h>
+#define LT_ANSI_SHORTEN_NAMES
+#include <lt/ansi.h>
 
 #if defined(LT_UNIX)
 #	include <errno.h>
@@ -21,12 +23,12 @@ char* lt_os_err_str(void) {
 
 // Fatal errors
 void LT_NORETURN lt_ferr(lstr_t str) {
-	lt_fprintf(lt_stderr, "FERR: %S", str);
+	lt_fprintf(lt_stderr, FG_BRED"error"RESET": %S", str);
 	exit(1);
 }
 
 void LT_NORETURN lt_ferrf(char* fmt, ...) {
-	lt_fprintf(lt_stderr, "FERR: ");
+	lt_fprintf(lt_stderr, FG_BRED"error"RESET": ");
 
 	va_list list;
 	va_start(list, fmt);
@@ -36,13 +38,13 @@ void LT_NORETURN lt_ferrf(char* fmt, ...) {
 }
 
 void LT_NORETURN lt_ferrb(lstr_t str) {
-	lt_fprintf(lt_stderr, "FERR: %S", str);
+	lt_fprintf(lt_stderr, FG_BRED"error"RESET": %S", str);
 	lt_backtrace(NULL);
 	exit(1);
 }
 
 void LT_NORETURN lt_ferrbf(char* fmt, ...) {
-	lt_fprintf(lt_stderr, "FERR: ");
+	lt_fprintf(lt_stderr, FG_BRED"error"RESET": ");
 
 	va_list list;
 	va_start(list, fmt);
@@ -55,11 +57,11 @@ void LT_NORETURN lt_ferrbf(char* fmt, ...) {
 
 // Warnings
 void lt_werr(lstr_t str) {
-	lt_fprintf(lt_stderr, "WARN: %S", str);
+	lt_fprintf(lt_stderr, FG_BMAGENTA"warning"RESET": %S", str);
 }
 
 void lt_werrf(char* fmt, ...) {
-	lt_fprintf(lt_stderr, "WARN: ");
+	lt_fprintf(lt_stderr, FG_BMAGENTA"warning"RESET": ");
 
 	va_list list;
 	va_start(list, fmt);
@@ -68,12 +70,12 @@ void lt_werrf(char* fmt, ...) {
 }
 
 void lt_werrb(lstr_t str) {
-	lt_fprintf(lt_stderr, "WARN: %S", str);
+	lt_fprintf(lt_stderr, FG_BMAGENTA"warning"RESET": %S", str);
 	lt_backtrace(NULL);
 }
 
 void lt_werrbf(char* fmt, ...) {
-	lt_fprintf(lt_stderr, "WARN: ");
+	lt_fprintf(lt_stderr, FG_BMAGENTA"warning"RESET": ");
 
 	va_list list;
 	va_start(list, fmt);
