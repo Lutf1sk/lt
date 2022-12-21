@@ -10,7 +10,7 @@
 #define LT_HTTP_2 LT_HTTP_VERSION(2, 0)
 #define LT_HTTP_3 LT_HTTP_VERSION(3, 0)
 
-#define LT_HTTP_VERSION_MINOR(ver) (ver & 0xFFFF)
+#define LT_HTTP_VERSION_MINOR(ver) (ver & 0xFF)
 #define LT_HTTP_VERSION_MAJOR(ver) ((u16)ver >> 8)
 
 #define LT_FOR_EACH_HTTP_METHOD() \
