@@ -41,6 +41,7 @@ OBJS = \
 	src/mem/vmem.o \
 	src/net/socket.o \
 	src/net/sockstream.o \
+	src/ssl/ssl.o \
 	src/str/str.o \
 	src/strstream/strstream.o \
 	src/term/term.o \
@@ -66,6 +67,10 @@ ifdef WINDOWS
 else
 	CC_FLAGS += -g -rdynamic
 	LNK_FLAGS += -g -rdynamic
+endif
+
+ifdef SSL
+	CC_FLAGS += -DLT_SSL=1
 endif
 
 # -----
