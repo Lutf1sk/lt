@@ -6,8 +6,7 @@ void* lt_darr_create_(usz elem_size, usz initial_count, lt_alloc_t* alloc) {
 
 	usz alloced_size = initial_count * elem_size;
 	lt_darr_t* head = lt_malloc(alloc, LT_DARR_ALIGNED_SIZE + alloced_size);
-	if (!head)
-		return NULL;
+	LT_ASSERT(head);
 	head->alloced_size = alloced_size;
 	head->elem_size = elem_size;
 	head->count = 0;
@@ -52,6 +51,7 @@ void lt_darr_erase(void* arr, usz start_idx, usz count) {
 
 void* lt_darr_insert_(void* arr, usz idx, void* data, usz count) {
 	lt_darr_t* head = lt_darr_head(arr);
+	LT_ASSERT(arr && head);
 	LT_ASSERT(idx <= head->count);
 
 	usz old_count = head->count;
@@ -67,5 +67,16 @@ void* lt_darr_insert_(void* arr, usz idx, void* data, usz count) {
 	memcpy(start_ptr, data, size);
 
 	return arr;
+}
+
+void* lt_darr_dup_(void* arr) {
+	lt_darr_t* head = lt_darr_head(arr);
+	LT_ASSERT(arr && head);
+
+	lt_darr_t* new_head = lt_malloc(head->alloc, LT_DARR_ALIGNED_SIZE + head->alloced_size);
+	LT_ASSERT(new_head);
+	memcpy(new_head, head, LT_DARR_ALIGNED_SIZE + head->count * head->elem_size);
+
+	return (u8*)head + LT_DARR_ALIGNED_SIZE;
 }
 

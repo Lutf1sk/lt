@@ -41,4 +41,9 @@ void lt_darr_clear(void* arr) {
 	lt_darr_head(arr)->count = 0;
 }
 
+void* lt_darr_dup_(void* arr);
+#define lt_darr_dup(T, arr) ((T*)lt_darr_dup_(arr))
+
+#define lt_darr_lstr(arr) LSTR(arr, lt_darr_count(arr))
+
 #endif
