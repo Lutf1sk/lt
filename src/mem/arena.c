@@ -90,3 +90,7 @@ usz lt_amsize(lt_arena_t* arena, void* ptr) {
 	return *(usz*)((usz)ptr - LT_ALLOC_DEFAULT_ALIGN);
 }
 
+b8 lt_amleaked(lt_arena_t* arena) {
+	return arena->base != arena->top + sizeof(lt_arena_t);
+}
+

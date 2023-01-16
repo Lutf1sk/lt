@@ -95,6 +95,7 @@ void lt_amfree(lt_arena_t* arena, void* ptr);
 void* lt_amrealloc(lt_arena_t* arena, void* ptr, usz new_size);
 usz lt_amsize(lt_arena_t* arena, void* ptr);
 
+b8 lt_amleaked(lt_arena_t* arena);
 
 // pool.c
 typedef struct lt_pool {
