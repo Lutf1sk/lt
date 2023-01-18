@@ -24,14 +24,14 @@ isz lt_io_printf(lt_io_callback_t callb, void* usr, char* fmt, ...);
 
 typedef
 enum lt_file_mode {
-	LT_FILE_R,
-	LT_FILE_W,
-	LT_FILE_RW,
+	LT_FILE_R = 1,
+	LT_FILE_W = 2,
+	LT_FILE_RW = 3,
 } lt_file_mode_t;
 
 typedef
 enum lt_file_perms {
-	LT_FILE_PERMIT_X,
+	LT_FILE_PERMIT_X = 1,
 } lt_file_perms_t;
 
 lt_file_t* lt_file_open(lstr_t path, lt_file_mode_t access, lt_file_perms_t perms, lt_alloc_t* alloc);
