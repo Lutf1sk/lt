@@ -67,6 +67,20 @@ void* lt_msize(void* alloc_, void* mem) {
 	return alloc->size(alloc, mem);
 }
 
+static LT_INLINE
+void* lt_memdup(void* alloc_, void* mem, usz size) {
+	lt_alloc_t* alloc = alloc_;
+	void* newmem = lt_malloc(alloc, size);
+	if (!newmem)
+		return NULL;
+	memcpy(newmem, mem, size);
+	return newmem;
+}
+
+static LT_INLINE
+lstr_t lt_strdup(void* alloc, lstr_t str) {
+	return LSTR(lt_memdup(alloc, str.str, str.len), str.len);
+}
 
 // heap.c
 extern lt_alloc_t* lt_libc_heap;
