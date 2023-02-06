@@ -47,6 +47,11 @@ lstr_t lt_lstr_split_bwd(lstr_t str, char delim) {
 	return str;
 }
 
+static LT_INLINE
+lstr_t lt_lstr_from_cstr(char* cstr) {
+	return LSTR(cstr, strlen(cstr));
+}
+
 lstr_t lt_lstr_trim_left(lstr_t str);
 lstr_t lt_lstr_trim_right(lstr_t str);
 lstr_t lt_lstr_trim(lstr_t str);
