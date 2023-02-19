@@ -267,6 +267,30 @@ lt_vec3_t lt_v3cross(lt_vec3_t a, lt_vec3_t b) {
 }
 
 static LT_INLINE
+lt_vec3_t lt_v3project(lt_vec3_t normal, lt_vec3_t point) {
+	float nmag2 = lt_v3dot(normal, normal);
+	if (nmag2 <= 0.0f)
+		return point;
+
+	float factor = lt_v3dot(point, normal) / nmag2;
+	return lt_v3mulf(normal, factor);
+}
+
+static LT_INLINE
+lt_vec3_t lt_v3pproject(lt_vec3_t normal, lt_vec3_t point) {
+	float nmag2 = lt_v3dot(normal, normal);
+	if (nmag2 <= 0.0f)
+		return LT_VEC3(0.0f, 0.0f, 0.0f);
+
+	float factor = lt_v3dot(point, normal) / nmag2;
+	return LT_VEC3(
+		point.x - normal.x * factor,
+		point.y - normal.y * factor,
+		point.z - normal.z * factor
+	);
+}
+
+static LT_INLINE
 lt_vec3_t lt_vec3_rotate(lt_vec3_t v, float angle, lt_vec3_t axis) {
 	lt_vec3_t ax, v1, v2;
 	float x = cos(angle), y = sin(angle);
@@ -434,6 +458,14 @@ lt_vec4_t lt_v4normalize(lt_vec4_t v) {
 		lt_vec3_t: lt_v3cross \
 	)((a), (b)))
 
+#define lt_vproject(a, b) (_Generic((a), \
+		lt_vec3_t: lt_v3project \
+	)((a), (b)))
+
+#define lt_vpproject(a, b) (_Generic((a), \
+		lt_vec3_t: lt_v3pproject \
+	)((a), (b)))
+
 // ----- Shortened names
 
 #ifdef LT_LINALG_SHORTEN_NAMES
@@ -460,6 +492,9 @@ lt_vec4_t lt_v4normalize(lt_vec4_t v) {
 #	define vcross lt_vcross
 #	define vmagnitude lt_vmagnitude
 #	define vnormalize lt_vnormalize
+
+#	define vproject lt_vproject
+#	define vpproject lt_vpproject
 
 #	define m4perspective lt_m4perspective
 #	define m4ortho lt_m4ortho
