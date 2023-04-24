@@ -23,25 +23,36 @@ typedef
 struct lt_conf {
 	lt_conf_stype_t stype;
 	lstr_t key;
-	usz count;
 
 	union {
 		i64 int_val;
 		u64 uint_val;
 		f64 float_val;
 		b8 bool_val;
-		char* str_val;
+		lstr_t str_val;
 
-		lt_conf_t* children;
+		struct {
+			lt_conf_t* children;
+			usz child_count;
+		};
 	};
 } lt_conf_t;
+
+typedef
+struct lt_conf_err_info {
+	lt_err_t err;
+	lstr_t err_str;
+} lt_conf_err_info_t;
+
+#define LT_CONF_ERR_INFO_INIT(e, s) { (e), (s) }
+#define LT_CONF_ERR_INFO(e, s) ((lt_conf_err_info_t)LT_CONF_ERR_INFO_INIT((e), (s)))
 
 #define LT_CONF_INIT(stype, key, ...) { (stype), (key), 0, __VA_ARGS__ }
 #define LT_CONF(stype, key, ...) ((lt_conf_t)LT_CONF_INIT(stype, key, __VA_ARGS__))
 
-lstr_t conf_type_str(lt_conf_stype_t stype);
+lt_err_t lt_conf_parse(lt_conf_t* cf, void* data, usz len, lt_conf_err_info_t* err_str, lt_alloc_t* alloc);
 
-lt_err_t lt_conf_parse(lt_conf_t* cf, lstr_t data);
+void lt_conf_free_err_info();
 
 lt_conf_t* lt_conf_find(lt_conf_t* parent, lstr_t key_path);
 
@@ -59,6 +70,6 @@ f64 lt_conf_find_float_default(lt_conf_t* parent, lstr_t key_path, f64 default_)
 
 lt_err_t lt_conf_write(lt_conf_t* cf, lt_file_t* file);
 
-void lt_conf_free(lt_conf_t* cf);
+void lt_conf_free(lt_conf_t* cf, lt_alloc_t* alloc);
 
 #endif

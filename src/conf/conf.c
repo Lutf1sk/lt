@@ -3,73 +3,116 @@
 #include <lt/mem.h>
 #include <lt/io.h>
 #include <lt/ctype.h>
-
-lstr_t conf_type_str(lt_conf_stype_t stype) {
-	switch (stype) {
-#define LT_CONF_OP(x) case LT_CONF_##x: return CLSTR(#x);
-	LT_FOR_EACH_CONF()
-#undef LT_CONF_OP
-	default:
-		return CLSTR("INVALID");
-	}
-}
+#include <lt/darr.h>
+#include <lt/internal.h>
+#include <lt/math.h>
 
 typedef
 struct parse_ctx {
-	char* it;
+	lt_alloc_t* alloc;
+	lt_conf_err_info_t* err_info;
+	char* begin;
 	char* end;
+	char* it;
 } parse_ctx_t;
+
+#define RETURN_ERROR(e, s) \
+	do { \
+		lt_err_t err_ = (e); \
+		if (cx->err_info) \
+			*cx->err_info = LT_CONF_ERR_INFO(err_, (s)); \
+		return err_; \
+	} while (0)
+
+#define GOTO_ERROR(l, e, s) \
+	do { \
+		err = (e); \
+		if (cx->err_info) \
+			*cx->err_info = LT_CONF_ERR_INFO(err, (s)); \
+		goto (l); \
+	} while (0)
 
 static lt_err_t parse_val(parse_ctx_t* cx, lt_conf_t* cf);
 
 static
-b8 skip_whitespace(parse_ctx_t* cx) {
+void skip_whitespace(parse_ctx_t* cx) {
 	while (cx->it < cx->end && lt_is_space(*cx->it))
 		++cx->it;
-	return cx->it == cx->end;
 }
 
 static
-b8 consume_string(parse_ctx_t* cx, lstr_t str) {
-	if (cx->end - cx->it < str.len && memcmp(cx->it, str.str, str.len) == 0)
-		return 0;
+lt_err_t consume_string(parse_ctx_t* cx, lstr_t str) {
+	char* it = str.str, *end = it + str.len;
+
+	char* begin = cx->it;
+	while (it < end) {
+		if (cx->it >= cx->end || *cx->it != *it) {
+			lstr_t sym = LSTR(begin, cx->it - begin + 1);
+			if (cx->it >= cx->end)
+				sym = CLSTR("EOF");
+			lstr_t err_str;
+			lt_aprintf(&err_str, cx->alloc, "expected '%S', got '%S'", str, sym);
+			RETURN_ERROR(LT_ERR_INVALID_FORMAT, err_str);
+		}
+		++it;
+		++cx->it;
+	}
 	cx->it += str.len;
-	return 1;
+	return LT_SUCCESS;
+}
+
+static
+lt_err_t consume_key(parse_ctx_t* cx, lstr_t* out) {
+	char* begin = cx->it;
+	while (cx->it < cx->end && lt_is_ident_body(*cx->it))
+		++cx->it;
+
+	if (cx->it == begin) {
+		lstr_t sym = LSTR(cx->it, 1);
+		if (cx->it == cx->end)
+			sym = CLSTR("EOF");
+		lstr_t err_str;
+		lt_aprintf(&err_str, cx->alloc, "expected a valid key, got '%S'", sym);
+		RETURN_ERROR(LT_ERR_INVALID_FORMAT, err_str);
+	}
+
+	if (out)
+		*out = LSTR(begin, cx->it - begin);
+	return LT_SUCCESS;
 }
 
 static
 lt_err_t parse_obj_body(parse_ctx_t* cx, lt_conf_t* cf) {
 	lt_err_t err;
 
-	cf->stype = LT_CONF_OBJECT;
-	cf->children = NULL;
-	cf->count = 0;
+	lt_darr(lt_conf_t) children = lt_darr_create(lt_conf_t, 16, cx->alloc);
+	if (!children)
+		RETURN_ERROR(LT_ERR_INVALID_FORMAT, lt_strdup(cx->alloc, CLSTR("out of memory")));
 
-	for (;;) {
-		if (skip_whitespace(cx) || *cx->it == '}')
-			return LT_SUCCESS;
-
-		cf->children = realloc(cf->children, (cf->count + 1) * sizeof(lt_conf_t));
-		lt_conf_t* child = &cf->children[cf->count++];
-
-		// Consume name
-		char* key_start = cx->it;
-		while (cx->it < cx->end && lt_is_ident_body(*cx->it))
-			++cx->it;
-		lstr_t key = LSTR(key_start, cx->it - key_start);
-		if (!key.len) {
-			err = LT_ERR_INVALID_SYNTAX;
+	while (cx->it < cx->end && *cx->it != '}') {
+		lstr_t key;
+		if ((err = consume_key(cx, &key)))
 			goto err0;
-		}
-		child->key = key;
 
-		// Parse value
-		if ((err = parse_val(cx, child)))
+		lt_conf_t child;
+		skip_whitespace(cx);
+		if ((err = parse_val(cx, &child)))
 			goto err0;
+
+		child.key = key;
+		lt_darr_push(children, child);
+
+		skip_whitespace(cx);
 	}
 
-err0:	cf->count--;
-		lt_conf_free(cf);
+	cf->stype = LT_CONF_OBJECT;
+	cf->children = children;
+	cf->child_count = lt_darr_count(children);
+	return LT_SUCCESS;
+
+err0:	for (lt_conf_t* it = children, *end = it + lt_darr_count(children); it < end; ++it)
+			lt_conf_free(it, cx->alloc);
+		lt_darr_destroy(children);
 		return err;
 }
 
@@ -77,34 +120,29 @@ static
 lt_err_t parse_arr_body(parse_ctx_t* cx, lt_conf_t* cf) {
 	lt_err_t err;
 
-	cf->stype = LT_CONF_ARRAY;
-	cf->children = NULL;
-	cf->count = 0;
+	lt_darr(lt_conf_t) children = lt_darr_create(lt_conf_t, 16, cx->alloc);
+	if (!children)
+		RETURN_ERROR(LT_ERR_OUT_OF_MEMORY, lt_strdup(cx->alloc, CLSTR("out of memory")));
 
-	for (;;) {
-		if (skip_whitespace(cx)) {
-			err = LT_ERR_INVALID_SYNTAX;
+	while (cx->it < cx->end && *cx->it != ']') {
+		lt_conf_t child;
+		if ((err = parse_val(cx, &child)))
 			goto err0;
-		}
-		if (*cx->it == ']')
-			return LT_SUCCESS;
 
-		void* res = realloc(cf->children, (cf->count + 1) * sizeof(lt_conf_t));
-		if (!res) {
-			err = LT_ERR_OUT_OF_MEMORY;
-			goto err0;
-		}
+		child.key = NLSTR();
+		lt_darr_push(children, child);
 
-		cf->children = res;
-		lt_conf_t* child = &cf->children[cf->count++];
-
-		// Parse value
-		if ((err = parse_val(cx, child)))
-			goto err0;
+		skip_whitespace(cx);
 	}
 
-err0:	cf->count--;
-		lt_conf_free(cf);
+	cf->stype = LT_CONF_ARRAY;
+	cf->children = children;
+	cf->child_count = lt_darr_count(children);
+	return LT_SUCCESS;
+
+err0:	for (lt_conf_t* it = children, *end = it + lt_darr_count(children); it < end; ++it)
+			lt_conf_free(it, cx->alloc);
+		lt_darr_destroy(children);
 		return err;
 }
 
@@ -112,69 +150,77 @@ static
 lt_err_t parse_val(parse_ctx_t* cx, lt_conf_t* cf) {
 	lt_err_t err;
 
-	if (skip_whitespace(cx))
-		return LT_ERR_INVALID_SYNTAX;
+	if (cx->it >= cx->end)
+		RETURN_ERROR(LT_ERR_INVALID_FORMAT, lt_strdup(cx->alloc, CLSTR("unexpected end of input")));
 
-	char c = *cx->it++;
-	switch (c) {
+	switch (*cx->it) {
+	case '"':
+		char* begin = ++cx->it;
+		while (cx->it < cx->end && *cx->it != '"')
+			++cx->it;
+		if (cx->it >= cx->end)
+			RETURN_ERROR(LT_ERR_INVALID_FORMAT, lt_strdup(cx->alloc, CLSTR("unterminated string")));
+
+		cf->stype = LT_CONF_STRING;
+		cf->str_val = LSTR(begin, cx->it++ - begin);
+		return LT_SUCCESS;
+
 	case '{':
+		++cx->it;
+		skip_whitespace(cx);
 		if ((err = parse_obj_body(cx, cf)))
 			return err;
-		if (skip_whitespace(cx) || *cx->it++ != '}')
-			return LT_ERR_INVALID_SYNTAX;
-		return LT_SUCCESS;
+		return consume_string(cx, CLSTR("}"));
 
 	case '[':
+		++cx->it;
+		skip_whitespace(cx);
 		if ((err = parse_arr_body(cx, cf)))
 			return err;
-		if (skip_whitespace(cx) || *cx->it++ != ']')
-			return LT_ERR_INVALID_SYNTAX;
-		return LT_SUCCESS;
+		return consume_string(cx, CLSTR("]"));
 
 	case 't':
-		if (!consume_string(cx, CLSTR("rue")))
-			return LT_ERR_INVALID_SYNTAX;
 		cf->stype = LT_CONF_BOOL;
 		cf->bool_val = 1;
-		return LT_SUCCESS;
+		return consume_string(cx, CLSTR("true"));
 
 	case 'f':
-		if (!consume_string(cx, CLSTR("alse")))
-			return LT_ERR_INVALID_SYNTAX;
 		cf->stype = LT_CONF_BOOL;
 		cf->bool_val = 0;
-		return LT_SUCCESS;
+		return consume_string(cx, CLSTR("false"));
 
-	case '"':
-		char* start = cx->it;
-		while (*cx->it++ != '"') {
-			if (cx->it >= cx->end)
-				return LT_ERR_INVALID_SYNTAX;
-		}
-		cf->stype = LT_CONF_STRING;
-		cf->str_val = start;
-		cf->count = cx->it - start - 1;
-		return LT_SUCCESS;
-
-	default:
-		if (lt_is_digit(c)) {
-			char* start = cx->it - 1;
+	default: {
+		if (lt_is_numeric_head(*cx->it)) {
+			char* begin = cx->it;
 			while (cx->it < cx->end && lt_is_numeric_body(*cx->it))
 				++cx->it;
+
 			cf->stype = LT_CONF_INT;
-			// TODO: Properly parse floats and different types of integers
-			cf->int_val = lt_lstr_uint(LSTR(start, cx->it - start));
+			cf->int_val = lt_lstr_int(LSTR(begin, cx->it - begin));
 			return LT_SUCCESS;
 		}
-		return LT_ERR_INVALID_SYNTAX;
+
+		lstr_t err_str;
+		lt_aprintf(&err_str, cx->alloc, "unexpected character '%c', expected a value", *cx->it);
+		RETURN_ERROR(LT_ERR_INVALID_FORMAT, err_str);
+	}
 	}
 }
 
-lt_err_t lt_conf_parse(lt_conf_t* cf, lstr_t data) {
+lt_err_t lt_conf_parse(lt_conf_t* cf, void* data, usz len, lt_conf_err_info_t* err_info, lt_alloc_t* alloc) {
 	parse_ctx_t cx;
-	cx.it = data.str;
-	cx.end = data.str + data.len;
+	cx.alloc = alloc;
+	cx.err_info = err_info;
+	cx.begin = data;
+	cx.end = data + len;
+	cx.it = data;
+
+	skip_whitespace(&cx);
 	return parse_obj_body(&cx, cf);
+}
+
+void lt_conf_free_err_info(lt_conf_err_info_t* err_info, lt_alloc_t* alloc) {
+	lt_mfree(alloc, err_info->err_str.str);
 }
 
 lt_conf_t* lt_conf_find(lt_conf_t* parent, lstr_t key_path) {
@@ -185,7 +231,7 @@ lt_conf_t* lt_conf_find(lt_conf_t* parent, lstr_t key_path) {
 
 		lstr_t key = LSTR(it, lt_lstr_split(LSTR(it, end - it), '.'));
 
-		for (usz i = 0; i < parent->count; ++i) {
+		for (usz i = 0; i < parent->child_count; ++i) {
 			if (lt_lstr_eq(parent->children[i].key, key)) {
 				parent = &parent->children[i];
 				it += key.len + 1;
@@ -226,7 +272,7 @@ lt_conf_t* lt_conf_find_str(lt_conf_t* cf, lstr_t key_path, lstr_t* out) {
 	cf = lt_conf_find(cf, key_path);
 	if (!cf || cf->stype != LT_CONF_STRING)
 		return NULL;
-	*out = LSTR(cf->str_val, cf->count);
+	*out = cf->str_val;
 	return cf;
 }
 
@@ -263,7 +309,7 @@ lstr_t lt_conf_find_str_default(lt_conf_t* cf, lstr_t key_path, lstr_t default_)
 	cf = lt_conf_find(cf, key_path);
 	if (!cf || cf->stype != LT_CONF_STRING)
 		return default_;
-	return LSTR(cf->str_val, cf->count);
+	return cf->str_val;
 }
 
 f64 lt_conf_find_float_default(lt_conf_t* cf, lstr_t key_path, f64 default_) {
@@ -274,68 +320,19 @@ f64 lt_conf_find_float_default(lt_conf_t* cf, lstr_t key_path, f64 default_) {
 }
 
 static
-void lt_conf_write_indent(lt_file_t* file, isz indent) {
-	for (isz i = 0; i < indent; ++i) // TODO: Optimize this
-		lt_fprintf(file, "\t");
-}
-
-static
-lt_err_t lt_conf_write_unsafe(lt_conf_t* cf, lt_file_t* file, isz indent) {
-	switch (cf->stype) {
-	case LT_CONF_OBJECT:
-		if (indent)
-			lt_fprintf(file, "{\n");
-		for (usz i = 0; i < cf->count; ++i) {
-			lt_conf_t* child = &cf->children[i];
-			lt_conf_write_indent(file, indent);
-			lt_fprintf(file, "%S ", child->key);
-			lt_conf_write_unsafe(child, file, indent + 1);
-		}
-		if (indent) {
-			lt_conf_write_indent(file, indent - 1);
-			lt_fprintf(file, "}\n");
-		}
-		return LT_SUCCESS;
-
-	case LT_CONF_ARRAY:
-		lt_fprintf(file, "[\n");
-		for (usz i = 0; i < cf->count; ++i) {
-			lt_conf_write_indent(file, indent);
-			lt_conf_write_unsafe(&cf->children[i], file, 0);
-		}
-		lt_conf_write_indent(file, indent - 1);
-		lt_fprintf(file, "]\n");
-		return LT_SUCCESS;
-
-	case LT_CONF_INT: return lt_fprintf(file, "%iq\n", cf->int_val) != -1;
-	case LT_CONF_STRING: return lt_fprintf(file, "\"%S\"\n", LSTR(cf->str_val, cf->count)) != -1;
-	case LT_CONF_FLOAT: return LT_ERR_UNSUPPORTED; // TODO: Write float values
-	case LT_CONF_BOOL: return lt_fprintf(file, "%S\n", cf->bool_val ? CLSTR("true") : CLSTR("false")) != -1;
-	}
-
-	return LT_ERR_INVALID_TYPE;
-}
-
-lt_err_t lt_conf_write(lt_conf_t* cf, lt_file_t* file) {
-	if (!file)
-		file = lt_stdout;
-	return lt_conf_write_unsafe(cf, file, 0);
-}
-
-static
-void lt_conf_free_children(lt_conf_t* cf) {
-	for (usz i = 0; i < cf->count; ++i) {
+void lt_conf_free_children(lt_conf_t* cf, lt_alloc_t* alloc) {
+	for (usz i = 0; i < cf->child_count; ++i) {
 		lt_conf_t* child = &cf->children[i];
 		if (child->stype == LT_CONF_OBJECT || child->stype == LT_CONF_ARRAY)
-			lt_conf_free_children(child);
+			lt_conf_free_children(child, alloc);
 	}
-	if (cf->count)
-		free(cf->children);
+
+	lt_darr_destroy(cf->children);
 }
 
-void lt_conf_free(lt_conf_t* cf) {
+void lt_conf_free(lt_conf_t* cf, lt_alloc_t* alloc) {
 	if (!cf || !(cf->stype == LT_CONF_OBJECT || cf->stype == LT_CONF_ARRAY))
 		return;
-	lt_conf_free_children(cf);
+	lt_conf_free_children(cf, alloc);
 }
 
