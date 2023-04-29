@@ -57,7 +57,6 @@ lt_err_t consume_string(parse_ctx_t* cx, lstr_t str) {
 		++it;
 		++cx->it;
 	}
-	cx->it += str.len;
 	return LT_SUCCESS;
 }
 
