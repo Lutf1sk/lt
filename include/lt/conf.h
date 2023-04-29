@@ -52,7 +52,7 @@ struct lt_conf_err_info {
 
 lt_err_t lt_conf_parse(lt_conf_t* cf, void* data, usz len, lt_conf_err_info_t* err_str, lt_alloc_t* alloc);
 
-void lt_conf_free_err_info();
+void lt_conf_free_err_info(lt_conf_err_info_t* err_info, lt_alloc_t* alloc);
 
 lt_conf_t* lt_conf_find(lt_conf_t* parent, lstr_t key_path);
 
