@@ -2,7 +2,7 @@
 #define LT_GUI_H 1
 
 #include <lt/fwd.h>
-#include <lt/lt.h>
+#include <lt/err.h>
 
 #define LT_GUI_ICON_EXPANDED	0
 #define LT_GUI_ICON_COLLAPSED	1
@@ -94,7 +94,7 @@ struct lt_gui_textbox_state {
 
 extern lt_gui_style_t* lt_gui_default_style;
 
-b8 lt_gui_ctx_init(lt_gui_ctx_t* cx, lt_alloc_t* alloc);
+lt_err_t lt_gui_ctx_init(lt_gui_ctx_t* cx, lt_alloc_t* alloc);
 void lt_gui_ctx_free(lt_gui_ctx_t* cx, lt_alloc_t* alloc);
 
 void lt_gui_begin(lt_gui_ctx_t* cx, isz x, isz y, isz w, isz h);

@@ -65,16 +65,16 @@ usz text_width(lt_gui_ctx_t* cx, lstr_t text) {
 	return cx->text_width(cx->user_data, text);
 }
 
-b8 lt_gui_ctx_init(lt_gui_ctx_t* cx, lt_alloc_t* alloc) {
+lt_err_t lt_gui_ctx_init(lt_gui_ctx_t* cx, lt_alloc_t* alloc) {
 	cx->conts = lt_malloc(alloc, sizeof(lt_gui_cont_t) * cx->cont_max);
 	if (!cx->conts)
-		return 0;
+		return LT_ERR_OUT_OF_MEMORY;
 
 	LT_ASSERT(cx->draw_rect);
 	LT_ASSERT(cx->draw_text);
 	LT_ASSERT(cx->draw_icon);
 	LT_ASSERT(cx->scissor);
-	return 1;
+	return LT_SUCCESS;
 }
 
 void lt_gui_ctx_free(lt_gui_ctx_t* cx, lt_alloc_t* alloc) {
