@@ -367,10 +367,10 @@ void lt_mesh_destroy(lt_mesh_t* mesh) {
 }
 
 lt_err_t lt_mesh_upload(lt_gfx_t* gfx, lt_mesh_t* mesh, lt_model_t* model) {
-	mesh->index_count = model->index_count;
 	glBindVertexArray(mesh->gl_vao);
 
 	if (model->indices) {
+		mesh->index_count = model->index_count;
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->gl_idxbuf);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, model->index_count * sizeof(u32), model->indices, GL_STATIC_DRAW);
 	}
