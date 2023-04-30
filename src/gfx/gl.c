@@ -119,6 +119,8 @@ lt_err_t lt_gfx_begin(lt_gfx_t* gfx) {
 	int w, h;
 	lt_window_get_size(gfx->window, &w, &h);
 
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
 	glViewport(0, 0, w, h);
 	glScissor(0, 0, w, h);
 
