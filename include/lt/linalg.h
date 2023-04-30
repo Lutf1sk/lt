@@ -500,6 +500,7 @@ lt_vec4_t lt_v4normalize(lt_vec4_t v) {
 #	define m4ortho lt_m4ortho
 #	define m4view lt_m4view
 #	define m4euler lt_m4euler
+#	define m4translate lt_m4translate
 
 #	define m2identity lt_m2identity
 #	define m3identity lt_m3identity
@@ -562,5 +563,15 @@ lt_mat4_t lt_m4ortho(f32 left, f32 right, f32 bottom, f32 top, f32 near, f32 far
 
 lt_mat4_t lt_m4view(lt_vec3_t pos, lt_vec3_t fwd, lt_vec3_t up);
 lt_mat4_t lt_m4euler(lt_vec3_t angles);
+
+static LT_INLINE
+lt_mat4_t lt_m4translate(lt_vec3_t pos) {
+	return LT_MAT4V(
+		LT_VEC4(1, 0, 0, 0),
+		LT_VEC4(0, 1, 0, 0),
+		LT_VEC4(0, 0, 1, 0),
+		LT_VEC4(pos.x, pos.y, pos.z, 1)
+	);
+}
 
 #endif
