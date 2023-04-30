@@ -44,7 +44,7 @@ struct lt_model {
 typedef
 struct lt_mesh {
 	u32 gl_vao;
-	u32 gl_idxbuf, gl_posbuf, gl_uvbuf;
+	u32 gl_idxbuf, gl_posbuf, gl_uvbuf, gl_normbuf;
 	u32 index_count;
 } lt_mesh_t;
 

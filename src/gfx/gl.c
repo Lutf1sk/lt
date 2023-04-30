@@ -17,12 +17,18 @@ static lstr_t vert_src = CLSTR(
 	"#version 440\n"
 	"layout(location = 0) in vec3 in_pos;"
 	"layout(location = 1) in vec2 in_uv;"
+	"layout(location = 2) in vec3 in_norm;"
+	""
 	"layout(location = 0) uniform mat4 proj;"
 	"layout(location = 1) uniform mat4 model;"
+	""
 	"layout(location = 0) out vec2 out_uv;"
+	"layout(location = 1) out vec3 out_norm;"
+	""
 	"void main() {"
 	"	gl_Position = proj * model * vec4(in_pos, 1.0f);"
 	"	out_uv = in_uv;"
+	"	out_norm = in_norm;"
 	"}"
 );
 
@@ -328,6 +334,7 @@ lt_err_t lt_mesh_create(lt_gfx_t* gfx, lt_mesh_t* mesh, lt_model_t* model) {
 	glGenBuffers(1, &mesh->gl_idxbuf);
 	glGenBuffers(1, &mesh->gl_posbuf);
 	glGenBuffers(1, &mesh->gl_uvbuf);
+	glGenBuffers(1, &mesh->gl_normbuf);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->gl_idxbuf);
 
@@ -336,9 +343,12 @@ lt_err_t lt_mesh_create(lt_gfx_t* gfx, lt_mesh_t* mesh, lt_model_t* model) {
 	glEnableVertexAttribArray(0);
 
 	glBindBuffer(GL_ARRAY_BUFFER, mesh->gl_uvbuf);
-	glBufferData(GL_ARRAY_BUFFER, model->vertex_count * sizeof(float) * 2, model->uvs, GL_STATIC_DRAW);
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), NULL);
 	glEnableVertexAttribArray(1);
+
+	glBindBuffer(GL_ARRAY_BUFFER, mesh->gl_normbuf);
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), NULL);
+	glEnableVertexAttribArray(2);
 
 	lt_err_t err;
 	if (model && (err = lt_mesh_upload(gfx, mesh, model))) {
@@ -352,12 +362,12 @@ void lt_mesh_destroy(lt_mesh_t* mesh) {
 	glDeleteBuffers(1, &mesh->gl_idxbuf);
 	glDeleteBuffers(1, &mesh->gl_posbuf);
 	glDeleteBuffers(1, &mesh->gl_uvbuf);
+	glDeleteBuffers(1, &mesh->gl_normbuf);
 	glDeleteVertexArrays(1, &mesh->gl_vao);
 }
 
 lt_err_t lt_mesh_upload(lt_gfx_t* gfx, lt_mesh_t* mesh, lt_model_t* model) {
 	mesh->index_count = model->index_count;
-
 	glBindVertexArray(mesh->gl_vao);
 
 	if (model->indices) {
@@ -371,6 +381,10 @@ lt_err_t lt_mesh_upload(lt_gfx_t* gfx, lt_mesh_t* mesh, lt_model_t* model) {
 	if (model->uvs) {
 		glBindBuffer(GL_ARRAY_BUFFER, mesh->gl_uvbuf);
 		glBufferData(GL_ARRAY_BUFFER, model->vertex_count * sizeof(float) * 2, model->uvs, GL_STATIC_DRAW);
+	}
+	if (model->normals) {
+		glBindBuffer(GL_ARRAY_BUFFER, mesh->gl_normbuf);
+		glBufferData(GL_ARRAY_BUFFER, model->vertex_count * sizeof(float) * 3, model->normals, GL_STATIC_DRAW);
 	}
 
 	return LT_SUCCESS;
