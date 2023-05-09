@@ -1,7 +1,7 @@
 #include <lt/asm.h>
 #include <lt/mem.h>
 
-lt_instr_stream_t lt_instr_stream_create(void* data, usz size, lt_io_callback_t callb, void* usr) {
+lt_instr_stream_t lt_instr_stream_create(lt_io_callback_t callb, void* usr, void* data, usz size) {
 	lt_instr_stream_t stream;
 	stream.it = data;
 	stream.end = (u8*)data + size;

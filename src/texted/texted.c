@@ -323,7 +323,7 @@ void lt_texted_clear(lt_texted_t* ed) {
 	sync_tx(ed);
 }
 
-isz lt_texted_write_contents(lt_texted_t* ed, void* usr, lt_io_callback_t callb) {
+isz lt_texted_write_contents(lt_texted_t* ed, lt_io_callback_t callb, void* usr) {
 	isz bytes = callb(usr, ed->lines[0].str, lt_darr_count(ed->lines[0].str));
 	if (bytes < 0)
 		return bytes;
@@ -344,7 +344,7 @@ isz lt_texted_write_contents(lt_texted_t* ed, void* usr, lt_io_callback_t callb)
 	return bytes;
 }
 
-isz lt_texted_write_range(lt_texted_t* ed, usz x1, usz y1, usz x2, usz y2, void* usr, lt_io_callback_t callb) {
+isz lt_texted_write_range(lt_texted_t* ed, usz x1, usz y1, usz x2, usz y2, lt_io_callback_t callb, void* usr) {
 	LT_ASSERT(y1 >= 0 && y1 < lt_darr_count(ed->lines));
 	LT_ASSERT(y2 >= 0 && y2 < lt_darr_count(ed->lines));
 	LT_ASSERT(x1 >= 0 && x1 <= lt_darr_count(ed->lines[y1].str));
@@ -432,7 +432,7 @@ b8 lt_texted_get_selection(lt_texted_t* ed, usz* out_x1, usz* out_y1, usz* out_x
 	return !(y1 == y2 && x1 == x2);
 }
 
-isz lt_texted_write_selection(lt_texted_t* ed, void* usr, lt_io_callback_t callb) {
+isz lt_texted_write_selection(lt_texted_t* ed, lt_io_callback_t callb, void* usr) {
 	usz x1, y1, x2, y2;
 	if (!lt_texted_get_selection(ed, &x1, &y1, &x2, &y2))
 		return 0;

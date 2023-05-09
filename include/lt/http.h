@@ -49,7 +49,7 @@ struct lt_http_response {
 
 lstr_t lt_http_method_str(lt_http_method_t method);
 
-lt_err_t lt_http_parse_response(lt_http_response_t* response, void* usr, lt_io_callback_t callb, lt_alloc_t* alloc);
+lt_err_t lt_http_parse_response(lt_http_response_t* response, lt_io_callback_t callb, void* usr, lt_alloc_t* alloc);
 void lt_http_response_destroy(lt_http_response_t* response, lt_alloc_t* alloc);
 
 #endif

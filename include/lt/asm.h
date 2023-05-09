@@ -14,7 +14,7 @@ struct lt_instr_stream {
 	void* usr;
 } lt_instr_stream_t;
 
-lt_instr_stream_t lt_instr_stream_create(void* data, usz size, lt_io_callback_t callb, void* usr);
+lt_instr_stream_t lt_instr_stream_create(lt_io_callback_t callb, void* usr, void* data, usz size);
 usz lt_x64_disasm_instr(lt_instr_stream_t* stream);
 
 b8 lt_instr_stream_read(lt_instr_stream_t* stream, void* out, usz size);

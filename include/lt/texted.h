@@ -81,8 +81,8 @@ void lt_texted_destroy(lt_texted_t* ed);
 
 void lt_texted_clear(lt_texted_t* ed);
 
-isz lt_texted_write_contents(lt_texted_t* ed, void* usr, lt_io_callback_t callb);
-isz lt_texted_write_range(lt_texted_t* ed, usz x1, usz y1, usz x2, usz y2, void* usr, lt_io_callback_t callb);
+isz lt_texted_write_contents(lt_texted_t* ed, lt_io_callback_t callb, void* usr);
+isz lt_texted_write_range(lt_texted_t* ed, usz x1, usz y1, usz x2, usz y2, lt_io_callback_t callb, void* usr);
 void lt_texted_erase_range(lt_texted_t* ed, usz x1, usz y1, usz x2, usz y2);
 
 static LT_INLINE
@@ -95,7 +95,7 @@ void lt_texted_get_cursor(lt_texted_t* ed, usz* out_x, usz* out_y) {
 
 b8 lt_texted_selection_present(lt_texted_t* ed);
 b8 lt_texted_get_selection(lt_texted_t* ed, usz* out_x1, usz* out_y1, usz* out_x2, usz* out_y2);
-isz lt_texted_write_selection(lt_texted_t* ed, void* usr, lt_io_callback_t callb);
+isz lt_texted_write_selection(lt_texted_t* ed, lt_io_callback_t callb, void* usr);
 void lt_texted_erase_selection(lt_texted_t* ed);
 
 b8 lt_texted_input_str(lt_texted_t* ed, lstr_t str);
