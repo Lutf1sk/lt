@@ -54,7 +54,7 @@ isz lt_io_printhq(lt_io_callback_t callb, void* usr, u64 n) {
 
 static LT_INLINE
 isz lt_io_printfq(lt_io_callback_t callb, void* usr, f64 n) {
-	return -1;
+	return -1; // !!
 }
 
 
@@ -152,6 +152,13 @@ isz lt_io_vprintf(lt_io_callback_t callb, void* usr, char* fmt, va_list argl) {
 			default: val = 0.0f; break;
 			}
 			written += lt_io_printfq(callb, usr, val);
+		}	break;
+
+		case 'r': {
+			char val = *++it;
+			isz repeat = va_arg(argl, usz);
+			for (usz i = 0; i < repeat; ++i)
+				written += callb(usr, &val, 1);
 		}	break;
 
 		default: {
