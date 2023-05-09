@@ -283,6 +283,21 @@ lt_conf_t* lt_conf_find_float(lt_conf_t* cf, lstr_t key_path, f64* out) {
 	return cf;
 }
 
+lt_conf_t* lt_conf_find_object(lt_conf_t* cf, lstr_t key_path, lt_conf_t** out) {
+	cf = lt_conf_find(cf, key_path);
+	if (!cf || cf->stype != LT_CONF_OBJECT)
+		return NULL;
+	*out = cf;
+	return cf;
+}
+lt_conf_t* lt_conf_find_array(lt_conf_t* cf, lstr_t key_path, lt_conf_t** out) {
+	cf = lt_conf_find(cf, key_path);
+	if (!cf || cf->stype != LT_CONF_ARRAY)
+		return NULL;
+	*out = cf;
+	return cf;
+}
+
 i64 lt_conf_find_int_default(lt_conf_t* cf, lstr_t key_path, i64 default_) {
 	cf = lt_conf_find(cf, key_path);
 	if (!cf || cf->stype != LT_CONF_INT)
