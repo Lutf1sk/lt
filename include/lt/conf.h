@@ -70,7 +70,7 @@ b8 lt_conf_find_bool_default(lt_conf_t* parent, lstr_t key_path, b8 default_);
 lstr_t lt_conf_find_str_default(lt_conf_t* parent, lstr_t key_path, lstr_t default_);
 f64 lt_conf_find_float_default(lt_conf_t* parent, lstr_t key_path, f64 default_);
 
-lt_err_t lt_conf_write(lt_conf_t* cf, lt_file_t* file);
+isz lt_conf_write(lt_conf_t* cf, lt_io_callback_t callb, void* usr);
 
 void lt_conf_free(lt_conf_t* cf, lt_alloc_t* alloc);
 

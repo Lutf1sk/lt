@@ -334,6 +334,72 @@ f64 lt_conf_find_float_default(lt_conf_t* cf, lstr_t key_path, f64 default_) {
 }
 
 static
+isz lt_conf_write_indented(lt_conf_t* cf, lt_io_callback_t callb, void* usr, usz indent) {
+	usz bytes = 0;
+	isz res = 0;
+
+	switch (cf->stype) {
+	case LT_CONF_OBJECT:
+		if (indent) {
+			if ((res = lt_io_printf(callb, usr, "{\n")) < 0)
+				return res;
+			bytes += res;
+		}
+		for (usz i = 0; i < cf->child_count; ++i) {
+			if ((res = lt_io_printf(callb, usr, "%r\t%S ", indent, cf->children[i].key)) < 0)
+				return res;
+			bytes += res;
+			if ((res = lt_conf_write_indented(&cf->children[i], callb, usr, indent + 1)) < 0)
+				return res;
+			bytes += res;
+		}
+		if (indent) {
+			if ((res = lt_io_printf(callb, usr, "%r\t", indent - 1)) < 0)
+				return res;
+			bytes += res;
+			if ((res = lt_io_printf(callb, usr, "}\n")) < 0)
+				return res;
+			bytes += res;
+		}
+		return bytes;
+
+	case LT_CONF_ARRAY:
+		if ((res = lt_io_printf(callb, usr, "[\n")) < 0)
+			return res;
+		bytes += res;
+		for (usz i = 0; i < cf->child_count; ++i) {
+			if ((res = lt_io_printf(callb, usr, "%r\t", indent)) < 0)
+				return res;
+			bytes += res;
+			if ((res = lt_conf_write_indented(&cf->children[i], callb, usr, indent + 1)) < 0)
+				return res;
+			bytes += res;
+		}
+		if (indent) {
+			if ((res = lt_io_printf(callb, usr, "%r\t", indent - 1)) < 0)
+				return res;
+			bytes += res;
+		}
+		if ((res = lt_io_printf(callb, usr, "]\n")) < 0)
+			return res;
+		return bytes + res;
+
+	case LT_CONF_INT: return lt_io_printf(callb, usr, "%iq\n", cf->int_val);
+	case LT_CONF_STRING: return lt_io_printf(callb, usr, "\"%S\"\n", cf->str_val);
+	case LT_CONF_FLOAT: return -LT_ERR_UNSUPPORTED;
+	case LT_CONF_BOOL: return lt_io_printf(callb, usr, cf->bool_val ? "true\n" : "false\n");
+
+	default:
+		lt_werrf("invalid config stype value\n");
+		return -LT_ERR_UNKNOWN;
+	}
+}
+
+isz lt_conf_write(lt_conf_t* cf, lt_io_callback_t callb, void* usr) {
+	return lt_conf_write_indented(cf, callb, usr, 0);
+}
+
+static
 void lt_conf_free_children(lt_conf_t* cf, lt_alloc_t* alloc) {
 	for (usz i = 0; i < cf->child_count; ++i) {
 		lt_conf_t* child = &cf->children[i];
