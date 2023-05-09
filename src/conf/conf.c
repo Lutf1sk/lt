@@ -390,8 +390,7 @@ isz lt_conf_write_indented(lt_conf_t* cf, lt_io_callback_t callb, void* usr, usz
 	case LT_CONF_BOOL: return lt_io_printf(callb, usr, cf->bool_val ? "true\n" : "false\n");
 
 	default:
-		lt_werrf("invalid config stype value\n");
-		return -LT_ERR_UNKNOWN;
+		return -LT_ERR_INVALID_TYPE;
 	}
 }
 

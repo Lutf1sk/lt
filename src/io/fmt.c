@@ -54,7 +54,7 @@ isz lt_io_printhq(lt_io_callback_t callb, void* usr, u64 n) {
 
 static LT_INLINE
 isz lt_io_printfq(lt_io_callback_t callb, void* usr, f64 n) {
-	return -1; // !!
+	return -LT_ERR_UNSUPPORTED;
 }
 
 
