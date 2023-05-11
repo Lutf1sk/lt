@@ -33,7 +33,7 @@ isz lt_io_printiq(lt_io_callback_t callb, void* usr, i64 n) {
 		sign = 1;
 	}
 
-	return lt_io_printuq(callb, usr, n) + sign;
+	return lt_io_printuq(callb, usr, v) + sign;
 }
 
 static char io_hex_char[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
