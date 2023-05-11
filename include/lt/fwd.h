@@ -53,9 +53,19 @@ typedef struct lt_gfx lt_gfx_t;
 typedef struct lt_pipeline lt_pipeline_t;
 typedef struct lt_mesh lt_mesh_t;
 typedef struct lt_texture lt_texture_t;
+typedef struct lt_model lt_model_t;
 
 // textedit.h
 typedef struct lt_led lt_led_t;
 typedef struct lt_texted lt_texted_t;
+
+// linalg.h
+typedef union lt_vec2 lt_vec2_t;
+typedef union lt_vec3 lt_vec3_t;
+typedef union lt_vec4 lt_vec4_t;
+
+typedef union lt_mat2 lt_mat2_t;
+typedef union lt_mat3 lt_mat3_t;
+typedef union lt_mat4 lt_mat4_t;
 
 #endif
