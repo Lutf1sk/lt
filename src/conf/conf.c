@@ -195,7 +195,11 @@ lt_err_t parse_val(parse_ctx_t* cx, lt_conf_t* cf) {
 				++cx->it;
 
 			cf->stype = LT_CONF_INT;
-			cf->int_val = lt_lstr_int(LSTR(begin, cx->it - begin));
+			err = lt_lstr_int(LSTR(begin, cx->it - begin), &cf->int_val);
+			if (err == LT_ERR_OVERFLOW)
+				RETURN_ERROR(LT_ERR_OVERFLOW, lt_strdup(cx->alloc, CLSTR("integer overflow")));
+			else if (err != LT_SUCCESS)
+				RETURN_ERROR(LT_ERR_INVALID_FORMAT, lt_strdup(cx->alloc, CLSTR("expected a valid integer")));
 			return LT_SUCCESS;
 		}
 

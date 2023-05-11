@@ -25,9 +25,10 @@ isz lt_io_printiq(lt_io_callback_t callb, void* usr, i64 n) {
 	static char minus = '-';
 	usz sign = 0;
 
+	u64 v = n;
 	// Handle signed values
 	if (n < 0) {
-		n = -n;
+		v = -v;
 		callb(usr, &minus, 1);
 		sign = 1;
 	}
@@ -101,8 +102,8 @@ isz lt_io_vprintf(lt_io_callback_t callb, void* usr, char* fmt, va_list argl) {
 			u64 val;
 			c = *++it;
 			switch (c) {
-			case 'b': val = va_arg(argl, int); break;
-			case 'w': val = va_arg(argl, int); break;
+			case 'b': val = va_arg(argl, unsigned int); break;
+			case 'w': val = va_arg(argl, unsigned int); break;
 			case 'd': val = va_arg(argl, u32); break;
 			case 'q': val = va_arg(argl, u64); break;
 			case 'z': val = va_arg(argl, usz); break;
@@ -129,8 +130,8 @@ isz lt_io_vprintf(lt_io_callback_t callb, void* usr, char* fmt, va_list argl) {
 			u64 val;
 			c = *++it;
 			switch (c) {
-			case 'b': val = va_arg(argl, int); break;
-			case 'w': val = va_arg(argl, int); break;
+			case 'b': val = va_arg(argl, unsigned int); break;
+			case 'w': val = va_arg(argl, unsigned int); break;
 			case 'd': val = va_arg(argl, u32); break;
 			case 'q': val = va_arg(argl, u64); break;
 			case 'z': val = va_arg(argl, usz); break;

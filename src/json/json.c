@@ -247,17 +247,17 @@ lt_json_t* lt_json_find_child(lt_json_t* json, lstr_t key) {
 	return NULL;
 }
 
-u64 lt_json_uint_val(lt_json_t* json) {
-	return lt_lstr_uint(json->str_val);
-}
+// u64 lt_json_uint_val(lt_json_t* json) {
+// 	return lt_lstr_uint(json->str_val);
+// }
 
-i64 lt_json_int_val(lt_json_t* json) {
-	return lt_lstr_int(json->str_val);
-}
+// i64 lt_json_int_val(lt_json_t* json) {
+// 	return lt_lstr_int(json->str_val);
+// }
 
-f64 lt_json_float_val(lt_json_t* json) {
-	return lt_lstr_float(json->str_val);
-}
+// f64 lt_json_float_val(lt_json_t* json) {
+// 	return lt_lstr_float(json->str_val);
+// }
 
 b8 lt_json_bool_val(lt_json_t* json) {
 	return lt_lstr_eq(json->str_val, CLSTR("true"));

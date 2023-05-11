@@ -29,9 +29,9 @@ lstr_t lt_lstr_trim(lstr_t str) {
 	return lt_lstr_trim_left(lt_lstr_trim_right(str));
 }
 
-f64 lt_lstr_float(lstr_t str) {
+lt_err_t lt_lstr_float(lstr_t str, f64* out) {
 	if (!str.len)
-		return 0;
+		return LT_ERR_UNEXPECTED_EOF;
 
 	usz it = 0;
 
@@ -40,7 +40,6 @@ f64 lt_lstr_float(lstr_t str) {
 		++it;
 
 	u64 val = 0;
-
 	f64 float_val = 0;
 
 	while (it < str.len) {
@@ -51,22 +50,29 @@ f64 lt_lstr_float(lstr_t str) {
 			while (it < str.len) {
 				decimal_mult *= 10;
 				decimal *= 10;
-				decimal += str.str[it++] - '0';
+				char c = str.str[it++];
+				if (!lt_is_digit(c))
+					return LT_ERR_INVALID_FORMAT;
+				decimal += c - '0';
 			}
 			float_val = ((f64)val + (f64)decimal / (f64)decimal_mult);
 			goto done;
 		}
 		val *= 10;
-		val += str.str[it++] - '0';
+		char c = str.str[it++];
+		if (!lt_is_digit(c))
+			return LT_ERR_INVALID_FORMAT;
+		val += c - '0';
 	}
 	float_val = (f64)val;
 done:
 	if (sign)
 		float_val = -float_val;
-	return float_val;
+	*out = float_val;
+	return LT_SUCCESS;
 }
 
-i64 lt_lstr_int(lstr_t str) {
+lt_err_t lt_lstr_int(lstr_t str, i64* out) {
 	if (!str.len)
 		return 0;
 
@@ -74,22 +80,37 @@ i64 lt_lstr_int(lstr_t str) {
 	if (sign) {
 		++str.str;
 		--str.len;
-		return -lt_lstr_uint(str);
 	}
 
-	return lt_lstr_uint(str);
+	u64 v;
+	lt_err_t err = lt_lstr_uint(str, &v);
+	if (err)
+		return err;
+
+	if (v > LT_I64_MAX)
+		return LT_ERR_OVERFLOW;
+
+	if (sign)
+		*out = -v;
+	else
+		*out = v;
+	return LT_SUCCESS;
 }
 
-u64 lt_lstr_uint(lstr_t str) {
+lt_err_t lt_lstr_uint(lstr_t str, u64* out) {
 	u64 val = 0;
 
-	usz i = 0;
-	while (i < str.len) {
-		val *= 10;
-		val += str.str[i++] - '0';
+	char* it = str.str, *end = it + str.len;
+	while (it < end) {
+		val *= 10; // TODO: check for overflow
+		char c = *it++;
+		if (!lt_is_digit(c))
+			return LT_ERR_INVALID_FORMAT;
+		val += c - '0'; // TODO: check for overflow
 	}
 
-	return val;
+	*out = val;
+	return LT_SUCCESS;
 }
 
 static u8 hex_conv_tab[256] = {
@@ -112,15 +133,15 @@ static u8 hex_conv_tab[256] = {
 	['F'] = 0xF, ['f'] = 0xF,
  };
 
-u64 lt_lstr_hex_uint(lstr_t str) {
+lt_err_t lt_lstr_hex_uint(lstr_t str, u64* out) {
 	u64 val = 0;
 
-	usz i = 0;
-	while (i < str.len) {
-		u8 c = str.str[i++];
+	char* it = str.str, *end = it + str.len;
+	while (it < end) {
+		u8 c = *it++; // TODO: check for invalid character
 
-		val <<= 4;
-		val += hex_conv_tab[c];
+		val <<= 4; // TODO: check for overflow
+		val += hex_conv_tab[c]; // TODO: check for overflow
 	}
 
 	return val;

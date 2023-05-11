@@ -69,7 +69,9 @@ lt_err_t lt_http_parse_response(lt_http_response_t* response, lt_io_callback_t c
 		++it;
 	if (status_start == it)
 		fail_to(err = LT_ERR_INVALID_SYNTAX, err1);
-	u32 status_code = lt_lstr_uint(LSTR(status_start, it - status_start));
+	u64 status_code;
+	if (lt_lstr_uint(LSTR(status_start, it - status_start), &status_code) != LT_SUCCESS || status_code > LT_U32_MAX)
+		return LT_ERR_INVALID_SYNTAX;
 
 	// Parse status message
 	if (*it != ' ')
@@ -89,7 +91,7 @@ lt_err_t lt_http_parse_response(lt_http_response_t* response, lt_io_callback_t c
 
 	b8 transfer_enc_present = 0;
 	b8 content_length_present = 0;
-	usz content_length = 0;
+	u64 content_length = 0;
 
 	usz entry_count = 0;
 	while (it < end) {
@@ -112,7 +114,8 @@ lt_err_t lt_http_parse_response(lt_http_response_t* response, lt_io_callback_t c
 		if (lt_lstr_case_eq(key, CLSTR("transfer-encoding")))
 			transfer_enc_present = 1;
 		else if (lt_lstr_case_eq(key, CLSTR("content-length"))) {
-			content_length = lt_lstr_uint(val);
+			if (lt_lstr_uint(val, &content_length) != LT_SUCCESS)
+				return LT_ERR_INVALID_SYNTAX;
 			content_length_present = 1;
 		}
 
