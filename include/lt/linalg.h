@@ -501,6 +501,7 @@ lt_vec4_t lt_v4normalize(lt_vec4_t v) {
 #	define m4view lt_m4view
 #	define m4euler lt_m4euler
 #	define m4translate lt_m4translate
+#	define m4inverse lt_m4inverse
 
 #	define m2identity lt_m2identity
 #	define m3identity lt_m3identity
@@ -573,5 +574,7 @@ lt_mat4_t lt_m4translate(lt_vec3_t pos) {
 		LT_VEC4(pos.x, pos.y, pos.z, 1)
 	);
 }
+
+lt_mat4_t lt_m4inverse(const lt_mat4_t* m);
 
 #endif

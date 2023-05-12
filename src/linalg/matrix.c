@@ -69,3 +69,52 @@ lt_mat4_t lt_m4euler(lt_vec3_t angles) {
 	);
 }
 
+lt_mat4_t lt_m4inverse(const lt_mat4_t* mat) {
+	float t[6];
+	float det;
+	float
+		a = mat->data[0][0], b = mat->data[0][1], c = mat->data[0][2], d = mat->data[0][3],
+		e = mat->data[1][0], f = mat->data[1][1], g = mat->data[1][2], h = mat->data[1][3],
+		i = mat->data[2][0], j = mat->data[2][1], k = mat->data[2][2], l = mat->data[2][3],
+		m = mat->data[3][0], n = mat->data[3][1], o = mat->data[3][2], p = mat->data[3][3];
+
+	t[0] = k * p - o * l; t[1] = j * p - n * l; t[2] = j * o - n * k;
+	t[3] = i * p - m * l; t[4] = i * o - m * k; t[5] = i * n - m * j;
+
+	lt_mat4_t res;
+	res.data[0][0] =  f * t[0] - g * t[1] + h * t[2];
+	res.data[1][0] =-(e * t[0] - g * t[3] + h * t[4]);
+	res.data[2][0] =  e * t[1] - f * t[3] + h * t[5];
+	res.data[3][0] =-(e * t[2] - f * t[4] + g * t[5]);
+
+	res.data[0][1] =-(b * t[0] - c * t[1] + d * t[2]);
+	res.data[1][1] =  a * t[0] - c * t[3] + d * t[4];
+	res.data[2][1] =-(a * t[1] - b * t[3] + d * t[5]);
+	res.data[3][1] =  a * t[2] - b * t[4] + c * t[5];
+
+	t[0] = g * p - o * h; t[1] = f * p - n * h; t[2] = f * o - n * g;
+	t[3] = e * p - m * h; t[4] = e * o - m * g; t[5] = e * n - m * f;
+
+	res.data[0][2] =  b * t[0] - c * t[1] + d * t[2];
+	res.data[1][2] =-(a * t[0] - c * t[3] + d * t[4]);
+	res.data[2][2] =  a * t[1] - b * t[3] + d * t[5];
+	res.data[3][2] =-(a * t[2] - b * t[4] + c * t[5]);
+
+	t[0] = g * l - k * h; t[1] = f * l - j * h; t[2] = f * k - j * g;
+	t[3] = e * l - i * h; t[4] = e * k - i * g; t[5] = e * j - i * f;
+
+	res.data[0][3] =-(b * t[0] - c * t[1] + d * t[2]);
+	res.data[1][3] =  a * t[0] - c * t[3] + d * t[4];
+	res.data[2][3] =-(a * t[1] - b * t[3] + d * t[5]);
+	res.data[3][3] =  a * t[2] - b * t[4] + c * t[5];
+
+	det = 1.0f / (a * res.data[0][0] + b * res.data[1][0] + c * res.data[2][0] + d * res.data[3][0]);
+
+	res.data[0][0] *= det; res.data[0][1] *= det; res.data[0][2] *= det; res.data[0][3] *= det;
+	res.data[1][0] *= det; res.data[1][1] *= det; res.data[1][2] *= det; res.data[1][3] *= det;
+	res.data[2][0] *= det; res.data[2][1] *= det; res.data[2][2] *= det; res.data[2][3] *= det;
+	res.data[3][0] *= det; res.data[3][1] *= det; res.data[3][2] *= det; res.data[3][3] *= det;
+
+	return res;
+}
+
