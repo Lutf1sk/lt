@@ -4,6 +4,7 @@
 #include <lt/primitives.h>
 #include <lt/mem.h>
 #include <lt/lt.h>
+#include <lt/math.h>
 
 #include <math.h>
 
@@ -188,6 +189,16 @@ float lt_v2cross(lt_vec2_t a, lt_vec2_t b) {
 	return a.x * b.y - a.y * b.x;
 }
 
+static LT_INLINE
+lt_vec2_t lt_v2max(lt_vec2_t a, lt_vec2_t b) {
+	return LT_VEC2(lt_max_f32(a.x, b.x), lt_max_f32(a.y, b.y));
+}
+
+static LT_INLINE
+lt_vec2_t lt_v2min(lt_vec2_t a, lt_vec2_t b) {
+	return LT_VEC2(lt_min_f32(a.x, b.x), lt_min_f32(a.y, b.y));
+}
+
 // ----- vec3
 
 static LT_INLINE
@@ -315,6 +326,16 @@ lt_vec3_t lt_vec3_rotate(lt_vec3_t v, float angle, lt_vec3_t axis) {
 	return lt_v3add(v1, v2);
 }
 
+static LT_INLINE
+lt_vec3_t lt_v3max(lt_vec3_t a, lt_vec3_t b) {
+	return LT_VEC3(lt_max_f32(a.x, b.x), lt_max_f32(a.y, b.y), lt_max_f32(a.z, b.z));
+}
+
+static LT_INLINE
+lt_vec3_t lt_v3min(lt_vec3_t a, lt_vec3_t b) {
+	return LT_VEC3(lt_min_f32(a.x, b.x), lt_min_f32(a.y, b.y), lt_min_f32(a.z, b.z));
+}
+
 // ----- vec4
 
 static LT_INLINE
@@ -390,6 +411,16 @@ lt_vec4_t lt_v4normalize(lt_vec4_t v) {
 	if (m == 0.0f)
 		return LT_VEC4(0.0f, 0.0f, 0.0f, 0.0f);
 	return lt_v4mulf(v, 1.0f / m);
+}
+
+static LT_INLINE
+lt_vec4_t lt_v4max(lt_vec4_t a, lt_vec4_t b) {
+	return LT_VEC4(lt_max_f32(a.x, b.x), lt_max_f32(a.y, b.y), lt_max_f32(a.z, b.z), lt_max_f32(a.w, b.w));
+}
+
+static LT_INLINE
+lt_vec4_t lt_v4min(lt_vec4_t a, lt_vec4_t b) {
+	return LT_VEC4(lt_min_f32(a.x, b.x), lt_min_f32(a.y, b.y), lt_min_f32(a.z, b.z), lt_min_f32(a.w, b.w));
 }
 
 // ----- Generic
@@ -487,6 +518,18 @@ lt_vec4_t lt_v4normalize(lt_vec4_t v) {
 		lt_vec3_t: lt_v3pproject \
 	)((a), (b)))
 
+#define lt_vmax(a, b) (_Generic((a), \
+		lt_vec2_t: lt_v3max \
+		lt_vec3_t: lt_v3max \
+		lt_vec4_t: lt_v4max \
+	)((a), (b)))
+
+#define lt_vmin(a, b) (_Generic((a), \
+		lt_vec2_t: lt_v3min \
+		lt_vec3_t: lt_v3min \
+		lt_vec4_t: lt_v4min \
+	)((a), (b)))
+
 // ----- Shortened names
 
 #ifdef LT_LINALG_SHORTEN_NAMES
@@ -508,6 +551,8 @@ lt_vec4_t lt_v4normalize(lt_vec4_t v) {
 #	define vmulf lt_vmulf
 #	define vmulm lt_vmulm
 #	define vmulm4 lt_vmulm4
+#	define vmax lt_vmax
+#	define vmin lt_vmin
 
 #	define vdot lt_vdot
 #	define vneg lt_vneg
