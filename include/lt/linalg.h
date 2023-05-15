@@ -166,6 +166,11 @@ f32 lt_v2dot(lt_vec2_t a, lt_vec2_t b) {
 }
 
 static LT_INLINE
+lt_vec2_t lt_v2neg(lt_vec2_t v) {
+	return LT_VEC2(-v.x, -v.y);
+}
+
+static LT_INLINE
 f32 lt_v2magnitude(lt_vec2_t v) {
 	return sqrt(v.x * v.x + v.y * v.y);
 }
@@ -242,6 +247,11 @@ lt_vec3_t lt_v3mulm4(lt_vec3_t v, float w, const lt_mat4_t* m) {
 static LT_INLINE
 f32 lt_v3dot(lt_vec3_t a, lt_vec3_t b) {
 	return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
+static LT_INLINE
+lt_vec3_t lt_v3neg(lt_vec3_t v) {
+	return LT_VEC3(-v.x, -v.y, -v.z);
 }
 
 static LT_INLINE
@@ -363,6 +373,11 @@ f32 lt_v4dot(lt_vec4_t a, lt_vec4_t b) {
 }
 
 static LT_INLINE
+lt_vec4_t lt_v4neg(lt_vec4_t v) {
+	return LT_VEC4(-v.x, -v.y, -v.z, -v.w);
+}
+
+static LT_INLINE
 f32 lt_v4magnitude(lt_vec4_t v) {
 	float h = sqrt(v.x * v.x + v.y * v.y);
 	float h2 = sqrt(v.z * v.z + h * h);
@@ -441,6 +456,12 @@ lt_vec4_t lt_v4normalize(lt_vec4_t v) {
 		lt_vec4_t: lt_v4dot \
 	)((a), (b)))
 
+#define lt_vneg(a) (_Generic((a), \
+		lt_vec2_t: lt_v2neg, \
+		lt_vec3_t: lt_v3neg, \
+		lt_vec4_t: lt_v4neg \
+	)((a)))
+
 #define lt_vmagnitude(a) (_Generic((a), \
 		lt_vec2_t: lt_v2magnitude, \
 		lt_vec3_t: lt_v3magnitude, \
@@ -489,6 +510,7 @@ lt_vec4_t lt_v4normalize(lt_vec4_t v) {
 #	define vmulm4 lt_vmulm4
 
 #	define vdot lt_vdot
+#	define vneg lt_vneg
 #	define vcross lt_vcross
 #	define vmagnitude lt_vmagnitude
 #	define vnormalize lt_vnormalize
@@ -501,6 +523,8 @@ lt_vec4_t lt_v4normalize(lt_vec4_t v) {
 #	define m4view lt_m4view
 #	define m4euler lt_m4euler
 #	define m4translate lt_m4translate
+#	define m4scale lt_m4scale
+#	define m4model lt_m4model
 #	define m4inverse lt_m4inverse
 
 #	define m2identity lt_m2identity
@@ -552,10 +576,10 @@ lt_mat3_t lt_m3mul(const lt_mat3_t* m1, const lt_mat3_t* m2) {
 static LT_INLINE
 lt_mat4_t lt_m4mul(const lt_mat4_t* m1, const lt_mat4_t* m2) {
 	return LT_MAT4V(
-		lt_v4mulm(m1->i, m2),
-		lt_v4mulm(m1->j, m2),
-		lt_v4mulm(m1->k, m2),
-		lt_v4mulm(m1->l, m2)
+		lt_v4mulm(m2->i, m1),
+		lt_v4mulm(m2->j, m1),
+		lt_v4mulm(m2->k, m1),
+		lt_v4mulm(m2->l, m1)
 	);
 }
 
@@ -574,6 +598,18 @@ lt_mat4_t lt_m4translate(lt_vec3_t pos) {
 		LT_VEC4(pos.x, pos.y, pos.z, 1)
 	);
 }
+
+static LT_INLINE
+lt_mat4_t lt_m4scale(lt_vec3_t scale) {
+	return LT_MAT4V(
+		LT_VEC4(scale.x, 0, 0, 0),
+		LT_VEC4(0, scale.y, 0, 0),
+		LT_VEC4(0, 0, scale.z, 0),
+		LT_VEC4(0, 0, 0, 1)
+	);
+}
+
+lt_mat4_t lt_m4model(lt_vec3_t pos, lt_vec3_t rot, lt_vec3_t scale);
 
 lt_mat4_t lt_m4inverse(const lt_mat4_t* m);
 
