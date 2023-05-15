@@ -63,7 +63,7 @@ lt_err_t lt_gfx_create(lt_gfx_t* gfx, lt_window_t* win, lt_alloc_t* alloc) {
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_CULL_FACE);
-	glCullFace(GL_FRONT);
+	glCullFace(GL_BACK);
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
 	glEnable(GL_SCISSOR_TEST);
@@ -82,14 +82,14 @@ lt_err_t lt_gfx_create(lt_gfx_t* gfx, lt_window_t* win, lt_alloc_t* alloc) {
 	rect_model.vertex_count = 4;
 	rect_model.positions = (float[]) {
 		0.0f, 0.0f, 0.0f,
-		1.0f, 0.0f, 0.0f,
 		0.0f, 1.0f, 0.0f,
+		1.0f, 0.0f, 0.0f,
 		1.0f, 1.0f, 0.0f,
 	};
 	rect_model.uvs = (float[]) {
 		0.0f, 0.0f,
-		1.0f, 0.0f,
 		0.0f, 1.0f,
+		1.0f, 0.0f,
 		1.0f, 1.0f,
 	};
 	rect_model.index_count = 6;
@@ -176,7 +176,7 @@ void lt_gfx_draw_rectctd(lt_gfx_t* gfx, isz x, isz y, isz w, isz h, u32 color, l
 		w, 0, 0, 0,
 		0, h, 0, 0,
 		0, 0, 1, 0,
-		x, y, (float)(LT_MAX_DEPTH - depth) / (float)LT_MAX_DEPTH, 1
+		x, y, (float)depth / (float)LT_MAX_DEPTH, 1
 	);
 	lt_pipeline_uniform_mat4(&gfx->default_pipeline, DEFAULT_LOCATION_MODEL, (float*)&model);
 
