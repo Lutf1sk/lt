@@ -1,3 +1,6 @@
+#ifndef LT_MATH_H
+#define LT_MATH_H 1
+
 #include <lt/lt.h>
 
 #define LT_DEFINE_MAX(T) static LT_INLINE T lt_max_##T (T a, T b) { return a > b ? a : b; }
@@ -62,3 +65,4 @@ LT_DEFINE_ABS(f32)
 LT_DEFINE_ABS(f64)
 #undef LT_DEFINE_ABS
 
+#endif
