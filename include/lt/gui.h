@@ -49,6 +49,12 @@ struct lt_gui_style {
 
 	u32 ctrl_bg_clr;
 	u32 ctrl_text_clr;
+	u32 ctrl_hover_bg_clr;
+	u32 ctrl_hover_text_clr;
+
+	u32 checkbox_bg_clr;
+	u32 checkbox_hover_bg_clr;
+	u32 checkbox_icon_clr;
 
 	u16 button_hpad;
 
@@ -78,6 +84,8 @@ struct lt_gui_ctx {
 
 	int mouse_x, mouse_y;
 	u32 mouse_state, prev_mouse_state;
+
+	b8 hovered;
 } lt_gui_ctx_t;
 
 typedef

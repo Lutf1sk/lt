@@ -12,6 +12,8 @@ lt_gui_style_t lt_gui_default_style_ = {
 
 	.ctrl_bg_clr = 0x505050FF,
 	.ctrl_text_clr = 0xE0E0E0FF,
+	.ctrl_hover_bg_clr = 0x707070FF,
+	.ctrl_hover_text_clr = 0xF0F0F0FF,
 
 	.button_hpad = 8,
 
@@ -92,6 +94,8 @@ void lt_gui_begin(lt_gui_ctx_t* cx, isz x, isz y, isz w, isz h) {
 
 	c->padding = 0;
 	c->spacing = cx->style->spacing;
+
+	cx->hovered = is_hovered(cx, &cont_top(cx)->r);
 }
 
 void lt_gui_end(lt_gui_ctx_t* cx) {
@@ -306,14 +310,17 @@ u8 lt_gui_button(lt_gui_ctx_t* cx, lstr_t text, u32 flags) {
 	make_space(cx, &r, flags);
 
 	u32 bg = cx->style->ctrl_bg_clr;
+	u32 fg = cx->style->ctrl_text_clr;
 	b8 hovered = is_hovered(cx, &r);
-	if (hovered)
-		bg += 0x20202000;
+	if (hovered) {
+		bg = cx->style->ctrl_hover_bg_clr;
+		fg = cx->style->ctrl_hover_text_clr;
+	}
 
 	lt_gui_draw_rect(cx, &r, bg);
 	lt_gui_draw_border(cx, &r, cx->style->border_clr, flags);
 
-	lt_gui_draw_text(cx, r.x + cx->style->button_hpad, r.y + 1, text, cx->style->ctrl_text_clr);
+	lt_gui_draw_text(cx, r.x + cx->style->button_hpad, r.y + 1, text, fg);
 
 	return hovered && mb_pressed(cx, 0);
 }
@@ -323,9 +330,11 @@ u8 lt_gui_expandable(lt_gui_ctx_t* cx, lstr_t text, b8* expanded, u32 flags) {
 	make_space(cx, &r, flags);
 
 	u32 bg = cx->style->ctrl_bg_clr;
+	u32 fg = cx->style->ctrl_text_clr;
 	b8 hovered = is_hovered(cx, &r);
 	if (hovered) {
-		bg += 0x20202000;
+		bg = cx->style->ctrl_hover_bg_clr;
+		fg = cx->style->ctrl_hover_text_clr;
 		if (mb_pressed(cx, 0))
 			*expanded = !*expanded;
 	}
@@ -337,7 +346,7 @@ u8 lt_gui_expandable(lt_gui_ctx_t* cx, lstr_t text, b8* expanded, u32 flags) {
 	lt_gui_draw_rect(cx, &r, bg);
 	lt_gui_draw_border(cx, &r, cx->style->border_clr, flags);
 
-	lt_gui_draw_text(cx, r.x + r.w/2 - text_width(cx, text)/2, r.y + 1, text, cx->style->ctrl_text_clr);
+	lt_gui_draw_text(cx, r.x + r.w/2 - text_width(cx, text)/2, r.y + 1, text, fg);
 
 	lt_gui_rect_t ir = { r.x + 1, r.y + 1, cx->glyph_height, cx->glyph_height };
 	lt_gui_draw_icon(cx, &ir, cx->style->ctrl_text_clr, icon);
@@ -362,6 +371,7 @@ b8 lt_gui_dropdown_begin(lt_gui_ctx_t* cx, lstr_t text, isz ew, isz eh, u32* sta
 	make_space(cx, &r, flags);
 
 	u32 bg = cx->style->ctrl_bg_clr;
+	u32 fg = cx->style->ctrl_text_clr;
 	b8 hovered = is_hovered(cx, &r);
 
 	lt_gui_cont_t c;
@@ -373,7 +383,8 @@ b8 lt_gui_dropdown_begin(lt_gui_ctx_t* cx, lstr_t text, isz ew, isz eh, u32* sta
 	c.depth = cont_top(cx)->depth + DEPTH_WINDOW_STEP;
 
 	if (hovered) {
-		bg += 0x20202000;
+		bg = cx->style->ctrl_hover_bg_clr;
+		fg = cx->style->ctrl_hover_text_clr;
 		if (mb_pressed(cx, 0))
 			*state = !*state;
 	}
@@ -384,7 +395,7 @@ b8 lt_gui_dropdown_begin(lt_gui_ctx_t* cx, lstr_t text, isz ew, isz eh, u32* sta
 	lt_gui_draw_rect(cx, &r, bg);
 	lt_gui_draw_border(cx, &r, cx->style->border_clr, flags);
 
-	lt_gui_draw_text(cx, r.x + cx->style->padding, r.y + 1, text, cx->style->ctrl_text_clr);
+	lt_gui_draw_text(cx, r.x + cx->style->padding, r.y + 1, text, fg);
 
 	lt_gui_rect_t ir = { r.x + r.w - cx->glyph_height - cx->style->padding, r.y + 1, cx->glyph_height, cx->glyph_height };
 	lt_gui_draw_icon(cx, &ir, cx->style->ctrl_text_clr, LT_GUI_ICON_EXPANDED);
@@ -411,22 +422,24 @@ b8 lt_gui_checkbox(lt_gui_ctx_t* cx, lstr_t text, b8* state, u32 flags) {
 	lt_gui_rect_t r = { 0, 0, text_w + cx->style->padding*2 + cx->glyph_height, cx->glyph_height };
 	make_space(cx, &r, flags);
 
-	u32 bg = cx->style->panel_bg_clr - 0x1A1A1A00;
+	u32 bg = cx->style->checkbox_bg_clr;
+	u32 fg = cx->style->text_clr;
+	u32 icon_clr = cx->style->checkbox_icon_clr;
 	b8 hovered = is_hovered(cx, &r);
 	if (hovered) {
-		bg += 0x10101000;
+		bg = cx->style->checkbox_hover_bg_clr;
 		if (mb_pressed(cx, 0))
 			*state = !*state;
 	}
 
-	lt_gui_draw_text(cx, r.x + cx->glyph_height + cx->style->padding*2, r.y, text, cx->style->text_clr);
+	lt_gui_draw_text(cx, r.x + cx->glyph_height + cx->style->padding*2, r.y, text, fg);
 
 	lt_gui_rect_t cr = { r.x, r.y, cx->glyph_height, cx->glyph_height };
 	lt_gui_draw_rect(cx, &cr, bg);
 	lt_gui_draw_border(cx, &cr, cx->style->border_clr, flags);
 
 	if (*state)
-		lt_gui_draw_icon(cx, &cr, cx->style->ctrl_text_clr, LT_GUI_ICON_CHECK);
+		lt_gui_draw_icon(cx, &cr, icon_clr, LT_GUI_ICON_CHECK);
 
 	return *state;
 }
