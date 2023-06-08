@@ -199,6 +199,11 @@ lt_vec2_t lt_v2min(lt_vec2_t a, lt_vec2_t b) {
 	return LT_VEC2(lt_min_f32(a.x, b.x), lt_min_f32(a.y, b.y));
 }
 
+static LT_INLINE
+lt_vec2_t lt_v2abs(lt_vec2_t v) {
+	return LT_VEC2(fabs(v.x), fabs(v.y));
+}
+
 // ----- vec3
 
 static LT_INLINE
@@ -336,6 +341,11 @@ lt_vec3_t lt_v3min(lt_vec3_t a, lt_vec3_t b) {
 	return LT_VEC3(lt_min_f32(a.x, b.x), lt_min_f32(a.y, b.y), lt_min_f32(a.z, b.z));
 }
 
+static LT_INLINE
+lt_vec3_t lt_v3abs(lt_vec3_t v) {
+	return LT_VEC3(fabs(v.x), fabs(v.y), fabs(v.z));
+}
+
 // ----- vec4
 
 static LT_INLINE
@@ -421,6 +431,11 @@ lt_vec4_t lt_v4max(lt_vec4_t a, lt_vec4_t b) {
 static LT_INLINE
 lt_vec4_t lt_v4min(lt_vec4_t a, lt_vec4_t b) {
 	return LT_VEC4(lt_min_f32(a.x, b.x), lt_min_f32(a.y, b.y), lt_min_f32(a.z, b.z), lt_min_f32(a.w, b.w));
+}
+
+static LT_INLINE
+lt_vec4_t lt_v4abs(lt_vec4_t v) {
+	return LT_VEC4(fabs(v.x), fabs(v.y), fabs(v.z), fabs(v.w));
 }
 
 // ----- Generic
@@ -519,16 +534,22 @@ lt_vec4_t lt_v4min(lt_vec4_t a, lt_vec4_t b) {
 	)((a), (b)))
 
 #define lt_vmax(a, b) (_Generic((a), \
-		lt_vec2_t: lt_v3max \
-		lt_vec3_t: lt_v3max \
+		lt_vec2_t: lt_v2max, \
+		lt_vec3_t: lt_v3max, \
 		lt_vec4_t: lt_v4max \
 	)((a), (b)))
 
 #define lt_vmin(a, b) (_Generic((a), \
-		lt_vec2_t: lt_v3min \
-		lt_vec3_t: lt_v3min \
+		lt_vec2_t: lt_v2min, \
+		lt_vec3_t: lt_v3min, \
 		lt_vec4_t: lt_v4min \
 	)((a), (b)))
+
+#define lt_vabs(a) (_Generic((a), \
+		lt_vec2_t: lt_v2abs, \
+		lt_vec3_t: lt_v3abs, \
+		lt_vec4_t: lt_v4abs \
+	)((a)))
 
 // ----- Shortened names
 
@@ -559,6 +580,7 @@ lt_vec4_t lt_v4min(lt_vec4_t a, lt_vec4_t b) {
 #	define vcross lt_vcross
 #	define vmagnitude lt_vmagnitude
 #	define vnormalize lt_vnormalize
+#	define vabs lt_vabs
 
 #	define vproject lt_vproject
 #	define vpproject lt_vpproject
