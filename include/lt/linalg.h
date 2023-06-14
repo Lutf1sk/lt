@@ -204,6 +204,11 @@ lt_vec2_t lt_v2abs(lt_vec2_t v) {
 	return LT_VEC2(fabs(v.x), fabs(v.y));
 }
 
+static LT_INLINE
+int lt_v2equ(lt_vec2_t a, lt_vec2_t b, f32 epsilon) {
+	return fabs(a.x - b.x) < epsilon && fabs(a.y - b.y) < epsilon;
+}
+
 // ----- vec3
 
 static LT_INLINE
@@ -346,6 +351,11 @@ lt_vec3_t lt_v3abs(lt_vec3_t v) {
 	return LT_VEC3(fabs(v.x), fabs(v.y), fabs(v.z));
 }
 
+static LT_INLINE
+int lt_v3equ(lt_vec3_t a, lt_vec3_t b, f32 epsilon) {
+	return fabs(a.x - b.x) < epsilon && fabs(a.y - b.y) < epsilon && fabs(a.z - b.z) < epsilon;
+}
+
 // ----- vec4
 
 static LT_INLINE
@@ -436,6 +446,11 @@ lt_vec4_t lt_v4min(lt_vec4_t a, lt_vec4_t b) {
 static LT_INLINE
 lt_vec4_t lt_v4abs(lt_vec4_t v) {
 	return LT_VEC4(fabs(v.x), fabs(v.y), fabs(v.z), fabs(v.w));
+}
+
+static LT_INLINE
+int lt_v4equ(lt_vec4_t a, lt_vec4_t b, f32 epsilon) {
+	return fabs(a.x - b.x) < epsilon && fabs(a.y - b.y) < epsilon && fabs(a.z - b.z) < epsilon && fabs(a.w - b.w) < epsilon;
 }
 
 // ----- Generic
@@ -551,6 +566,12 @@ lt_vec4_t lt_v4abs(lt_vec4_t v) {
 		lt_vec4_t: lt_v4abs \
 	)((a)))
 
+#define lt_vequ(a, b, c) (_Generic((a), \
+		lt_vec2_t: lt_v2equ, \
+		lt_vec3_t: lt_v3equ, \
+		lt_vec4_t: lt_v4equ \
+	)((a), (b), (c)))
+
 // ----- Shortened names
 
 #ifdef LT_LINALG_SHORTEN_NAMES
@@ -581,6 +602,7 @@ lt_vec4_t lt_v4abs(lt_vec4_t v) {
 #	define vmagnitude lt_vmagnitude
 #	define vnormalize lt_vnormalize
 #	define vabs lt_vabs
+#	define vequ lt_vequ
 
 #	define vproject lt_vproject
 #	define vpproject lt_vpproject
