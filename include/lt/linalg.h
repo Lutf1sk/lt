@@ -177,6 +177,11 @@ f32 lt_v2magnitude(lt_vec2_t v) {
 }
 
 static LT_INLINE
+f32 lt_v2distance(lt_vec2_t a, lt_vec2_t b) {
+	return lt_v2magnitude(lt_v2sub(a, b));
+}
+
+static LT_INLINE
 lt_vec2_t lt_v2normalize(lt_vec2_t v) {
 	f32 m = lt_v2magnitude(v);
 	if (m == 0.0f)
@@ -278,6 +283,11 @@ lt_vec3_t lt_v3neg(lt_vec3_t v) {
 static LT_INLINE
 f32 lt_v3magnitude(lt_vec3_t v) {
 	return sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+}
+
+static LT_INLINE
+f32 lt_v3distance(lt_vec3_t a, lt_vec3_t b) {
+	return lt_v3magnitude(lt_v3sub(a, b));
 }
 
 static LT_INLINE
@@ -431,6 +441,11 @@ f32 lt_v4magnitude(lt_vec4_t v) {
 }
 
 static LT_INLINE
+f32 lt_v4distance(lt_vec4_t a, lt_vec4_t b) {
+	return lt_v4magnitude(lt_v4sub(a, b));
+}
+
+static LT_INLINE
 lt_vec4_t lt_v4normalize(lt_vec4_t v) {
 	f32 m = lt_v4magnitude(v);
 	if (m == 0.0f)
@@ -534,6 +549,12 @@ int lt_v4equ(lt_vec4_t a, lt_vec4_t b, f32 epsilon) {
 		lt_vec4_t: lt_v4magnitude \
 	)((a)))
 
+#define lt_vdistance(a, b) (_Generic((a), \
+		lt_vec2_t: lt_v2distance, \
+		lt_vec3_t: lt_v2distance, \
+		lt_vec4_t: lt_v2distance \
+	)((a), (b)))
+
 #define lt_vnormalize(a) (_Generic((a), \
 		lt_vec2_t: lt_v2normalize, \
 		lt_vec3_t: lt_v3normalize, \
@@ -610,6 +631,8 @@ int lt_v4equ(lt_vec4_t a, lt_vec4_t b, f32 epsilon) {
 #	define vcross lt_vcross
 #	define vcrossn lt_vcrossn
 #	define vmagnitude lt_vmagnitude
+#	define vdistance lt_vdistance
+#	define vdistance lt_vdistance
 #	define vnormalize lt_vnormalize
 #	define vabs lt_vabs
 #	define vequ lt_vequ
