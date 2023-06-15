@@ -4,6 +4,29 @@
 
 #include <math.h>
 
+lt_mat3_t lt_m3quat(lt_quat_t q) {
+	f32 x = q.x * 2.0f, y = q.y * 2.0f, z = q.z * 2.0f;
+	f32 xx = q.x * x, yy = q.y * y, zz =  q.z * z;
+	f32 xy = q.x * y, xz = q.x * z;
+	f32 yz = q.y * z;
+	f32 wx = q.w * x, wy = q.w * y, wz = q.w * z;
+
+	lt_mat3_t m;
+	m.data[0][0] = 1.0f - (yy + zz);
+	m.data[0][1] = xy - wz;
+	m.data[0][2] = xz + wy;
+
+	m.data[1][0] = xy + wz;
+	m.data[1][1] = 1.0f - (xx + zz);
+	m.data[1][2] = yz - wx;
+
+	m.data[2][0] = xz - wy;
+	m.data[2][1] = yz - wx;
+	m.data[2][2] = 1.0f - (xx + yy);
+
+	return m;
+}
+
 static
 lt_mat4_t lt_m4frustum(f32 bottom, f32 top, f32 left, f32 right, f32 near, f32 far) {
 	lt_mat4_t m;
@@ -88,6 +111,37 @@ lt_mat4_t lt_m4euler(lt_vec3_t angles) {
 		sy, -cy * sx, cx * cy, 0.0f,
 		0.0f, 0.0f, 0.0f, 1.0f
 	);
+}
+
+lt_mat4_t lt_m4quat(lt_quat_t q) {
+	f32 x = q.x * 2.0f, y = q.y * 2.0f, z = q.z * 2.0f;
+	f32 xx = q.x * x, yy = q.y * y, zz =  q.z * z;
+	f32 xy = q.x * y, xz = q.x * z;
+	f32 yz = q.y * z;
+	f32 wx = q.w * x, wy = q.w * y, wz = q.w * z;
+
+	lt_mat4_t m;
+	m.data[0][0] = 1.0f - (yy + zz);
+	m.data[0][1] = xy - wz;
+	m.data[0][2] = xz + wy;
+	m.data[0][3] = 0.0f;
+
+	m.data[1][0] = xy + wz;
+	m.data[1][1] = 1.0f - (xx + zz);
+	m.data[1][2] = yz - wx;
+	m.data[1][3] = 0.0f;
+
+	m.data[2][0] = xz - wy;
+	m.data[2][1] = yz - wx;
+	m.data[2][2] = 1.0f - (xx + yy);
+	m.data[2][3] = 0.0f;
+
+	m.data[3][0] = 0.0f;
+	m.data[3][1] = 0.0f;
+	m.data[3][2] = 0.0f;
+	m.data[3][3] = 1.0f;
+
+	return m;
 }
 
 lt_mat4_t lt_m4inverse(const lt_mat4_t* m_) {

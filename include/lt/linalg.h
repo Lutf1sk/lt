@@ -569,8 +569,8 @@ int lt_v4equ(lt_vec4_t a, lt_vec4_t b, f32 epsilon) {
 
 #define lt_vdist(a, b) (_Generic((a), \
 		lt_vec2_t: lt_v2dist, \
-		lt_vec3_t: lt_v2dist, \
-		lt_vec4_t: lt_v2dist \
+		lt_vec3_t: lt_v3dist, \
+		lt_vec4_t: lt_v4dist \
 	)((a), (b)))
 
 #define lt_vnorm(a) (_Generic((a), \
@@ -713,6 +713,8 @@ lt_mat3_t lt_m3mul(const lt_mat3_t* m1, const lt_mat3_t* m2) {
 	);
 }
 
+lt_mat3_t lt_m3quat(lt_quat_t quat);
+
 // ----- mat4
 
 static LT_INLINE
@@ -735,6 +737,8 @@ lt_mat4_t lt_m4perspective(f32 fov, f32 aspect, f32 near, f32 far);
 lt_mat4_t lt_m4ortho(f32 left, f32 right, f32 bottom, f32 top, f32 near, f32 far);
 
 lt_mat4_t lt_m4view(lt_vec3_t pos, lt_vec3_t fwd, lt_vec3_t up);
+
+lt_mat4_t lt_m4quat(lt_quat_t quat);
 lt_mat4_t lt_m4euler(lt_vec3_t angles);
 
 static LT_INLINE
@@ -809,22 +813,24 @@ lt_mat4_t lt_m4inverse(const lt_mat4_t* m);
 #	define qnorm lt_qnorm
 #	define qequ lt_qequ
 
+#	define m4identity lt_m4identity
+#	define m4mul lt_m4mul
 #	define m4perspective lt_m4perspective
 #	define m4ortho lt_m4ortho
 #	define m4view lt_m4view
 #	define m4euler lt_m4euler
+#	define m4quat lt_m4quat
 #	define m4translate lt_m4translate
 #	define m4scale lt_m4scale
 #	define m4model lt_m4model
 #	define m4inverse lt_m4inverse
 
 #	define m2identity lt_m2identity
-#	define m3identity lt_m3identity
-#	define m4identity lt_m4identity
-
 #	define m2mul lt_m2mul
+
+#	define m3identity lt_m3identity
 #	define m3mul lt_m3mul
-#	define m4mul lt_m4mul
+#	define m3quat lt_m3quat
 
 #	define VEC2_INIT(...) LT_VEC2_INIT(__VA_ARGS__)
 #	define VEC3_INIT(...) LT_VEC3_INIT(__VA_ARGS__)
