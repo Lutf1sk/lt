@@ -59,15 +59,15 @@ lt_mat4_t lt_m4ortho(f32 left, f32 right, f32 bottom, f32 top, f32 near, f32 far
 lt_mat4_t lt_m4view(lt_vec3_t pos, lt_vec3_t fwd, lt_vec3_t up) {
 	lt_vec3_t f, u, s;
 
-	f = lt_v3normalize(fwd);
-	s = lt_v3normalize(lt_v3cross(f, up));
-	u = lt_v3cross(s, f);
+	f = lt_vnorm(fwd);
+	s = lt_vnorm(lt_vcross(f, up));
+	u = lt_vcross(s, f);
 
 	return LT_MAT4(
 		s.x, u.x, -f.x, 0.0f,
 		s.y, u.y, -f.y, 0.0f,
 		s.z, u.z, -f.z, 0.0f,
-		-lt_v3dot(s, pos), -lt_v3dot(u, pos), lt_v3dot(f, pos), 1.0f
+		-lt_vdot(s, pos), -lt_vdot(u, pos), lt_vdot(f, pos), 1.0f
 	);
 }
 

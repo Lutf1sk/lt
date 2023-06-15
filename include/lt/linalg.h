@@ -172,18 +172,18 @@ lt_vec2_t lt_v2neg(lt_vec2_t v) {
 }
 
 static LT_INLINE
-f32 lt_v2magnitude(lt_vec2_t v) {
+f32 lt_v2mag(lt_vec2_t v) {
 	return sqrt(v.x * v.x + v.y * v.y);
 }
 
 static LT_INLINE
-f32 lt_v2distance(lt_vec2_t a, lt_vec2_t b) {
-	return lt_v2magnitude(lt_v2sub(a, b));
+f32 lt_v2dist(lt_vec2_t a, lt_vec2_t b) {
+	return lt_v2mag(lt_v2sub(a, b));
 }
 
 static LT_INLINE
-lt_vec2_t lt_v2normalize(lt_vec2_t v) {
-	f32 m = lt_v2magnitude(v);
+lt_vec2_t lt_v2norm(lt_vec2_t v) {
+	f32 m = lt_v2mag(v);
 	if (m == 0.0f)
 		return LT_VEC2(0.0f, 0.0f);
 	return lt_v2mulf(v, 1.0f / m);
@@ -281,18 +281,18 @@ lt_vec3_t lt_v3neg(lt_vec3_t v) {
 }
 
 static LT_INLINE
-f32 lt_v3magnitude(lt_vec3_t v) {
+f32 lt_v3mag(lt_vec3_t v) {
 	return sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
 }
 
 static LT_INLINE
-f32 lt_v3distance(lt_vec3_t a, lt_vec3_t b) {
-	return lt_v3magnitude(lt_v3sub(a, b));
+f32 lt_v3dist(lt_vec3_t a, lt_vec3_t b) {
+	return lt_v3mag(lt_v3sub(a, b));
 }
 
 static LT_INLINE
-lt_vec3_t lt_v3normalize(lt_vec3_t v) {
-	f32 m = lt_v3magnitude(v);
+lt_vec3_t lt_v3norm(lt_vec3_t v) {
+	f32 m = lt_v3mag(v);
 	if (m == 0.0f)
 		return LT_VEC3(0.0f, 0.0f, 0.0f);
 	return lt_v3mulf(v, 1.0f / m);
@@ -309,7 +309,7 @@ lt_vec3_t lt_v3cross(lt_vec3_t a, lt_vec3_t b) {
 
 static LT_INLINE
 lt_vec3_t lt_v3crossn(lt_vec3_t a, lt_vec3_t b) {
-	return lt_v3normalize(lt_v3cross(a, b));
+	return lt_v3norm(lt_v3cross(a, b));
 }
 
 static LT_INLINE
@@ -341,7 +341,7 @@ lt_vec3_t lt_vec3_rotate(lt_vec3_t v, float angle, lt_vec3_t axis) {
 	lt_vec3_t ax, v1, v2;
 	float x = cos(angle), y = sin(angle);
 
-	ax = lt_v3normalize(axis);
+	ax = lt_v3norm(axis);
 	v1 = lt_v3mulf(v, x);
 	v2 = lt_v3mulf(lt_v3cross(ax, v), y);
 
@@ -434,20 +434,20 @@ lt_vec4_t lt_v4neg(lt_vec4_t v) {
 }
 
 static LT_INLINE
-f32 lt_v4magnitude(lt_vec4_t v) {
+f32 lt_v4mag(lt_vec4_t v) {
 	float h = sqrt(v.x * v.x + v.y * v.y);
 	float h2 = sqrt(v.z * v.z + h * h);
 	return sqrt(v.w * v.w + h2 * h2);
 }
 
 static LT_INLINE
-f32 lt_v4distance(lt_vec4_t a, lt_vec4_t b) {
-	return lt_v4magnitude(lt_v4sub(a, b));
+f32 lt_v4dist(lt_vec4_t a, lt_vec4_t b) {
+	return lt_v4mag(lt_v4sub(a, b));
 }
 
 static LT_INLINE
-lt_vec4_t lt_v4normalize(lt_vec4_t v) {
-	f32 m = lt_v4magnitude(v);
+lt_vec4_t lt_v4norm(lt_vec4_t v) {
+	f32 m = lt_v4mag(v);
 	if (m == 0.0f)
 		return LT_VEC4(0.0f, 0.0f, 0.0f, 0.0f);
 	return lt_v4mulf(v, 1.0f / m);
@@ -543,22 +543,22 @@ int lt_v4equ(lt_vec4_t a, lt_vec4_t b, f32 epsilon) {
 		lt_vec4_t: lt_v4neg \
 	)((a)))
 
-#define lt_vmagnitude(a) (_Generic((a), \
-		lt_vec2_t: lt_v2magnitude, \
-		lt_vec3_t: lt_v3magnitude, \
-		lt_vec4_t: lt_v4magnitude \
+#define lt_vmag(a) (_Generic((a), \
+		lt_vec2_t: lt_v2mag, \
+		lt_vec3_t: lt_v3mag, \
+		lt_vec4_t: lt_v4mag \
 	)((a)))
 
-#define lt_vdistance(a, b) (_Generic((a), \
-		lt_vec2_t: lt_v2distance, \
-		lt_vec3_t: lt_v2distance, \
-		lt_vec4_t: lt_v2distance \
+#define lt_vdist(a, b) (_Generic((a), \
+		lt_vec2_t: lt_v2dist, \
+		lt_vec3_t: lt_v2dist, \
+		lt_vec4_t: lt_v2dist \
 	)((a), (b)))
 
-#define lt_vnormalize(a) (_Generic((a), \
-		lt_vec2_t: lt_v2normalize, \
-		lt_vec3_t: lt_v3normalize, \
-		lt_vec4_t: lt_v4normalize \
+#define lt_vnorm(a) (_Generic((a), \
+		lt_vec2_t: lt_v2norm, \
+		lt_vec3_t: lt_v3norm, \
+		lt_vec4_t: lt_v4norm \
 	)((a)))
 
 #define lt_vcross(a, b) (_Generic((a), \
@@ -630,10 +630,9 @@ int lt_v4equ(lt_vec4_t a, lt_vec4_t b, f32 epsilon) {
 #	define vneg lt_vneg
 #	define vcross lt_vcross
 #	define vcrossn lt_vcrossn
-#	define vmagnitude lt_vmagnitude
-#	define vdistance lt_vdistance
-#	define vdistance lt_vdistance
-#	define vnormalize lt_vnormalize
+#	define vmag lt_vmag
+#	define vdist lt_vdist
+#	define vnorm lt_vnorm
 #	define vabs lt_vabs
 #	define vequ lt_vequ
 
