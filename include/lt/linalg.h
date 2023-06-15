@@ -298,6 +298,11 @@ lt_vec3_t lt_v3cross(lt_vec3_t a, lt_vec3_t b) {
 }
 
 static LT_INLINE
+lt_vec3_t lt_v3crossn(lt_vec3_t a, lt_vec3_t b) {
+	return lt_v3normalize(lt_v3cross(a, b));
+}
+
+static LT_INLINE
 lt_vec3_t lt_v3project(lt_vec3_t normal, lt_vec3_t point) {
 	float nmag2 = lt_v3dot(normal, normal);
 	if (nmag2 <= 0.0f)
@@ -540,6 +545,10 @@ int lt_v4equ(lt_vec4_t a, lt_vec4_t b, f32 epsilon) {
 		lt_vec3_t: lt_v3cross \
 	)((a), (b)))
 
+#define lt_vcrossn(a, b) (_Generic((a), \
+		lt_vec3_t: lt_v3crossn \
+	)((a), (b)))
+
 #define lt_vproject(a, b) (_Generic((a), \
 		lt_vec3_t: lt_v3project \
 	)((a), (b)))
@@ -599,6 +608,7 @@ int lt_v4equ(lt_vec4_t a, lt_vec4_t b, f32 epsilon) {
 #	define vdot lt_vdot
 #	define vneg lt_vneg
 #	define vcross lt_vcross
+#	define vcrossn lt_vcrossn
 #	define vmagnitude lt_vmagnitude
 #	define vnormalize lt_vnormalize
 #	define vabs lt_vabs
