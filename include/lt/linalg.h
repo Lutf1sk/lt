@@ -825,6 +825,25 @@ lt_mat4_t lt_m4inverse(const lt_mat4_t* m);
 #	define m2mul lt_m2mul
 #	define m3mul lt_m3mul
 #	define m4mul lt_m4mul
+
+#	define VEC2_INIT(...) LT_VEC2_INIT(__VA_ARGS__)
+#	define VEC3_INIT(...) LT_VEC3_INIT(__VA_ARGS__)
+#	define VEC4_INIT(...) LT_VEC4_INIT(__VA_ARGS__)
+
+#	define VEC2(...) LT_VEC2(__VA_ARGS__)
+#	define VEC3(...) LT_VEC3(__VA_ARGS__)
+#	define VEC4(...) LT_VEC4(__VA_ARGS__)
+
+#	define QUAT_INIT(...) LT_QUAT_INIT(__VA_ARGS__)
+#	define QUAT(...) LT_QUAT(__VA_ARGS__)
+
+#	define MAT2_INIT(...) LT_MAT4_INIT(__VA_ARGS__)
+#	define MAT3_INIT(...) LT_MAT3_INIT(__VA_ARGS__)
+#	define MAT4_INIT(...) LT_MAT4_INIT(__VA_ARGS__)
+
+#	define MAT2(...) LT_MAT4(__VA_ARGS__)
+#	define MAT3(...) LT_MAT3(__VA_ARGS__)
+#	define MAT4(...) LT_MAT4(__VA_ARGS__)
 #endif
 
 #endif
