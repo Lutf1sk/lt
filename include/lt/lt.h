@@ -111,9 +111,9 @@ void lt_breakpoint(void);
 #	define LT_DEBUG_ARGS(...) (__VA_ARGS__, lstr_t _lt_filename, usz _lt_linenum)
 #	define LT_DEBUG_CALL(f, ...) ((f)(__VA_ARGS__, LT_FILENAME, LT_LINENUM))
 #	define LT_DEBUG_FWD(f, ...) ((f)(__VA_ARGS__, _lt_filename, _lt_linenum))
-#	define LT_DEBUG_FERR(msg) lt_ferrf("%S:%uz: %S", _lt_filename, _lt_linenum, CLSTR(#msg))
+#	define LT_DEBUG_FERR(msg) lt_ferrf("%S:%uz: %S", _lt_filename, _lt_linenum, CLSTR(msg))
 #	define LT_DEBUG_FERRF(fmt, ...) lt_ferrf("%S:%uz: "fmt, _lt_filename, _lt_linenum, __VA_ARGS__)
-#	define LT_DEBUG_WERR(msg) lt_werrf("%S:%uz: %S", _lt_filename, _lt_linenum, CLSTR(#msg))
+#	define LT_DEBUG_WERR(msg) lt_werrf("%S:%uz: %S", _lt_filename, _lt_linenum, CLSTR(msg))
 #	define LT_DEBUG_WERRF(fmt, ...) lt_werrf("%S:%uz: "fmt, _lt_filename, _lt_linenum, __VA_ARGS__)
 #else
 #	define LT_ASSERT(x) ((void)0)
@@ -123,9 +123,9 @@ void lt_breakpoint(void);
 #	define LT_DEBUG_ARGS(...) (__VA_ARGS__)
 #	define LT_DEBUG_CALL(f, ...) ((f)(__VA_ARGS__))
 #	define LT_DEBUG_FWD(f, ...) ((f)(__VA_ARGS__))
-#	define LT_DEBUG_FERR(msg) lt_ferrf("%S", CLSTR(#msg))
+#	define LT_DEBUG_FERR(msg) lt_ferrf("%S", CLSTR(msg))
 #	define LT_DEBUG_FERRF(fmt, ...) lt_ferrf(fmt, __VA_ARGS__)
-#	define LT_DEBUG_WERR(msg) lt_werrf("%S", CLSTR(#msg))
+#	define LT_DEBUG_WERR(msg) lt_werrf("%S", CLSTR(msg))
 #	define LT_DEBUG_WERRF(fmt, ...) lt_werrf(fmt, __VA_ARGS__)
 #endif
 
