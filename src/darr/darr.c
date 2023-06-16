@@ -1,11 +1,11 @@
 #include <lt/darr.h>
 #include <lt/mem.h>
 
-void* lt_darr_create_(usz elem_size, usz initial_count, lt_alloc_t* alloc) {
+void* lt_darr_create_ LT_DEBUG_ARGS(usz elem_size, usz initial_count, lt_alloc_t* alloc) {
 	LT_ASSERT(elem_size && initial_count);
 
 	usz alloced_size = initial_count * elem_size;
-	lt_darr_t* head = lt_malloc(alloc, LT_DARR_ALIGNED_SIZE + alloced_size);
+	lt_darr_t* head = LT_DEBUG_FWD(lt_malloc, alloc, LT_DARR_ALIGNED_SIZE + alloced_size);
 	LT_ASSERT(head);
 	head->alloced_size = alloced_size;
 	head->elem_size = elem_size;
@@ -14,13 +14,13 @@ void* lt_darr_create_(usz elem_size, usz initial_count, lt_alloc_t* alloc) {
 	return (u8*)head + LT_DARR_ALIGNED_SIZE;
 }
 
-void lt_darr_destroy(void* arr) {
+void lt_darr_destroy LT_DEBUG_ARGS(void* arr) {
 	lt_darr_t* head = lt_darr_head(arr);
 	LT_ASSERT(arr && head);
-	lt_mfree(head->alloc, head);
+	LT_DEBUG_FWD(lt_mfree, head->alloc, head);
 }
 
-void* lt_darr_make_space(void* arr, usz count) {
+void* lt_darr_make_space LT_DEBUG_ARGS(void* arr, usz count) {
 	lt_darr_t* head = lt_darr_head(arr);
 	LT_ASSERT(arr && head);
 
@@ -31,12 +31,12 @@ void* lt_darr_make_space(void* arr, usz count) {
 
 	while (head->alloced_size < new_size)
 		head->alloced_size <<= 1;
-	head = lt_mrealloc(head->alloc, head, LT_DARR_ALIGNED_SIZE + head->alloced_size);
+	head = LT_DEBUG_FWD(lt_mrealloc, head->alloc, head, LT_DARR_ALIGNED_SIZE + head->alloced_size);
 	LT_ASSERT(head);
 	return (u8*)head + LT_DARR_ALIGNED_SIZE;
 }
 
-void lt_darr_erase(void* arr, usz start_idx, usz count) {
+void lt_darr_erase LT_DEBUG_ARGS(void* arr, usz start_idx, usz count) {
 	lt_darr_t* head = lt_darr_head(arr);
 	LT_ASSERT(start_idx <= head->count && start_idx + count <= head->count);
 
@@ -49,13 +49,13 @@ void lt_darr_erase(void* arr, usz start_idx, usz count) {
 	head->count -= count;
 }
 
-void* lt_darr_insert_(void* arr, usz idx, void* data, usz count) {
+void* lt_darr_insert_ LT_DEBUG_ARGS(void* arr, usz idx, void* data, usz count) {
 	lt_darr_t* head = lt_darr_head(arr);
 	LT_ASSERT(arr && head);
 	LT_ASSERT(idx <= head->count);
 
 	usz old_count = head->count;
-	arr = lt_darr_make_space(arr, count);
+	arr = LT_DEBUG_FWD(lt_darr_make_space, arr, count);
 	head = lt_darr_head(arr);
 
 	usz size = count * head->elem_size;
@@ -69,11 +69,11 @@ void* lt_darr_insert_(void* arr, usz idx, void* data, usz count) {
 	return arr;
 }
 
-void* lt_darr_dup_(void* arr) {
+void* lt_darr_dup_ LT_DEBUG_ARGS(void* arr) {
 	lt_darr_t* head = lt_darr_head(arr);
 	LT_ASSERT(arr && head);
 
-	lt_darr_t* new_head = lt_malloc(head->alloc, LT_DARR_ALIGNED_SIZE + head->alloced_size);
+	lt_darr_t* new_head = LT_DEBUG_FWD(lt_malloc, head->alloc, LT_DARR_ALIGNED_SIZE + head->alloced_size);
 	LT_ASSERT(new_head);
 	memcpy(new_head, head, LT_DARR_ALIGNED_SIZE + head->count * head->elem_size);
 
