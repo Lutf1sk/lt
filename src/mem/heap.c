@@ -9,22 +9,30 @@
 #endif
 
 static
-void* lt_libc_malloc(void* usr, usz size) {
+void* lt_libc_malloc LT_DEBUG_ARGS(void* usr, usz size) {
+	if (!size) {
+		LT_DEBUG_WERR("libc malloc called with size 0\n");
+		size = 1;
+	}
 	return malloc(size);
 }
 
 static
-void lt_libc_free(void* usr, void* mem) {
+void lt_libc_free LT_DEBUG_ARGS(void* usr, void* mem) {
 	free(mem);
 }
 
 static
-void* lt_libc_realloc(void* usr, void* mem, usz size) {
+void* lt_libc_realloc LT_DEBUG_ARGS(void* usr, void* mem, usz size) {
+	if (!size) {
+		LT_DEBUG_WERR("libc realloc called with size 0\n");
+		size = 1;
+	}
 	return realloc(mem, size);
 }
 
 static
-usz lt_libc_msize(void* usr, void* mem) {
+usz lt_libc_msize LT_DEBUG_ARGS(void* usr, void* mem) {
 	return MSIZE(mem);
 }
 

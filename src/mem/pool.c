@@ -2,18 +2,22 @@
 #include <lt/align.h>
 
 static
-void* lt_pmalloc_if(lt_pool_t* pool, usz size) {
-	if (size > pool->chunk_size)
+void* lt_pmalloc_if LT_DEBUG_ARGS(lt_pool_t* pool, usz size) {
+	if (size > pool->chunk_size) {
+		LT_DEBUG_WERR("pool allocation failed, size is larger than chunk size\n");
 		return NULL;
-	return lt_pmalloc(pool);
+	}
+	return LT_DEBUG_FWD(lt_pmalloc, pool);
 }
 
 static
-void* lt_pmrealloc_if(lt_pool_t* pool, void* chunk, usz size) {
-	if (size > pool->chunk_size)
+void* lt_pmrealloc_if LT_DEBUG_ARGS(lt_pool_t* pool, void* chunk, usz size) {
+	if (size > pool->chunk_size) {
+		LT_DEBUG_WERR("pool allocation failed, size is larger than chunk size\n");
 		return NULL;
+	}
 	if (!chunk)
-		return lt_pmalloc(pool);
+		return LT_DEBUG_FWD(lt_pmalloc, pool);
 	return chunk;
 }
 
@@ -72,20 +76,22 @@ void lt_pmreset(lt_pool_t* pool) {
 	}
 }
 
-void* lt_pmalloc(lt_pool_t* pool) {
+void* lt_pmalloc LT_DEBUG_ARGS(lt_pool_t* pool) {
 	void** head = pool->head;
-	if (!head)
+	if (!head) {
+		LT_DEBUG_WERR("pool allocation failed, not enough memory\n");
 		return NULL;
+	}
 	pool->head = *head;
 	return head;
 }
 
-void lt_pmfree(lt_pool_t* pool, void* chunk) {
+void lt_pmfree LT_DEBUG_ARGS(lt_pool_t* pool, void* chunk) {
 	*(void**)chunk = pool->head;
 	pool->head = chunk;
 }
 
-usz lt_pmsize(lt_pool_t* pool, void* chunk) {
+usz lt_pmsize LT_DEBUG_ARGS(lt_pool_t* pool, void* chunk) {
 	return pool->chunk_size;
 }
 

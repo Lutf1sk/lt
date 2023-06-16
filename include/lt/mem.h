@@ -25,12 +25,12 @@ extern usz (*lt_get_pagesize)(void);
 void* lt_vmalloc(usz size);
 void lt_vmfree(void* addr, usz size);
 
-
 // alloc.c
-typedef void*(*lt_alloc_callback_t)(void* usr, usz size);
-typedef void(*lt_free_callback_t)(void* usr, void* mem);
-typedef void*(*lt_realloc_callback_t)(void* usr, void* mem, usz size);
-typedef void*(*lt_size_callback_t)(void* usr, void* mem);
+
+typedef void*(*lt_alloc_callback_t)LT_DEBUG_ARGS(void* usr, usz size);
+typedef void(*lt_free_callback_t)LT_DEBUG_ARGS(void* usr, void* mem);
+typedef void*(*lt_realloc_callback_t)LT_DEBUG_ARGS(void* usr, void* mem, usz size);
+typedef void*(*lt_size_callback_t)LT_DEBUG_ARGS(void* usr, void* mem);
 
 typedef
 struct lt_alloc {
@@ -44,33 +44,33 @@ struct lt_alloc {
 		((lt_alloc_t){ (lt_alloc_callback_t)(alloc), (lt_free_callback_t)(free), (lt_realloc_callback_t)(realloc), (lt_size_callback_t)(size) })
 
 static LT_INLINE
-void* lt_malloc(void* alloc_, usz size) {
+void* lt_malloc LT_DEBUG_ARGS(void* alloc_, usz size) {
 	lt_alloc_t* alloc = alloc_;
-	return alloc->alloc(alloc, size);
+	return LT_DEBUG_FWD(alloc->alloc, alloc, size);
 }
 
 static LT_INLINE
-void lt_mfree(void* alloc_, void* mem) {
+void lt_mfree LT_DEBUG_ARGS(void* alloc_, void* mem) {
 	lt_alloc_t* alloc = alloc_;
-	alloc->free(alloc, mem);
+	LT_DEBUG_FWD(alloc->free, alloc, mem);
 }
 
 static LT_INLINE
-void* lt_mrealloc(void* alloc_, void* mem, usz size) {
+void* lt_mrealloc LT_DEBUG_ARGS(void* alloc_, void* mem, usz size) {
 	lt_alloc_t* alloc = alloc_;
-	return alloc->realloc(alloc, mem, size);
+	return LT_DEBUG_FWD(alloc->realloc, alloc, mem, size);
 }
 
 static LT_INLINE
-void* lt_msize(void* alloc_, void* mem) {
+void* lt_msize LT_DEBUG_ARGS(void* alloc_, void* mem) {
 	lt_alloc_t* alloc = alloc_;
-	return alloc->size(alloc, mem);
+	return LT_DEBUG_FWD(alloc->size, alloc, mem);
 }
 
 static LT_INLINE
-void* lt_memdup(void* alloc_, void* mem, usz size) {
+void* lt_memdup LT_DEBUG_ARGS(void* alloc_, void* mem, usz size) {
 	lt_alloc_t* alloc = alloc_;
-	void* newmem = lt_malloc(alloc, size);
+	void* newmem = LT_DEBUG_FWD(lt_malloc, alloc, size);
 	if (!newmem)
 		return NULL;
 	memcpy(newmem, mem, size);
@@ -78,9 +78,16 @@ void* lt_memdup(void* alloc_, void* mem, usz size) {
 }
 
 static LT_INLINE
-lstr_t lt_strdup(void* alloc, lstr_t str) {
-	return LSTR(lt_memdup(alloc, str.str, str.len), str.len);
+lstr_t lt_strdup LT_DEBUG_ARGS(void* alloc, lstr_t str) {
+	return LSTR(LT_DEBUG_FWD(lt_memdup, alloc, str.str, str.len), str.len);
 }
+
+#define lt_malloc(...) LT_DEBUG_CALL(lt_malloc, __VA_ARGS__)
+#define lt_mfree(...) LT_DEBUG_CALL(lt_mfree, __VA_ARGS__)
+#define lt_mrealloc(...) LT_DEBUG_CALL(lt_mrealloc, __VA_ARGS__)
+#define lt_msize(...) LT_DEBUG_CALL(lt_msize, __VA_ARGS__)
+#define lt_memdup(...) LT_DEBUG_CALL(lt_memdup, __VA_ARGS__)
+#define lt_strdup(...) LT_DEBUG_CALL(lt_strdup, __VA_ARGS__)
 
 // heap.c
 extern lt_alloc_t* lt_libc_heap;
@@ -104,10 +111,10 @@ void lt_amdestroy(lt_arena_t* arena);
 void* lt_amsave(lt_arena_t* arena);
 void lt_amrestore(lt_arena_t* arena, void* restore_point);
 
-void* lt_amalloc(lt_arena_t* arena, usz size);
-void lt_amfree(lt_arena_t* arena, void* ptr);
-void* lt_amrealloc(lt_arena_t* arena, void* ptr, usz new_size);
-usz lt_amsize(lt_arena_t* arena, void* ptr);
+void* lt_amalloc LT_DEBUG_ARGS(lt_arena_t* arena, usz size);
+void lt_amfree LT_DEBUG_ARGS(lt_arena_t* arena, void* ptr);
+void* lt_amrealloc LT_DEBUG_ARGS(lt_arena_t* arena, void* ptr, usz new_size);
+usz lt_amsize LT_DEBUG_ARGS(lt_arena_t* arena, void* ptr);
 
 b8 lt_amleaked(lt_arena_t* arena);
 
@@ -129,8 +136,8 @@ void lt_pmdestroy(lt_pool_t* pool);
 
 void lt_pmreset(lt_pool_t* pool);
 
-void* lt_pmalloc(lt_pool_t* pool);
-void lt_pmfree(lt_pool_t* pool, void* chunk);
-usz lt_pmsize(lt_pool_t* pool, void* chunk);
+void* lt_pmalloc LT_DEBUG_ARGS(lt_pool_t* pool);
+void lt_pmfree LT_DEBUG_ARGS(lt_pool_t* pool, void* chunk);
+usz lt_pmsize LT_DEBUG_ARGS(lt_pool_t* pool, void* chunk);
 
 #endif

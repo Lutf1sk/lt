@@ -30,6 +30,7 @@ lt_arena_t* lt_amcreate(lt_alloc_t* parent, usz size, usz flags) {
 	}
 	if (!base)
 		return NULL;
+
 	return lt_amcreatem(parent, base, size, flags);
 }
 
@@ -48,26 +49,28 @@ void lt_amrestore(lt_arena_t* arena, void* restore_point) {
 	arena->top = restore_point;
 }
 
-void* lt_amalloc(lt_arena_t* arena, usz size) {
+void* lt_amalloc LT_DEBUG_ARGS(lt_arena_t* arena, usz size) {
 	u8* start = (u8*)lt_align_fwd((usz)arena->top, LT_ALLOC_DEFAULT_ALIGN);
 	u8* data_start = start + LT_ALLOC_DEFAULT_ALIGN;
 	void* new_top = data_start + size;
-	if (new_top > arena->base + arena->size)
+	if (new_top > arena->base + arena->size) {
+		LT_DEBUG_WERR("arena allocation failed, not enough memory\n");
 		return NULL;
+	}
 	*(usz*)start = size;
 	arena->top = new_top;
 	return data_start;
 }
 
-void lt_amfree(lt_arena_t* arena, void* ptr) {
+void lt_amfree LT_DEBUG_ARGS(lt_arena_t* arena, void* ptr) {
 	usz* psize = (usz*)((usz)ptr - LT_ALLOC_DEFAULT_ALIGN);
 	if ((u8*)ptr + *psize == arena->top)
 		arena->top = psize;
 }
 
-void* lt_amrealloc(lt_arena_t* arena, void* ptr, usz new_size) {
+void* lt_amrealloc LT_DEBUG_ARGS(lt_arena_t* arena, void* ptr, usz new_size) {
 	if (!ptr)
-		return lt_amalloc(arena, new_size);
+		return LT_DEBUG_FWD(lt_amalloc, arena, new_size);
 
 	usz* psize = (usz*)((usz)ptr - LT_ALLOC_DEFAULT_ALIGN);
 	if ((u8*)ptr + *psize == arena->top) {
@@ -79,14 +82,14 @@ void* lt_amrealloc(lt_arena_t* arena, void* ptr, usz new_size) {
 		return ptr;
 	}
 
-	void* new_ptr = lt_amalloc(arena, new_size);
+	void* new_ptr = LT_DEBUG_FWD(lt_amalloc, arena, new_size);
 	if (!new_ptr)
 		return NULL;
 	memcpy(new_ptr, ptr, *psize);
 	return new_ptr;
 }
 
-usz lt_amsize(lt_arena_t* arena, void* ptr) {
+usz lt_amsize LT_DEBUG_ARGS(lt_arena_t* arena, void* ptr) {
 	return *(usz*)((usz)ptr - LT_ALLOC_DEFAULT_ALIGN);
 }
 
