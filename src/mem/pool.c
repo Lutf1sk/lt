@@ -21,7 +21,7 @@ void* lt_pmrealloc_if LT_DEBUG_ARGS(lt_pool_t* pool, void* chunk, usz size) {
 	return chunk;
 }
 
-lt_pool_t* lt_pmcreatem(lt_alloc_t* parent, void* mem, usz size, usz chunk_size, usz flags) {
+lt_pool_t* lt_pmcreatem LT_DEBUG_ARGS(lt_alloc_t* parent, void* mem, usz size, usz chunk_size, usz flags) {
 	usz headersz = lt_align_fwd(sizeof(lt_pool_t), LT_ALLOC_DEFAULT_ALIGN);
 	if (size < headersz)
 		return NULL;
@@ -40,7 +40,7 @@ lt_pool_t* lt_pmcreatem(lt_alloc_t* parent, void* mem, usz size, usz chunk_size,
 	return pool;
 }
 
-lt_pool_t* lt_pmcreate(lt_alloc_t* parent, usz size, usz chunk_size, usz flags) {
+lt_pool_t* lt_pmcreate LT_DEBUG_ARGS(lt_alloc_t* parent, usz size, usz chunk_size, usz flags) {
 	usz headersz = lt_align_fwd(sizeof(lt_pool_t), LT_ALLOC_DEFAULT_ALIGN);
 	if (size < headersz)
 		return NULL;
@@ -48,22 +48,22 @@ lt_pool_t* lt_pmcreate(lt_alloc_t* parent, usz size, usz chunk_size, usz flags) 
 	void* base = NULL;
 	if (!parent) {
 		size = lt_align_fwd(size, lt_get_pagesize());
-		base = lt_vmalloc(size);
+		base = LT_DEBUG_FWD(lt_vmalloc, size);
 	}
 	else {
 		size = lt_align_fwd(size, LT_ALLOC_DEFAULT_ALIGN);
-		base = lt_malloc(parent, size);
+		base = LT_DEBUG_FWD(lt_malloc, parent, size);
 	}
 	if (!base)
 		return NULL;
-	return lt_pmcreatem(parent, base, size, chunk_size, flags);
+	return LT_DEBUG_FWD(lt_pmcreatem, parent, base, size, chunk_size, flags);
 }
 
-void lt_pmdestroy(lt_pool_t* pool) {
+void lt_pmdestroy LT_DEBUG_ARGS(lt_pool_t* pool) {
 	if (pool->parent)
-		lt_mfree(pool->parent, pool);
+		LT_DEBUG_FWD(lt_mfree, pool->parent, pool);
 	else
-		lt_vmfree(pool, pool->size);
+		LT_DEBUG_FWD(lt_vmfree, pool, pool->size);
 }
 
 void lt_pmreset(lt_pool_t* pool) {

@@ -1,7 +1,7 @@
 #include <lt/mem.h>
 #include <lt/align.h>
 
-lt_arena_t* lt_amcreatem(lt_alloc_t* parent, void* mem, usz size, usz flags) {
+lt_arena_t* lt_amcreatem LT_DEBUG_ARGS(lt_alloc_t* parent, void* mem, usz size, usz flags) {
 	if (size < sizeof(lt_arena_t))
 		return NULL;
 
@@ -15,30 +15,30 @@ lt_arena_t* lt_amcreatem(lt_alloc_t* parent, void* mem, usz size, usz flags) {
 	return arena;
 }
 
-lt_arena_t* lt_amcreate(lt_alloc_t* parent, usz size, usz flags) {
+lt_arena_t* lt_amcreate LT_DEBUG_ARGS(lt_alloc_t* parent, usz size, usz flags) {
 	if (size < sizeof(lt_arena_t))
 		return NULL;
 
 	void* base = NULL;
 	if (!parent) {
 		size = lt_align_fwd(size, lt_get_pagesize());
-		base = lt_vmalloc(size);
+		base = LT_DEBUG_FWD(lt_vmalloc, size);
 	}
 	else {
 		size = lt_align_fwd(size, LT_ALLOC_DEFAULT_ALIGN);
-		base = lt_malloc(parent, size);
+		base = LT_DEBUG_FWD(lt_malloc, parent, size);
 	}
 	if (!base)
 		return NULL;
 
-	return lt_amcreatem(parent, base, size, flags);
+	return LT_DEBUG_FWD(lt_amcreatem, parent, base, size, flags);
 }
 
-void lt_amdestroy(lt_arena_t* arena) {
+void lt_amdestroy LT_DEBUG_ARGS(lt_arena_t* arena) {
 	if (arena->parent)
-		lt_mfree(arena->parent, arena);
+		LT_DEBUG_FWD(lt_mfree, arena->parent, arena);
 	else
-		lt_vmfree(arena, arena->size);
+		LT_DEBUG_FWD(lt_vmfree, arena, arena->size);
 }
 
 void* lt_amsave(lt_arena_t* arena) {

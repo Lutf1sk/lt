@@ -22,8 +22,11 @@ extern usz (*lt_get_pagesize)(void);
 
 
 // vmem.c
-void* lt_vmalloc(usz size);
-void lt_vmfree(void* addr, usz size);
+void* lt_vmalloc LT_DEBUG_ARGS(usz size);
+void lt_vmfree LT_DEBUG_ARGS(void* addr, usz size);
+
+#define lt_vmalloc(...) LT_DEBUG_CALL(lt_vmalloc, __VA_ARGS__)
+#define lt_vmfree(...) LT_DEBUG_CALL(lt_vmfree, __VA_ARGS__)
 
 // alloc.c
 
@@ -104,9 +107,9 @@ struct lt_arena {
 	lt_alloc_t* parent;
 } lt_arena_t;
 
-lt_arena_t* lt_amcreatem(lt_alloc_t* parent, void* mem, usz size, usz flags);
-lt_arena_t* lt_amcreate(lt_alloc_t* parent, usz size, usz flags);
-void lt_amdestroy(lt_arena_t* arena);
+lt_arena_t* lt_amcreatem LT_DEBUG_ARGS(lt_alloc_t* parent, void* mem, usz size, usz flags);
+lt_arena_t* lt_amcreate LT_DEBUG_ARGS(lt_alloc_t* parent, usz size, usz flags);
+void lt_amdestroy LT_DEBUG_ARGS(lt_arena_t* arena);
 
 void* lt_amsave(lt_arena_t* arena);
 void lt_amrestore(lt_arena_t* arena, void* restore_point);
@@ -117,6 +120,16 @@ void* lt_amrealloc LT_DEBUG_ARGS(lt_arena_t* arena, void* ptr, usz new_size);
 usz lt_amsize LT_DEBUG_ARGS(lt_arena_t* arena, void* ptr);
 
 b8 lt_amleaked(lt_arena_t* arena);
+
+#define lt_amcreatem(...) LT_DEBUG_CALL(lt_amcreatem, __VA_ARGS__)
+#define lt_amcreate(...) LT_DEBUG_CALL(lt_amcreate, __VA_ARGS__)
+#define lt_amdestroy(...) LT_DEBUG_CALL(lt_amdestroy, __VA_ARGS__)
+
+#define lt_amalloc(...) LT_DEBUG_CALL(lt_amalloc, __VA_ARGS__)
+#define lt_amfree(...) LT_DEBUG_CALL(lt_amfree, __VA_ARGS__)
+#define lt_amrealloc(...) LT_DEBUG_CALL(lt_amrealloc, __VA_ARGS__)
+#define lt_amsize(...) LT_DEBUG_CALL(lt_amsize, __VA_ARGS__)
+
 
 // pool.c
 typedef struct lt_pool {
@@ -130,14 +143,22 @@ typedef struct lt_pool {
 	lt_alloc_t* parent;
 } lt_pool_t;
 
-lt_pool_t* lt_pmcreatem(lt_alloc_t* parent, void* mem, usz size, usz chunk_size, usz flags);
-lt_pool_t* lt_pmcreate(lt_alloc_t* parent, usz size, usz chunk_size, usz flags);
-void lt_pmdestroy(lt_pool_t* pool);
+lt_pool_t* lt_pmcreatem LT_DEBUG_ARGS(lt_alloc_t* parent, void* mem, usz size, usz chunk_size, usz flags);
+lt_pool_t* lt_pmcreate LT_DEBUG_ARGS(lt_alloc_t* parent, usz size, usz chunk_size, usz flags);
+void lt_pmdestroy LT_DEBUG_ARGS(lt_pool_t* pool);
 
 void lt_pmreset(lt_pool_t* pool);
 
 void* lt_pmalloc LT_DEBUG_ARGS(lt_pool_t* pool);
 void lt_pmfree LT_DEBUG_ARGS(lt_pool_t* pool, void* chunk);
 usz lt_pmsize LT_DEBUG_ARGS(lt_pool_t* pool, void* chunk);
+
+#define lt_pmcreatem(...) LT_DEBUG_CALL(lt_pmcreatem, __VA_ARGS__)
+#define lt_pmcreate(...) LT_DEBUG_CALL(lt_pmcreate, __VA_ARGS__)
+#define lt_pmdestroy(...) LT_DEBUG_CALL(lt_pmdestroy, __VA_ARGS__)
+
+#define lt_pmalloc(...) LT_DEBUG_CALL(lt_pmalloc, __VA_ARGS__)
+#define lt_pmfree(...) LT_DEBUG_CALL(lt_pmfree, __VA_ARGS__)
+#define lt_pmsize(...) LT_DEBUG_CALL(lt_pmsize, __VA_ARGS__)
 
 #endif
