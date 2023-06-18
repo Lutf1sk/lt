@@ -8,7 +8,7 @@
 #define LT_FRAME_PREV_ADDR(frame) (*(void**)(frame))
 #define LT_FRAME_RETURN_ADDR(frame) (*((void**)(frame) + 1))
 
-void lt_print_single_stack_frame(void* frame, usz addr);
+void lt_print_instr_ptr(usz addr);
 void lt_stack_trace(usz skip_frames);
 
 #define LT_DEBUG

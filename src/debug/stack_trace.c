@@ -9,19 +9,16 @@
 
 #include <lt/str.h>
 
-void lt_print_single_stack_frame(void* frame, usz addr) {
+void lt_print_instr_ptr(usz addr) {
 	lstr_t name = lt_debug_symname_at((void*)addr);
 	usz elf_vaddr = addr - lt_debug_load_addr;
-
-// 	for (isz i = -3; i < 4; ++i)
-// 		lt_printf("%iz:\t0x%hz (%S)\n", i, ((u64*)frame)[i], lt_debug_symname_at((void*)((u64*)frame)[i]));
 
 	lstr_t filename;
 	usz linenum;
 	if (lt_elf64_lookup_vaddr(lt_debug_executable, elf_vaddr, &linenum, &filename, NULL) == LT_SUCCESS)
-		lt_printf("\t["LT_FG_BCYAN"0x%hz"LT_RESET"] called from '"LT_BOLD"%S"LT_RESET"' in "LT_BOLD"%S:%uz"LT_RESET" \n", addr, name, filename, linenum);
+		lt_printf("\t["LT_FG_BCYAN"0x%hz"LT_RESET"] in function '"LT_BOLD"%S"LT_RESET"' in "LT_BOLD"%S:%uz"LT_RESET" \n", addr, name, filename, linenum);
 	else
-		lt_printf("\t["LT_FG_BCYAN"0x%hz"LT_RESET"] called from '"LT_BOLD"%S"LT_RESET"'\n", addr, name);
+		lt_printf("\t["LT_FG_BCYAN"0x%hz"LT_RESET"] in function '"LT_BOLD"%S"LT_RESET"'\n", addr, name);
 }
 
 void lt_stack_trace(usz skip_frames) {
@@ -33,7 +30,7 @@ void lt_stack_trace(usz skip_frames) {
 	if (!lt_debug_executable) {
 		while (frame > MIN_FRAME) {
 			usz ret_addr = (usz)LT_FRAME_RETURN_ADDR(frame) - 1; // Subtract one, since a call instruction always pushes the adress of the NEXT instruction
-			lt_printf("\t["LT_FG_BCYAN"0x%hz"LT_RESET"] called from '"LT_BOLD"<unknown>"LT_RESET"'\n", ret_addr);
+			lt_printf("\t["LT_FG_BCYAN"0x%hz"LT_RESET"] in function '"LT_BOLD"<unknown>"LT_RESET"'\n", ret_addr);
 			frame = LT_FRAME_PREV_ADDR(frame);
 		}
 		return;
@@ -41,7 +38,7 @@ void lt_stack_trace(usz skip_frames) {
 
 	while (frame > MIN_FRAME) {
 		usz ret_addr = (usz)LT_FRAME_RETURN_ADDR(frame) - 1; // Subtract one, since a call instruction always pushes the adress of the NEXT instruction
-		lt_print_single_stack_frame(frame, ret_addr);
+		lt_print_instr_ptr(ret_addr);
 		frame = LT_FRAME_PREV_ADDR(frame);
 	}
 	return;
