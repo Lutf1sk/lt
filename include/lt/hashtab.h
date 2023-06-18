@@ -1,4 +1,7 @@
-#include <lt/bits.h>
+#ifndef LT_HASHTAB_H
+#define LT_HASHTAB_H 1
+
+#include <lt/math.h>
 #include <lt/fwd.h>
 
 #define LT_HASHTAB_SIZE 256
@@ -47,3 +50,4 @@ u32 lt_hash(void* _mem, usz size) {
 	return hash;
 }
 
+#endif

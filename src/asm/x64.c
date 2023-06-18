@@ -1,7 +1,7 @@
 #include <lt/asm.h>
 #include <lt/mem.h>
 #include <lt/str.h>
-#include <lt/bits.h>
+#include <lt/math.h>
 
 #define SZ_1 0
 #define SZ_2 1

@@ -1,6 +1,6 @@
 #include <lt/img.h>
 #include <lt/lt.h>
-#include <lt/bits.h>
+#include <lt/math.h>
 #include <lt/mem.h>
 
 typedef
