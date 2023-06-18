@@ -36,5 +36,5 @@ usz lt_libc_msize LT_DEBUG_ARGS(void* usr, void* mem) {
 	return MSIZE(mem);
 }
 
-static lt_alloc_t lt_libc_heap_ = LT_ALLOC_INTERFACE(lt_libc_malloc, lt_libc_free, lt_libc_realloc, lt_libc_msize);
+static lt_alloc_t lt_libc_heap_ = LT_ALLOC_INTERFACE_INIT(lt_libc_malloc, lt_libc_free, lt_libc_realloc, lt_libc_msize);
 lt_alloc_t* lt_libc_heap = &lt_libc_heap_;

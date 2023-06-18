@@ -4,6 +4,18 @@
 #include <lt/lt.h>
 #include <lt/debug.h>
 
+#define LT_PI 3.14159265
+#define LT_TAU (LT_PI * 2.0)
+
+#define LT_RAD_HALF LT_PI
+#define LT_RAD_MAX LT_TAU
+
+#define LT_RADDEG_MULT (180.0 / LT_PI)
+#define LT_DEGRAD_MULT (1.0 / LT_RADDEG_MULT)
+
+#define LT_RADTODEG(r) (r * LT_RADDEG_MULT)
+#define LT_DEGTORAD(d) (d * LT_DEGRAD_MULT)
+
 #define LT_DEFINE_MAX(T) static LT_INLINE T lt_max_##T (T a, T b) { return a > b ? a : b; }
 LT_DEFINE_MAX(u8)
 LT_DEFINE_MAX(u16)
@@ -90,6 +102,18 @@ i64 lt_sign_ext(i64 v, usz bytes) {
 	default: LT_ASSERT_NOT_REACHED(); return 0;
 	}
 }
+
+#define LT_ADDPTR(p, a) ((void*)((usz)(p) + (isz)(a)))
+#define LT_SUBPTR(p, a) ((void*)((usz)(p) - (isz)(a)))
+#define LT_MULPTR(p, a) ((void*)((usz)(p) * (isz)(a)))
+#define LT_DIVPTR(p, a) ((void*)((usz)(p) / (isz)(a)))
+#define LT_MODPTR(p, a) ((void*)((usz)(p) % (isz)(a)))
+#define LT_SHLPTR(p, a) ((void*)((usz)(p) << (isz)(a)))
+#define LT_SHRPTR(p, a) ((void*)((usz)(p) >> (isz)(a)))
+#define LT_ANDPTR(p, a) ((void*)((usz)(p) & (isz)(a)))
+#define LT_ORPTR(p, a) ((void*)((usz)(p) | (isz)(a)))
+#define LT_NOTPTR(p) ((void*)~(usz)(p))
+#define LT_NEGPTR(p) ((void*)-(usz)(p))
 
 
 #endif

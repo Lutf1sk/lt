@@ -215,7 +215,7 @@ lt_err_t lt_conf_parse(lt_conf_t* cf, void* data, usz len, lt_conf_err_info_t* e
 	cx.alloc = alloc;
 	cx.err_info = err_info;
 	cx.begin = data;
-	cx.end = data + len;
+	cx.end = LT_ADDPTR(data, len);
 	cx.it = data;
 
 	skip_whitespace(&cx);

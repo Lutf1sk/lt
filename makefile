@@ -79,7 +79,7 @@ endif
 # -----
 DEPS = $(patsubst %.o,%.d,$(OBJS))
 
-CC_FLAGS += -Wall -I./ -I./include/ -masm=intel -Ofast -fno-omit-frame-pointer -Wall -Werror -Wno-strict-aliasing -Wno-error=unused-variable -Wno-unused-function -Wno-pedantic
+CC_FLAGS += -Wall -I./ -I./include/ -masm=intel -Ofast -fno-omit-frame-pointer -Wall -Werror -Wno-strict-aliasing -Wno-error=unused-variable -Wno-unused-function -std=gnu2x -fmax-errors=3
 LNK_FLAGS += -L$(BASE_DIR)/bin
 
 OUT_PATH = $(LIB)

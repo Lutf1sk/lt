@@ -40,9 +40,9 @@ void lt_darr_erase LT_DEBUG_ARGS(void* arr, usz start_idx, usz count) {
 	lt_darr_t* head = lt_darr_head(arr);
 	LT_ASSERT(start_idx <= head->count && start_idx + count <= head->count);
 
-	void* start_ptr = (u8*)arr + start_idx * head->elem_size;
-	void* end_ptr = (u8*)start_ptr + count * head->elem_size;
-	void* arr_end_ptr = (u8*)arr + head->count * head->elem_size;
+	u8* start_ptr = (u8*)arr + start_idx * head->elem_size;
+	u8* end_ptr = start_ptr + count * head->elem_size;
+	u8* arr_end_ptr = (u8*)arr + head->count * head->elem_size;
 
 	memmove(start_ptr, end_ptr, arr_end_ptr - end_ptr);
 
@@ -59,9 +59,9 @@ void* lt_darr_insert_ LT_DEBUG_ARGS(void* arr, usz idx, void* data, usz count) {
 	head = lt_darr_head(arr);
 
 	usz size = count * head->elem_size;
-	void* start_ptr = (u8*)arr + (idx * head->elem_size);
-	void* end_ptr = (u8*)start_ptr + size;
-	void* arr_end_ptr = (u8*)arr + old_count * head->elem_size;
+	u8* start_ptr = (u8*)arr + (idx * head->elem_size);
+	u8* end_ptr = start_ptr + size;
+	u8* arr_end_ptr = (u8*)arr + old_count * head->elem_size;
 
 	memmove(end_ptr, start_ptr, arr_end_ptr - start_ptr);
 	memcpy(start_ptr, data, size);

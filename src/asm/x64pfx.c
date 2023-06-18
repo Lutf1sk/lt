@@ -49,19 +49,19 @@ struct lt_x64_pfx {
 
 static
 lt_x64_pfx_t legacy_pfxs[LPFX_COUNT] = {
-	{ CLSTR("lock"),				LPFX_LOCK,		LPFX_LOCK_BIT		},
-	{ CLSTR("repnz"),				LPFX_REPNZ,		LPFX_REPNZ_BIT		},
-	{ CLSTR("rep"),					LPFX_REP,		LPFX_REP_BIT		},
-	{ CLSTR("cs"),					LPFX_CS_OVERR,	LPFX_CS_OVERR_BIT	},
-	{ CLSTR("ss"),					LPFX_SS_OVERR,	LPFX_SS_OVERR_BIT	},
-	{ CLSTR("ds"),					LPFX_DS_OVERR,	LPFX_DS_OVERR_BIT	},
-	{ CLSTR("es"),					LPFX_ES_OVERR,	LPFX_ES_OVERR_BIT	},
-	{ CLSTR("fs"),					LPFX_FS_OVERR,	LPFX_FS_OVERR_BIT	},
-	{ CLSTR("gs"),					LPFX_GS_OVERR,	LPFX_GS_OVERR_BIT	},
-	{ CLSTR("branch_taken"),		LPFX_BTAKEN,	LPFX_BTAKEN_BIT		},
-	{ CLSTR("branch_not_taken"),	LPFX_NOBTAKEN,	LPFX_NOBTAKEN_BIT	},
-	{ CLSTR("opsz"),				LPFX_OPSZ,		LPFX_OPSZ_BIT		},
-	{ CLSTR("addrsz"),				LPFX_ADDRSZ,	LPFX_ADDRSZ_BIT		},
+	{ CLSTRI("lock"),				LPFX_LOCK,		LPFX_LOCK_BIT		},
+	{ CLSTRI("repnz"),				LPFX_REPNZ,		LPFX_REPNZ_BIT		},
+	{ CLSTRI("rep"),				LPFX_REP,		LPFX_REP_BIT		},
+	{ CLSTRI("cs"),					LPFX_CS_OVERR,	LPFX_CS_OVERR_BIT	},
+	{ CLSTRI("ss"),					LPFX_SS_OVERR,	LPFX_SS_OVERR_BIT	},
+	{ CLSTRI("ds"),					LPFX_DS_OVERR,	LPFX_DS_OVERR_BIT	},
+	{ CLSTRI("es"),					LPFX_ES_OVERR,	LPFX_ES_OVERR_BIT	},
+	{ CLSTRI("fs"),					LPFX_FS_OVERR,	LPFX_FS_OVERR_BIT	},
+	{ CLSTRI("gs"),					LPFX_GS_OVERR,	LPFX_GS_OVERR_BIT	},
+	{ CLSTRI("branch_taken"),		LPFX_BTAKEN,	LPFX_BTAKEN_BIT		},
+	{ CLSTRI("branch_not_taken"),	LPFX_NOBTAKEN,	LPFX_NOBTAKEN_BIT	},
+	{ CLSTRI("opsz"),				LPFX_OPSZ,		LPFX_OPSZ_BIT		},
+	{ CLSTRI("addrsz"),				LPFX_ADDRSZ,	LPFX_ADDRSZ_BIT		},
 };
 
 static

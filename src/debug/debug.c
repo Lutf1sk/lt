@@ -20,10 +20,6 @@ void handle_sigsegv(int sig, siginfo_t* si, void* usr) {
 	ucontext_t* c = usr;
 	void* instr_addr = (void*)c->uc_mcontext.gregs[REG_RIP];
 
-	lstr_t func = lt_debug_symname_at(instr_addr);
-
-	lstr_t filename;
-	usz linenum;
 	lt_printf(LT_FG_BRED"error"LT_RESET": segmentation fault accessing "LT_FG_BCYAN"0x%hz"LT_RESET"\n", (usz)si->si_addr);
 	lt_print_single_stack_frame(NULL, (usz)instr_addr);
 	lt_stack_trace(2);
@@ -51,7 +47,7 @@ void lt_debug_init(void) {
 	lt_debug_load_addr = (usz)lt_stack_trace - sym->value;
 
 	// Register signal handlers
-	struct sigaction sact = {0};
+	struct sigaction sact = {};
 	sigemptyset(&sact.sa_mask);
 	sact.sa_flags = SA_SIGINFO;
 	sact.sa_sigaction = handle_sigsegv;

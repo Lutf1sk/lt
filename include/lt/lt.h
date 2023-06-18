@@ -62,6 +62,10 @@ struct lstr {
 	usz len;
 } lstr_t;
 
+#define LSTRI(s, l) { (s), l }
+#define CLSTRI(s) { (s), sizeof((s)) - 1 }
+#define NLSTRI() { NULL, 0 }
+
 #define LSTR(s, l) ((lstr_t){ (s), l })
 #define CLSTR(s) ((lstr_t){ (s), sizeof((s)) - 1 })
 #define NLSTR() ((lstr_t){ NULL, 0 })

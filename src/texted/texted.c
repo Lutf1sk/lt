@@ -436,7 +436,7 @@ isz lt_texted_write_selection(lt_texted_t* ed, lt_io_callback_t callb, void* usr
 	usz x1, y1, x2, y2;
 	if (!lt_texted_get_selection(ed, &x1, &y1, &x2, &y2))
 		return 0;
-	return lt_texted_write_range(ed, x1, y1, x2, y2, usr, callb);
+	return lt_texted_write_range(ed, x1, y1, x2, y2, callb, usr);
 }
 
 void lt_texted_erase_selection(lt_texted_t* ed) {

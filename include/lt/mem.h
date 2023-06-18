@@ -44,6 +44,8 @@ struct lt_alloc {
 	lt_size_callback_t size;
 } lt_alloc_t;
 
+#define LT_ALLOC_INTERFACE_INIT(alloc, free, realloc, size) \
+		{ (lt_alloc_callback_t)(alloc), (lt_free_callback_t)(free), (lt_realloc_callback_t)(realloc), (lt_size_callback_t)(size) }
 #define LT_ALLOC_INTERFACE(alloc, free, realloc, size) \
 		((lt_alloc_t){ (lt_alloc_callback_t)(alloc), (lt_free_callback_t)(free), (lt_realloc_callback_t)(realloc), (lt_size_callback_t)(size) })
 

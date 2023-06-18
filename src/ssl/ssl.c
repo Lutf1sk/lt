@@ -1,6 +1,6 @@
-#ifdef LT_SSL
-
 #include <lt/ssl.h>
+
+#ifdef LT_SSL
 
 #include <openssl/ssl.h>
 #include <openssl/err.h>

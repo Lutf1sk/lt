@@ -3,8 +3,8 @@
 
 static
 lstr_t strtab[LT_ERR_MAX] = {
-	CLSTR("SUCCESS"),
-#define LT_ERR_OP(x) CLSTR(#x),
+	CLSTRI("SUCCESS"),
+#define LT_ERR_OP(x) CLSTRI(#x),
 	LT_FOR_EACH_ERR()
 #undef LT_ERR_OP
 };

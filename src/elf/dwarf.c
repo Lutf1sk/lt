@@ -86,7 +86,7 @@ lt_err_t lt_elf64_lookup_vaddr(lt_elf64_t* e, usz vaddr, usz* out_line, lstr_t* 
 		if (it >= (u8*)&p->version + p->unit_len) {
 			lt_darr_destroy(filenames);
 
-			if ((void*)it < lt_elf64_offs(e, e->dbgline_sh->offset) + e->dbgline_sh->size)
+			if (it < (u8*)lt_elf64_offs(e, e->dbgline_sh->offset) + e->dbgline_sh->size)
 				return lt_elf64_lookup_vaddr(e, vaddr, out_line, out_file_name, it);
 			else
 				return LT_ERR_NOT_FOUND;

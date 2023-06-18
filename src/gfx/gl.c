@@ -13,7 +13,7 @@
 
 // gfx
 
-static lstr_t vert_src = CLSTR(
+static lstr_t vert_src = CLSTRI(
 	"#version 440\n"
 	"layout(location = 0) in vec3 in_pos;"
 	"layout(location = 1) in vec2 in_uv;"
@@ -32,7 +32,7 @@ static lstr_t vert_src = CLSTR(
 	"}"
 );
 
-static lstr_t frag_src = CLSTR(
+static lstr_t frag_src = CLSTRI(
 	"#version 440\n"
 	"layout(location = 0) in vec2 in_uv;"
 	"layout(location = 0) out vec4 out_color;"
