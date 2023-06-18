@@ -1,6 +1,7 @@
 #include <lt/elf.h>
 #include <lt/mem.h>
 #include <lt/str.h>
+#include <lt/debug.h>
 
 b8 lt_elf_verify_magic(void* fh) {
 	return memcmp(fh, (u8[]){ 0x7F,'E','L','F' }, 4) == 0;

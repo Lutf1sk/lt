@@ -1,5 +1,6 @@
 #include <lt/mem.h>
 #include <lt/lt.h>
+#include <lt/debug.h>
 
 #ifdef LT_UNIX
 #	include <sys/mman.h>
@@ -17,16 +18,16 @@
 #	define MAP_PAGES_ERROR NULL
 #endif
 
-void* lt_vmalloc LT_DEBUG_ARGS(usz size) {
+void* lt_vmalloc(usz size) {
 	void* mem = MAP_PAGES(size);
 	if (mem == MAP_PAGES_ERROR) {
-		LT_DEBUG_WERR("virtual memory mapping failed\n");
+		lt_werrf("virtual memory mapping failed\n");
 		return NULL;
 	}
 	return mem;
 }
 
-void lt_vmfree LT_DEBUG_ARGS(void* addr, usz size) {
+void lt_vmfree(void* addr, usz size) {
 	UNMAP_PAGES(addr, size);
 }
 

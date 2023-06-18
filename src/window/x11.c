@@ -2,6 +2,7 @@
 
 #if defined(LT_X11)
 #	include <lt/mem.h>
+#	include <lt/debug.h>
 #	include <X11/Xlib-xcb.h>
 #	include <X11/keysym.h>
 #	include <X11/XKBlib.h>

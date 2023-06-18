@@ -1,6 +1,7 @@
 #include <lt/gui.h>
 #include <lt/mem.h>
 #include <lt/str.h>
+#include <lt/debug.h>
 
 static
 lt_gui_style_t lt_gui_default_style_ = {
