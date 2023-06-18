@@ -2,6 +2,7 @@
 #define LT_ELF_H 1
 
 #include <lt/lt.h>
+#include <lt/err.h>
 
 #define LT_ELF_VERSION_CURRENT 1
 
@@ -295,5 +296,50 @@ LT_PACKED_STRUCT(lt_elf64_dyn) {
 	i64 type;
 	u64 val;
 } lt_elf64_dyn_t;
+
+
+typedef
+struct lt_elf64 {
+	lt_elf64_fh_t* fh;
+	void* base;
+	usz size;
+
+	lt_elf64_sh_t* sh_strtab_sh;
+	lt_elf64_sh_t* sym_strtab_sh;
+
+	lt_elf64_sym_t* symtab;
+	usz sym_count;
+
+	lt_elf64_sh_t* dbgline_sh;
+	lt_elf64_sh_t* dbgline_strtab_sh;
+} lt_elf64_t;
+
+static LT_INLINE
+lt_elf64_sh_t* lt_elf64_sh(lt_elf64_t* e, usz i) {
+	return (void*)((usz)e->fh + e->fh->sh_offset + e->fh->sh_size * i);
+}
+
+static LT_INLINE
+lt_elf64_ph_t* lt_elf64_ph(lt_elf64_t* e, usz i) {
+	return (void*)((usz)e->fh + e->fh->ph_offset + e->fh->ph_size * i);
+}
+
+static LT_INLINE
+void* lt_elf64_offs(lt_elf64_t* e, usz offs) {
+	return (void*)((usz)e->base + offs);
+}
+
+lstr_t lt_elf64_str(lt_elf64_t* e, lt_elf64_sh_t* strtab_sh, usz offs);
+
+void lt_elf64_init(void* data, usz size, lt_elf64_t* e);
+
+usz lt_elf64_vaddr_to_offs(lt_elf64_t* e, usz vaddr);
+
+lt_elf64_sh_t* lt_elf64_sh_by_name(lt_elf64_t* e, lstr_t name);
+
+lt_elf64_sym_t* lt_elf64_sym_by_name(lt_elf64_t* e, lstr_t name);
+lt_elf64_sym_t* lt_elf64_sym_by_vaddr(lt_elf64_t* e, usz vaddr);
+
+lt_err_t lt_elf64_lookup_vaddr(lt_elf64_t* e, usz vaddr, usz* out_line, lstr_t* out_file_name, void*);
 
 #endif

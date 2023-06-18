@@ -4,6 +4,7 @@
 #include <lt/fwd.h>
 #include <lt/lt.h>
 #include <lt/align.h>
+#include <lt/debug.h>
 
 typedef
 struct lt_darr {

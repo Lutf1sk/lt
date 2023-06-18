@@ -2,6 +2,7 @@
 #define LT_BITS_H 1
 
 #include <lt/lt.h>
+#include <lt/debug.h>
 
 #define LT_DEF_ROTL(bits) \
 	static LT_INLINE \

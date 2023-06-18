@@ -1,4 +1,5 @@
 #include <lt/err.h>
+#include <lt/debug.h>
 
 static
 lstr_t strtab[LT_ERR_MAX] = {

@@ -8,6 +8,12 @@ OBJS = \
 	src/conf/conf.o \
 	src/ctype/ctype.o \
 	src/darr/darr.o \
+	src/debug/assert.o \
+	src/debug/breakpoint.o \
+	src/debug/debug.o \
+	src/debug/stack_trace.o \
+	src/dwarf/dwarf.o \
+	src/elf/dwarf.o \
 	src/elf/elf.o \
 	src/err/err.o \
 	src/font/font.o \
@@ -29,9 +35,6 @@ OBJS = \
 	src/io/str.o \
 	src/json/json.o \
 	src/linalg/matrix.o \
-	src/lt/assert.o \
-	src/lt/backtrace.o \
-	src/lt/breakpoint.o \
 	src/lt/dynl.o \
 	src/lt/err.o \
 	src/mem/arena.o \
@@ -76,7 +79,7 @@ endif
 # -----
 DEPS = $(patsubst %.o,%.d,$(OBJS))
 
-CC_FLAGS += -Wall -I./ -I./include/ -masm=intel -Ofast
+CC_FLAGS += -Wall -I./ -I./include/ -masm=intel -Ofast -fno-omit-frame-pointer -Wall -Werror -Wno-strict-aliasing -Wno-error=unused-variable -Wno-unused-function -Wno-pedantic
 LNK_FLAGS += -L$(BASE_DIR)/bin
 
 OUT_PATH = $(LIB)

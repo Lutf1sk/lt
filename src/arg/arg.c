@@ -1,5 +1,6 @@
 #include <lt/arg.h>
 #include <lt/str.h>
+#include <lt/debug.h>
 
 lt_arg_iterator_t lt_arg_iterator_create(int argc, char** argv) {
 	lt_arg_iterator_t it;

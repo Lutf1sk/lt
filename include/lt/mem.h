@@ -2,6 +2,7 @@
 #define LT_MEM_H
 
 #include <lt/lt.h>
+#include <lt/debug.h>
 
 #define LT_ALLOC_DEFAULT_ALIGN 16
 

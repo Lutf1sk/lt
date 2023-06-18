@@ -68,4 +68,16 @@ typedef union lt_mat2 lt_mat2_t;
 typedef union lt_mat3 lt_mat3_t;
 typedef union lt_mat4 lt_mat4_t;
 
+// elf.h
+typedef struct lt_elf64_fh lt_elf64_fh_t;
+typedef struct lt_elf32_fh lt_elf32_fh_t;
+typedef struct lt_elf64_ph lt_elf64_ph_t;
+typedef struct lt_elf32_ph lt_elf32_ph_t;
+typedef struct lt_elf64_sh lt_elf64_sh_t;
+typedef struct lt_elf32_sh lt_elf32_sh_t;
+typedef struct lt_elf64_sym lt_elf64_sym_t;
+typedef struct lt_elf32_sym lt_elf32_sym_t;
+typedef struct lt_elf64_dyn lt_elf64_dyn_t;
+typedef struct lt_elf64 lt_elf64_t;
+
 #endif
