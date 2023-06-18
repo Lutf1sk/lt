@@ -93,6 +93,7 @@ lt_err_t lt_gfx_create(lt_gfx_t* gfx, lt_window_t* win, lt_alloc_t* alloc) {
 		1.0f, 1.0f,
 	};
 	rect_model.index_count = 6;
+	rect_model.normals = NULL;
 	rect_model.indices = (u32[]) { 0, 1, 2, 3, 2, 1 };
 
 	if ((err = lt_mesh_create(gfx, &gfx->rect_mesh, &rect_model)))
