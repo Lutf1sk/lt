@@ -2,6 +2,7 @@
 #define LT_MEM_H
 
 #include <lt/lt.h>
+#include <lt/debug.h>
 
 #define LT_ALLOC_DEFAULT_ALIGN 16
 
@@ -27,28 +28,44 @@ void lt_vmfree(void* addr, usz size);
 
 // alloc.c
 
+typedef void*(*lt_alloc_for_caller_callback_t)(void* usr, usz size, void* caller);
 typedef void*(*lt_alloc_callback_t)(void* usr, usz size);
 typedef void(*lt_free_callback_t)(void* usr, void* mem);
+typedef void*(*lt_realloc_for_caller_callback_t)(void* usr, void* mem, usz size, void* caller);
 typedef void*(*lt_realloc_callback_t)(void* usr, void* mem, usz size);
 typedef void*(*lt_size_callback_t)(void* usr, void* mem);
 
 typedef
 struct lt_alloc {
 	lt_alloc_callback_t alloc;
+	lt_alloc_for_caller_callback_t alloc_for_caller;
 	lt_free_callback_t free;
 	lt_realloc_callback_t realloc;
+	lt_realloc_for_caller_callback_t realloc_for_caller;
 	lt_size_callback_t size;
 } lt_alloc_t;
 
-#define LT_ALLOC_INTERFACE_INIT(alloc, free, realloc, size) \
-		{ (lt_alloc_callback_t)(alloc), (lt_free_callback_t)(free), (lt_realloc_callback_t)(realloc), (lt_size_callback_t)(size) }
-#define LT_ALLOC_INTERFACE(alloc, free, realloc, size) \
-		((lt_alloc_t){ (lt_alloc_callback_t)(alloc), (lt_free_callback_t)(free), (lt_realloc_callback_t)(realloc), (lt_size_callback_t)(size) })
+#define LT_ALLOC_INTERFACE_INIT(alloc, alloc_for_caller, free, realloc, realloc_for_caller, size) { \
+		(lt_alloc_callback_t)(alloc), \
+		(lt_alloc_for_caller_callback_t)(alloc_for_caller), \
+		(lt_free_callback_t)(free), \
+		(lt_realloc_callback_t)(realloc), \
+		(lt_realloc_for_caller_callback_t)(realloc_for_caller), \
+		(lt_size_callback_t)(size) \
+	}
+#define LT_ALLOC_INTERFACE(alloc, alloc_for_caller, free, realloc, realloc_for_caller, size) ((lt_alloc_t) { \
+		(lt_alloc_callback_t)(alloc), \
+		(lt_alloc_for_caller_callback_t)(alloc_for_caller), \
+		(lt_free_callback_t)(free), \
+		(lt_realloc_callback_t)(realloc), \
+		(lt_realloc_for_caller_callback_t)(realloc_for_caller), \
+		(lt_size_callback_t)(size) \
+	})
 
-static LT_INLINE
+static LT_NOINLINE
 void* lt_malloc(void* alloc_, usz size) {
 	lt_alloc_t* alloc = alloc_;
-	return alloc->alloc(alloc, size);
+	return alloc->alloc_for_caller(alloc, size, (u8*)LT_RETURN_ADDR - 1);
 }
 
 static LT_INLINE
@@ -57,10 +74,10 @@ void lt_mfree(void* alloc_, void* mem) {
 	alloc->free(alloc, mem);
 }
 
-static LT_INLINE
+static LT_NOINLINE
 void* lt_mrealloc(void* alloc_, void* mem, usz size) {
 	lt_alloc_t* alloc = alloc_;
-	return alloc->realloc(alloc, mem, size);
+	return alloc->realloc_for_caller(alloc, mem, size, (u8*)LT_RETURN_ADDR - 1);
 }
 
 static LT_INLINE
@@ -69,10 +86,10 @@ void* lt_msize(void* alloc_, void* mem) {
 	return alloc->size(alloc, mem);
 }
 
-static LT_INLINE
+static LT_NOINLINE
 void* lt_memdup(void* alloc_, void* mem, usz size) {
 	lt_alloc_t* alloc = alloc_;
-	void* newmem = lt_malloc(alloc, size);
+	void* newmem = alloc->alloc_for_caller(alloc, size, (u8*)LT_RETURN_ADDR - 1);
 	if (!newmem)
 		return NULL;
 	memcpy(newmem, mem, size);
@@ -107,11 +124,13 @@ void* lt_amsave(lt_arena_t* arena);
 void lt_amrestore(lt_arena_t* arena, void* restore_point);
 
 void* lt_amalloc(lt_arena_t* arena, usz size);
+void* lt_amalloc_for_caller(lt_arena_t* arena, usz size, void* caller);
 void lt_amfree(lt_arena_t* arena, void* ptr);
 void* lt_amrealloc(lt_arena_t* arena, void* ptr, usz new_size);
+void* lt_amrealloc_for_caller(lt_arena_t* arena, void* ptr, usz new_size, void* caller);
 usz lt_amsize(lt_arena_t* arena, void* ptr);
 
-b8 lt_amleaked(lt_arena_t* arena);
+void lt_amleak_check(lt_arena_t* arena);
 
 
 // pool.c

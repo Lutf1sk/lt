@@ -7,6 +7,7 @@
 #define LT_FRAME_ADDR __builtin_frame_address(0)
 #define LT_FRAME_PREV_ADDR(frame) (*(void**)(frame))
 #define LT_FRAME_RETURN_ADDR(frame) (*((void**)(frame) + 1))
+#define LT_RETURN_ADDR LT_FRAME_RETURN_ADDR(LT_FRAME_ADDR)
 
 void lt_print_instr_ptr(usz addr);
 void lt_stack_trace(usz skip_frames);

@@ -35,7 +35,7 @@ lt_pool_t* lt_pmcreatem(lt_alloc_t* parent, void* mem, usz size, usz chunk_size,
 	pool->head = NULL;
 	pool->flags = flags;
 	pool->parent = parent;
-	pool->interf = LT_ALLOC_INTERFACE(lt_pmalloc_if, lt_pmfree, lt_pmrealloc_if, lt_pmsize);
+	pool->interf = LT_ALLOC_INTERFACE(lt_pmalloc_if, lt_pmalloc_if, lt_pmfree, lt_pmrealloc_if, lt_pmrealloc_if, lt_pmsize);
 
 	lt_pmreset(pool);
 	return pool;

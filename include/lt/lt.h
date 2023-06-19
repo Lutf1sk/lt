@@ -39,6 +39,7 @@
 #	define ATTRIB(a) __attribute__((a))
 
 #	define LT_INLINE inline ATTRIB(always_inline)
+#	define LT_NOINLINE ATTRIB(noinline)
 #	define LT_FLATTEN ATTRIB(flatten)
 #	define LT_PACKED_STRUCT(name) struct ATTRIB(packed) name
 #	define LT_NORETURN ATTRIB(noreturn)
@@ -46,6 +47,7 @@
 #	define LT_NONNULL ATTRIB(nonnull)
 #elif defined(LT_MSVC)
 #	define LT_INLINE inline __forceinline
+#	define LT_NOINLINE __declspec(noinline)
 #	define LT_FLATTEN
 #	define LT_PACKED_STRUCT(name) __pragma(pack(push, 1)) struct name __pragma(pack(pop))
 #	define LT_NORETURN __declspec(noreturn)

@@ -1,6 +1,24 @@
 #include <lt/mem.h>
 #include <lt/align.h>
 #include <lt/debug.h>
+#include <lt/math.h>
+
+typedef
+struct node {
+	usz size;
+	usz caller;
+	u8 free;
+} node_t;
+
+static LT_INLINE
+node_t* node_from_ptr(void* ptr) {
+	return LT_SUBPTR(ptr, lt_align_fwd(sizeof(node_t), LT_ALLOC_DEFAULT_ALIGN));
+}
+
+static LT_INLINE
+void* ptr_from_node(node_t* ptr) {
+	return LT_ADDPTR(ptr, lt_align_fwd(sizeof(node_t), LT_ALLOC_DEFAULT_ALIGN));
+}
 
 lt_arena_t* lt_amcreatem(lt_alloc_t* parent, void* mem, usz size, usz flags) {
 	if (size < sizeof(lt_arena_t))
@@ -9,10 +27,10 @@ lt_arena_t* lt_amcreatem(lt_alloc_t* parent, void* mem, usz size, usz flags) {
 	lt_arena_t* arena = mem;
 	arena->base = mem;
 	arena->size = size;
-	arena->top = (u8*)mem + sizeof(lt_arena_t);
+	arena->top = (u8*)mem + lt_align_fwd(sizeof(lt_arena_t), LT_ALLOC_DEFAULT_ALIGN);
 	arena->flags = flags;
 	arena->parent = parent;
-	arena->interf = LT_ALLOC_INTERFACE(lt_amalloc, lt_amfree, lt_amrealloc, lt_amsize);
+	arena->interf = LT_ALLOC_INTERFACE(lt_amalloc, lt_amalloc_for_caller, lt_amfree, lt_amrealloc, lt_amrealloc_for_caller, lt_amsize);
 	return arena;
 }
 
@@ -50,51 +68,85 @@ void lt_amrestore(lt_arena_t* arena, void* restore_point) {
 	arena->top = restore_point;
 }
 
-void* lt_amalloc(lt_arena_t* arena, usz size) {
-	u8* start = (u8*)lt_align_fwd((usz)arena->top, LT_ALLOC_DEFAULT_ALIGN);
-	u8* data_start = start + LT_ALLOC_DEFAULT_ALIGN;
+void* lt_amalloc_for_caller(lt_arena_t* arena, usz size, void* caller) {
+	size = lt_align_fwd(size, LT_ALLOC_DEFAULT_ALIGN);
+
+	node_t* start = arena->top;
+	u8* data_start = ptr_from_node(start);
 	u8* new_top = data_start + size;
 	if (new_top > (u8*)arena->base + arena->size) {
 		lt_werrf("arena allocation failed, not enough memory\n");
 		return NULL;
 	}
-	*(usz*)start = size;
+	start->size = size;
+	start->caller = (usz)caller;
+	start->free = 0;
 	arena->top = new_top;
 	return data_start;
 }
 
-void lt_amfree(lt_arena_t* arena, void* ptr) {
-	usz* psize = (usz*)((usz)ptr - LT_ALLOC_DEFAULT_ALIGN);
-	if ((u8*)ptr + *psize == arena->top)
-		arena->top = psize;
+LT_FLATTEN
+void* lt_amalloc(lt_arena_t* arena, usz size) {
+	return lt_amalloc_for_caller(arena, size, LT_RETURN_ADDR - 1);
 }
 
-void* lt_amrealloc(lt_arena_t* arena, void* ptr, usz new_size) {
-	if (!ptr)
-		return lt_amalloc(arena, new_size);
+void lt_amfree(lt_arena_t* arena, void* ptr) {
+	node_t* node = node_from_ptr(ptr);
+	if (node->free)
+		lt_werrf("called mfree on free'd block\n");
 
-	usz* psize = (usz*)((usz)ptr - LT_ALLOC_DEFAULT_ALIGN);
-	if ((u8*)ptr + *psize == arena->top) {
+	node->free = 1;
+	if ((u8*)ptr + node->size == arena->top)
+		arena->top = node;
+}
+
+void* lt_amrealloc_for_caller(lt_arena_t* arena, void* ptr, usz new_size, void* caller) {
+	if (!ptr)
+		return lt_amalloc_for_caller(arena, new_size, caller);
+
+	new_size = lt_align_fwd(new_size, LT_ALLOC_DEFAULT_ALIGN);
+
+	node_t* node = node_from_ptr(ptr);
+	if (node->free)
+		lt_werrf("called mrealloc on free'd block\n");
+
+	if ((u8*)ptr + node->size == arena->top) {
 		u8* new_top = (u8*)ptr + new_size;
 		if (new_top > (u8*)arena->base + arena->size)
 			return NULL;
-		*psize = new_size;
+		node->size = new_size;
 		arena->top = new_top;
 		return ptr;
 	}
 
-	void* new_ptr = lt_amalloc(arena, new_size);
+	void* new_ptr = lt_amalloc_for_caller(arena, new_size, caller);
 	if (!new_ptr)
 		return NULL;
-	memcpy(new_ptr, ptr, *psize);
+	memcpy(new_ptr, ptr, node->size);
+	lt_amfree(arena, ptr);
 	return new_ptr;
 }
 
-usz lt_amsize(lt_arena_t* arena, void* ptr) {
-	return *(usz*)((usz)ptr - LT_ALLOC_DEFAULT_ALIGN);
+LT_FLATTEN
+void* lt_amrealloc(lt_arena_t* arena, void* ptr, usz new_size) {
+	return lt_amrealloc_for_caller(arena, ptr, new_size, LT_RETURN_ADDR);
 }
 
-b8 lt_amleaked(lt_arena_t* arena) {
-	return (u8*)arena->base != (u8*)arena->top + sizeof(lt_arena_t);
+usz lt_amsize(lt_arena_t* arena, void* ptr) {
+	return node_from_ptr(ptr)->size;
+}
+
+void lt_amleak_check(lt_arena_t* arena) {
+	if ((u8*)arena->base == (u8*)arena->top + sizeof(lt_arena_t))
+		return;
+
+	node_t* it = LT_ADDPTR(arena->base, lt_align_fwd(sizeof(lt_arena_t), LT_ALLOC_DEFAULT_ALIGN));
+	while (it < (node_t*)arena->top) {
+		if (!it->free) {
+			lt_werrf("block 0x%hz leaked from ", ptr_from_node(it));
+			lt_print_instr_ptr(it->caller);
+		}
+		it = LT_ADDPTR(ptr_from_node(it), it->size);
+	}
 }
 
