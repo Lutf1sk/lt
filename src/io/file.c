@@ -98,8 +98,10 @@ lt_err_t lt_file_read_entire(lstr_t path, lstr_t* out, lt_alloc_t* alloc) {
 
 	usz size = lt_file_size(file);
 	char* data = lt_malloc(alloc, size);
-	if (!data)
+	if (!data) {
+		lt_file_close(file, alloc);
 		return LT_ERR_OUT_OF_MEMORY;
+	}
 
 	isz res = lt_file_read(file, data, size);
 	lt_file_close(file, alloc);
