@@ -24,8 +24,9 @@ lstr_t consume_string(parse_ctx_t* cx) {
 	++cx->it; // "
 	char* start_it = &cx->data[cx->it];
 	// TODO: This loop does not handle \\" correctly.
-	while (cx->it < cx->len && (cx->data[cx->it] != '"' && (cx->it != 0 || cx->data[cx->it - 1] == '\\'))) {
-		++cx->it;
+	while (cx->it < cx->len && cx->data[cx->it] != '"') {
+		if (cx->data[cx->it++] == '\\')
+			++cx->it;
 	}
 	++cx->it; // "
 	return LSTR(start_it, &cx->data[cx->it] - start_it - 1);
@@ -53,6 +54,7 @@ static lt_json_t* json_parse_value(parse_ctx_t* cx);
 static
 lt_json_t* json_parse_array(parse_ctx_t* cx) {
 	lt_json_t* arr = lt_malloc(cx->alloc, sizeof(lt_json_t));
+	LT_ASSERT(arr);
 	*arr = json_make(LT_JSON_ARRAY);
 	lt_json_t** current = &arr->child;
 
@@ -60,6 +62,7 @@ lt_json_t* json_parse_array(parse_ctx_t* cx) {
 	skip_whitespace(cx);
 	while (cx->it < cx->len && cx->data[cx->it] != ']') {
 		lt_json_t* child = json_parse_value(cx);
+		LT_ASSERT(child);
 		*current = child;
 		current = &child->next;
 		++arr->child_count;
@@ -72,7 +75,6 @@ lt_json_t* json_parse_array(parse_ctx_t* cx) {
 	}
 
 	++cx->it; // ]
-
 	return arr;
 }
 
@@ -88,6 +90,7 @@ lt_json_t* json_parse_value(parse_ctx_t* cx) {
 
 	case '"': {
 		lt_json_t* new = lt_malloc(cx->alloc, sizeof(lt_json_t));
+		LT_ASSERT(new);
 		*new = json_make(LT_JSON_STRING);
 		new->str_val = consume_string(cx);
 		return new;
@@ -99,6 +102,7 @@ lt_json_t* json_parse_value(parse_ctx_t* cx) {
 			return NULL;
 		cx->it += expect.len;
 		lt_json_t* new = lt_malloc(cx->alloc, sizeof(lt_json_t));
+		LT_ASSERT(new);
 		*new = json_make(LT_JSON_BOOL);
 		new->str_val = expect;
 		return new;
@@ -110,6 +114,7 @@ lt_json_t* json_parse_value(parse_ctx_t* cx) {
 			return NULL;
 		cx->it += expect.len;
 		lt_json_t* new = lt_malloc(cx->alloc, sizeof(lt_json_t));
+		LT_ASSERT(new);
 		*new = json_make(LT_JSON_BOOL);
 		new->str_val = expect;
 		return new;
@@ -121,6 +126,7 @@ lt_json_t* json_parse_value(parse_ctx_t* cx) {
 			return NULL;
 		cx->it += expect.len;
 		lt_json_t* new = lt_malloc(cx->alloc, sizeof(lt_json_t));
+		LT_ASSERT(new);
 		*new = json_make(LT_JSON_NULL);
 		new->str_val = expect;
 		return new;
@@ -129,6 +135,7 @@ lt_json_t* json_parse_value(parse_ctx_t* cx) {
 	default:
 		if (lt_is_digit(c)) {
 			lt_json_t* new = lt_malloc(cx->alloc, sizeof(lt_json_t));
+			LT_ASSERT(new);
 			*new = json_make(LT_JSON_NUMBER);
 			new->str_val = consume_number(cx);
 			return new;
@@ -149,7 +156,7 @@ lt_json_t* json_parse_entry(parse_ctx_t* cx) {
 	skip_whitespace(cx);
 
 	lt_json_t* val = json_parse_value(cx);
-
+	LT_ASSERT(val);
 	val->key = key;
 	return val;
 }
@@ -159,6 +166,7 @@ lt_json_t* json_parse_object(parse_ctx_t* cx) {
 	++cx->it; // {
 
 	lt_json_t* obj = lt_malloc(cx->alloc, sizeof(lt_json_t));
+	LT_ASSERT(obj);
 	*obj = json_make(LT_JSON_OBJECT);
 	lt_json_t** current = &obj->child;
 
@@ -209,9 +217,12 @@ void json_print_recursive(lt_file_t* file, lt_json_t* json, int indent) {
 			print_indent(file, indent + 1);
 			json_print_recursive(file, it, indent + 1);
 			it = it->next;
+			if (it)
+				lt_fprintf(file, ",");
+			lt_fprintf(file, "\n");
 		}
 		print_indent(file, indent);
-		lt_fprintf(file, "]\n");
+		lt_fprintf(file, "]");
 	}	break;
 
 	case LT_JSON_OBJECT: {
@@ -222,19 +233,27 @@ void json_print_recursive(lt_file_t* file, lt_json_t* json, int indent) {
 			lt_fprintf(file, "%S: ", it->key);
 			json_print_recursive(file, it, indent + 1);
 			it = it->next;
+			if (it)
+				lt_fprintf(file, ",");
+			lt_fprintf(file, "\n");
 		}
 		print_indent(file, indent);
-		lt_fprintf(file, "}\n");
+		lt_fprintf(file, "}");
 	}	break;
 
-	case LT_JSON_STRING: case LT_JSON_NUMBER: case LT_JSON_BOOL: case LT_JSON_NULL: {
-		lt_fprintf(file, "%S\n", json->str_val);
-	}	break;
+	case LT_JSON_STRING:
+		lt_fprintf(file, "\"%S\"", json->str_val);
+		break;
+
+	case LT_JSON_NUMBER: case LT_JSON_BOOL: case LT_JSON_NULL:
+		lt_fprintf(file, "%S", json->str_val);
+		break;
 	}
 }
 
 void lt_json_print(lt_file_t* file, lt_json_t* json) {
 	json_print_recursive(file, json, 0);
+	lt_fprintf(file, "\n");
 }
 
 lt_json_t* lt_json_find_child(lt_json_t* json, lstr_t key) {
