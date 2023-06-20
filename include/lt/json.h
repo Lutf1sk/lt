@@ -43,4 +43,7 @@ i64 lt_json_int_val(lt_json_t* json);
 f64 lt_json_float_val(lt_json_t* json);
 b8 lt_json_bool_val(lt_json_t* json);
 
+lstr_t lt_json_escape_str(lstr_t src, lt_alloc_t* alloc);
+lstr_t lt_json_unescape_str(lstr_t src, lt_alloc_t* alloc);
+
 #endif

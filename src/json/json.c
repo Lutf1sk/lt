@@ -3,6 +3,7 @@
 #include <lt/str.h>
 #include <lt/io.h>
 #include <lt/ctype.h>
+#include <lt/strstream.h>
 
 typedef
 struct parse_ctx {
@@ -35,7 +36,7 @@ lstr_t consume_string(parse_ctx_t* cx) {
 static
 lstr_t consume_number(parse_ctx_t* cx) {
 	char* start_it = &cx->data[cx->it];
-	while (cx->it < cx->len && (lt_is_digit(cx->data[cx->it]) || cx->data[cx->it] == '.'))
+	while (cx->it < cx->len && (lt_is_digit(cx->data[cx->it]) || cx->data[cx->it] == '.' || cx->data[cx->it] == '-'))
 		++cx->it;
 	return LSTR(start_it, &cx->data[cx->it] - start_it);
 }
@@ -133,7 +134,7 @@ lt_json_t* json_parse_value(parse_ctx_t* cx) {
 	}
 
 	default:
-		if (lt_is_digit(c)) {
+		if (lt_is_digit(c) || c == '-') {
 			lt_json_t* new = lt_malloc(cx->alloc, sizeof(lt_json_t));
 			LT_ASSERT(new);
 			*new = json_make(LT_JSON_NUMBER);
@@ -156,7 +157,8 @@ lt_json_t* json_parse_entry(parse_ctx_t* cx) {
 	skip_whitespace(cx);
 
 	lt_json_t* val = json_parse_value(cx);
-	LT_ASSERT(val);
+	if (!val)
+		lt_werrf("failed to parse '%S'\n", LSTR(&cx->data[cx->it], cx->len - cx->it));
 	val->key = key;
 	return val;
 }
@@ -257,6 +259,10 @@ void lt_json_print(lt_file_t* file, lt_json_t* json) {
 }
 
 lt_json_t* lt_json_find_child(lt_json_t* json, lstr_t key) {
+	LT_ASSERT(json->stype == LT_JSON_OBJECT);
+	if (json->stype != LT_JSON_OBJECT)
+		return NULL;
+
 	lt_json_t* it = json->child;
 	while (it) {
 		if (lt_lstr_eq(it->key, key))
@@ -266,9 +272,11 @@ lt_json_t* lt_json_find_child(lt_json_t* json, lstr_t key) {
 	return NULL;
 }
 
-// u64 lt_json_uint_val(lt_json_t* json) {
-// 	return lt_lstr_uint(json->str_val);
-// }
+u64 lt_json_uint_val(lt_json_t* json) {
+	u64 u;
+	lt_lstr_uint(json->str_val, &u);
+	return u;
+}
 
 // i64 lt_json_int_val(lt_json_t* json) {
 // 	return lt_lstr_int(json->str_val);
@@ -280,5 +288,58 @@ lt_json_t* lt_json_find_child(lt_json_t* json, lstr_t key) {
 
 b8 lt_json_bool_val(lt_json_t* json) {
 	return lt_lstr_eq(json->str_val, CLSTR("true"));
+}
+
+lstr_t lt_json_escape_str(lstr_t src, lt_alloc_t* alloc) {
+	lt_strstream_t ss;
+	LT_ASSERT(lt_strstream_create(&ss, alloc) == LT_SUCCESS);
+
+	char* it = src.str, *end = it + src.len;
+	while (it < end) {
+		char c = *it++;
+		switch (c) {
+		case '\"': lt_strstream_writels(&ss, CLSTR("\\\"")); break;
+		case '\\': lt_strstream_writels(&ss, CLSTR("\\\\")); break;
+		case '/': lt_strstream_writels(&ss, CLSTR("\\/")); break;
+		case '\b': lt_strstream_writels(&ss, CLSTR("\\b")); break;
+		case '\f': lt_strstream_writels(&ss, CLSTR("\\f")); break;
+		case '\n': lt_strstream_writels(&ss, CLSTR("\\n")); break;
+		case '\r': lt_strstream_writels(&ss, CLSTR("\\r")); break;
+		case '\t': lt_strstream_writels(&ss, CLSTR("\\t")); break;
+		case '\v': lt_strstream_writels(&ss, CLSTR("\\v")); break;
+		default: lt_strstream_writec(&ss, c); break;
+		}
+	}
+
+	return ss.str;
+}
+
+lstr_t lt_json_unescape_str(lstr_t src, lt_alloc_t* alloc) {
+	lt_strstream_t ss;
+	LT_ASSERT(lt_strstream_create(&ss, alloc) == LT_SUCCESS);
+
+	char* it = src.str, *end = it + src.len;
+	while (it < end) {
+		char c = *it++;
+		if (c == '\\') {
+			char esc = *it++;
+			switch (esc) {
+			case '\"': lt_strstream_writec(&ss, '\"'); break;
+			case '\\': lt_strstream_writec(&ss, '\\'); break;
+			case '/': lt_strstream_writec(&ss, '/'); break;
+			case 'b': lt_strstream_writec(&ss, '\b'); break;
+			case 'f': lt_strstream_writec(&ss, '\f'); break;
+			case 'n': lt_strstream_writec(&ss, '\n'); break;
+			case 'r': lt_strstream_writec(&ss, '\r'); break;
+			case 't': lt_strstream_writec(&ss, '\t'); break;
+			case 'v': lt_strstream_writec(&ss, '\v'); break;
+			default: lt_werrf("unknown escape sequence '\%c'\n", esc); break;
+			}
+		}
+		else
+			lt_strstream_writec(&ss, c);
+	}
+
+	return ss.str;
 }
 
