@@ -98,11 +98,11 @@ usz lt_dwarf_execute(lt_dwarf_lns_t* m, lt_dwarf_stmt_prologue_t* p, u8* instr) 
 		break;
 
 	// special opcodes
-	default:
+	default: {
 		u8 adj = opcode - p->opcode_base;
 		m->addr += p->min_instr_len * (adj / p->line_range);
 		m->line += p->line_base + (adj % p->line_range);
-		break;
+	}	break;
 	}
 
 	return it - instr;
