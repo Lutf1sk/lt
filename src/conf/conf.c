@@ -153,7 +153,7 @@ lt_err_t parse_val(parse_ctx_t* cx, lt_conf_t* cf) {
 		RETURN_ERROR(LT_ERR_INVALID_FORMAT, lt_strdup(cx->alloc, CLSTR("unexpected end of input")));
 
 	switch (*cx->it) {
-	case '"':
+	case '"': {
 		char* begin = ++cx->it;
 		while (cx->it < cx->end && *cx->it != '"')
 			++cx->it;
@@ -162,7 +162,7 @@ lt_err_t parse_val(parse_ctx_t* cx, lt_conf_t* cf) {
 
 		cf->stype = LT_CONF_STRING;
 		cf->str_val = LSTR(begin, cx->it++ - begin);
-		return LT_SUCCESS;
+	}	return LT_SUCCESS;
 
 	case '{':
 		++cx->it;
@@ -242,7 +242,7 @@ lt_conf_t* lt_conf_find(lt_conf_t* parent, lstr_t key_path) {
 			}
 		}
 		return NULL;
-	found:
+	found:;
 	}
 	return parent;
 }
