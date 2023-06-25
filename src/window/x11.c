@@ -693,7 +693,7 @@ void lt_window_get_size(lt_window_t* win, int* w, int* h) {
 	*h = win->size_h;
 }
 
-extern int strncmp(char*, char*, usz);
+extern int strncmp(const char*, const char*, usz);
 
 static
 void lt_generate_keytab(lt_window_t* win, lt_alloc_t* alloc) {
