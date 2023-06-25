@@ -20,7 +20,7 @@ void handle_sigsegv(int sig, siginfo_t* si, void* usr) {
 	ucontext_t* c = usr;
 	void* instr_addr = (void*)c->uc_mcontext.gregs[REG_RIP];
 
-	lt_printf(LT_FG_BRED"error"LT_RESET": segmentation fault accessing "LT_FG_BCYAN"0x%hz"LT_RESET"\n", (usz)si->si_addr);
+	lt_printf(LT_FG_BRED"error"LT_RESET": segmentation fault accessing "LT_FG_BCYAN"0x%hz"LT_RESET"\n\t", (usz)si->si_addr);
 	lt_print_instr_ptr((usz)instr_addr);
 	lt_stack_trace(2);
 	exit(sig);
