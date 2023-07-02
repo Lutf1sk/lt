@@ -28,6 +28,7 @@ union lt_vec3 {
 } lt_vec3_t;
 
 typedef
+LT_ALIGN(16)
 union lt_vec4 {
 	struct { float x, y, z, w; };
 	struct { float r, g, b, a; };
@@ -63,6 +64,7 @@ union lt_quat {
 // ----- Matrix
 
 typedef
+LT_ALIGN(16)
 union lt_mat2 {
 	struct { lt_vec2_t i, j; };
 	lt_vec2_t vdata[2];
@@ -76,7 +78,14 @@ union lt_mat3 {
 	float data[3][3];
 } lt_mat3_t;
 
+#ifdef LT_AVX
+#	define LT_MAT4_ALIGN LT_ALIGN(32)
+#else
+#	define LT_MAT4_ALIGN LT_ALIGN(16)
+#endif
+
 typedef
+LT_MAT4_ALIGN
 union lt_mat4 {
 	struct { lt_vec4_t i, j, k, l; };
 	lt_vec4_t vdata[4];
@@ -208,7 +217,7 @@ lt_vec2_t lt_v2norm(lt_vec2_t v) {
 }
 
 static LT_INLINE
-float lt_v2cross(lt_vec2_t a, lt_vec2_t b) {
+f32 lt_v2cross(lt_vec2_t a, lt_vec2_t b) {
 	return a.x * b.y - a.y * b.x;
 }
 
@@ -220,6 +229,16 @@ lt_vec2_t lt_v2max(lt_vec2_t a, lt_vec2_t b) {
 static LT_INLINE
 lt_vec2_t lt_v2min(lt_vec2_t a, lt_vec2_t b) {
 	return LT_VEC2(lt_min_f32(a.x, b.x), lt_min_f32(a.y, b.y));
+}
+
+static LT_INLINE
+f32 lt_v2maxcomp(lt_vec2_t v) {
+	return lt_max_f32(v.x, v.y);
+}
+
+static LT_INLINE
+f32 lt_v2mincomp(lt_vec2_t v) {
+	return lt_min_f32(v.x, v.y);
 }
 
 static LT_INLINE
@@ -380,6 +399,16 @@ lt_vec3_t lt_v3min(lt_vec3_t a, lt_vec3_t b) {
 }
 
 static LT_INLINE
+f32 lt_v3maxcomp(lt_vec3_t v) {
+	return lt_max_f32(v.z, lt_max_f32(v.x, v.y));
+}
+
+static LT_INLINE
+f32 lt_v3mincomp(lt_vec3_t v) {
+	return lt_min_f32(v.z, lt_min_f32(v.x, v.y));
+}
+
+static LT_INLINE
 lt_vec3_t lt_v3abs(lt_vec3_t v) {
 	return LT_VEC3(fabs(v.x), fabs(v.y), fabs(v.z));
 }
@@ -479,6 +508,16 @@ lt_vec4_t lt_v4max(lt_vec4_t a, lt_vec4_t b) {
 static LT_INLINE
 lt_vec4_t lt_v4min(lt_vec4_t a, lt_vec4_t b) {
 	return LT_VEC4(lt_min_f32(a.x, b.x), lt_min_f32(a.y, b.y), lt_min_f32(a.z, b.z), lt_min_f32(a.w, b.w));
+}
+
+static LT_INLINE
+f32 lt_v4maxcomp(lt_vec4_t v) {
+	return lt_max_f32(v.w, lt_max_f32(v.z, lt_max_f32(v.x, v.y)));
+}
+
+static LT_INLINE
+f32 lt_v4mincomp(lt_vec4_t v) {
+	return lt_min_f32(v.w, lt_min_f32(v.z, lt_min_f32(v.x, v.y)));
 }
 
 static LT_INLINE
@@ -607,6 +646,18 @@ int lt_v4equ(lt_vec4_t a, lt_vec4_t b, f32 epsilon) {
 		lt_vec3_t: lt_v3min, \
 		lt_vec4_t: lt_v4min \
 	)((a), (b)))
+
+#define lt_vmaxcomp(a) (_Generic((a), \
+		lt_vec2_t: lt_v2maxcomp, \
+		lt_vec3_t: lt_v3maxcomp, \
+		lt_vec4_t: lt_v4maxcomp \
+	)((a)))
+
+#define lt_vmincomp(a) (_Generic((a), \
+		lt_vec2_t: lt_v2mincomp, \
+		lt_vec3_t: lt_v3mincomp, \
+		lt_vec4_t: lt_v4mincomp \
+	)((a)))
 
 #define lt_vabs(a) (_Generic((a), \
 		lt_vec2_t: lt_v2abs, \
@@ -788,6 +839,8 @@ lt_mat4_t lt_m4inverse(const lt_mat4_t* m);
 #	define vmulm4 lt_vmulm4
 #	define vmax lt_vmax
 #	define vmin lt_vmin
+#	define vmaxcomp lt_vmaxcomp
+#	define vmincomp lt_vmincomp
 
 #	define vdot lt_vdot
 #	define vneg lt_vneg
