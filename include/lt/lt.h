@@ -25,6 +25,14 @@
 #	error Unsupported compiler
 #endif
 
+// AVX
+#if defined(__AVX2__)
+#	define LT_AVX2 1
+#	define LT_AVX 1
+#elif defined(__AVX__)
+#	define LT_AVX 1
+#endif
+
 // Useful macros
 #define LT_KB(n) ((usz)(n) * 1024L)
 #define LT_MB(n) ((usz)(n) * 1048576L)
@@ -38,6 +46,7 @@
 #if defined(LT_CLANG) || defined(LT_GCC)
 #	define ATTRIB(a) __attribute__((a))
 
+#	define LT_ALIGN(n) ATTRIB(aligned(n))
 #	define LT_INLINE inline ATTRIB(always_inline)
 #	define LT_NOINLINE ATTRIB(noinline)
 #	define LT_FLATTEN ATTRIB(flatten)
@@ -46,6 +55,7 @@
 #	define LT_NODISCARD ATTRIB(warn_unused_result)
 #	define LT_NONNULL ATTRIB(nonnull)
 #elif defined(LT_MSVC)
+#	define LT_ALIGN(n) __declspec(align(n))
 #	define LT_INLINE inline __forceinline
 #	define LT_NOINLINE __declspec(noinline)
 #	define LT_FLATTEN
