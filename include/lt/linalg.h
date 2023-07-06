@@ -232,6 +232,16 @@ lt_vec2_t lt_v2min(lt_vec2_t a, lt_vec2_t b) {
 }
 
 static LT_INLINE
+lt_vec2_t lt_v2clamp(lt_vec2_t v, lt_vec2_t min, lt_vec2_t max) {
+	return LT_VEC2(lt_clamp_f32(v.x, min.x, max.x), lt_clamp_f32(v.y, min.y, max.y));
+}
+
+static LT_INLINE
+lt_vec2_t lt_v2clampf(lt_vec2_t v, f32 min, f32 max) {
+	return LT_VEC2(lt_clamp_f32(v.x, min, max), lt_clamp_f32(v.y, min, max));
+}
+
+static LT_INLINE
 f32 lt_v2maxcomp(lt_vec2_t v) {
 	return lt_max_f32(v.x, v.y);
 }
@@ -399,6 +409,16 @@ lt_vec3_t lt_v3min(lt_vec3_t a, lt_vec3_t b) {
 }
 
 static LT_INLINE
+lt_vec3_t lt_v3clamp(lt_vec3_t v, lt_vec3_t min, lt_vec3_t max) {
+	return LT_VEC3(lt_clamp_f32(v.x, min.x, max.x), lt_clamp_f32(v.y, min.y, max.y), lt_clamp_f32(v.z, min.z, max.z));
+}
+
+static LT_INLINE
+lt_vec3_t lt_v3clampf(lt_vec3_t v, f32 min, f32 max) {
+	return LT_VEC3(lt_clamp_f32(v.x, min, max), lt_clamp_f32(v.y, min, max), lt_clamp_f32(v.z, min, max));
+}
+
+static LT_INLINE
 f32 lt_v3maxcomp(lt_vec3_t v) {
 	return lt_max_f32(v.z, lt_max_f32(v.x, v.y));
 }
@@ -508,6 +528,16 @@ lt_vec4_t lt_v4max(lt_vec4_t a, lt_vec4_t b) {
 static LT_INLINE
 lt_vec4_t lt_v4min(lt_vec4_t a, lt_vec4_t b) {
 	return LT_VEC4(lt_min_f32(a.x, b.x), lt_min_f32(a.y, b.y), lt_min_f32(a.z, b.z), lt_min_f32(a.w, b.w));
+}
+
+static LT_INLINE
+lt_vec4_t lt_v4clamp(lt_vec4_t v, lt_vec4_t min, lt_vec4_t max) {
+	return LT_VEC4(lt_clamp_f32(v.x, min.x, max.x), lt_clamp_f32(v.y, min.y, max.y), lt_clamp_f32(v.z, min.z, max.z), lt_clamp_f32(v.w, min.w, max.w));
+}
+
+static LT_INLINE
+lt_vec4_t lt_v4clampf(lt_vec4_t v, f32 min, f32 max) {
+	return LT_VEC4(lt_clamp_f32(v.x, min, max), lt_clamp_f32(v.y, min, max), lt_clamp_f32(v.z, min, max), lt_clamp_f32(v.w, min, max));
 }
 
 static LT_INLINE
@@ -646,6 +676,18 @@ int lt_v4equ(lt_vec4_t a, lt_vec4_t b, f32 epsilon) {
 		lt_vec3_t: lt_v3min, \
 		lt_vec4_t: lt_v4min \
 	)((a), (b)))
+
+#define lt_vclamp(v, min, max) (_Generic((v), \
+		lt_vec2_t: lt_v2clamp, \
+		lt_vec3_t: lt_v3clamp, \
+		lt_vec4_t: lt_v4clamp \
+	)((v), (min), (max)))
+
+#define lt_vclampf(v, min, max) (_Generic((v), \
+		lt_vec2_t: lt_v2clampf, \
+		lt_vec3_t: lt_v3clampf, \
+		lt_vec4_t: lt_v4clampf \
+	)((v), (min), (max)))
 
 #define lt_vmaxcomp(a) (_Generic((a), \
 		lt_vec2_t: lt_v2maxcomp, \
@@ -839,6 +881,8 @@ lt_mat4_t lt_m4inverse(const lt_mat4_t* m);
 #	define vmulm4 lt_vmulm4
 #	define vmax lt_vmax
 #	define vmin lt_vmin
+#	define vclamp lt_vclamp
+#	define vclampf lt_vclampf
 #	define vmaxcomp lt_vmaxcomp
 #	define vmincomp lt_vmincomp
 
