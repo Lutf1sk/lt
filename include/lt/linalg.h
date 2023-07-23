@@ -399,21 +399,6 @@ lt_vec3_t lt_v3pproject(lt_vec3_t normal, lt_vec3_t point) {
 }
 
 static LT_INLINE
-lt_vec3_t lt_vec3_rotate(lt_vec3_t v, float angle, lt_vec3_t axis) {
-	lt_vec3_t ax, v1, v2;
-	float x = cos(angle), y = sin(angle);
-
-	ax = lt_v3norm(axis);
-	v1 = lt_v3mulf(v, x);
-	v2 = lt_v3mulf(lt_v3cross(ax, v), y);
-
-	v1 = lt_v3add(v1, v2);
-	v2 = lt_v3mulf(ax, lt_v3dot(ax, v) * (1.0f - x));
-
-	return lt_v3add(v1, v2);
-}
-
-static LT_INLINE
 lt_vec3_t lt_v3max(lt_vec3_t a, lt_vec3_t b) {
 	return LT_VEC3(lt_max_f32(a.x, b.x), lt_max_f32(a.y, b.y), lt_max_f32(a.z, b.z));
 }
@@ -466,6 +451,21 @@ lt_vec3_t lt_v3lerpc(lt_vec3_t a, lt_vec3_t b, f32 t) {
 static LT_INLINE
 lt_vec3_t lt_v3fill(f32 v)  {
 	return LT_VEC3(v, v, v);
+}
+
+static LT_INLINE
+lt_vec3_t lt_v3rotate(lt_vec3_t v, float angle, lt_vec3_t axis) {
+	lt_vec3_t ax, v1, v2;
+	float x = cos(angle), y = sin(angle);
+
+	ax = lt_v3norm(axis);
+	v1 = lt_v3mulf(v, x);
+	v2 = lt_v3mulf(lt_v3cross(ax, v), y);
+
+	v1 = lt_v3add(v1, v2);
+	v2 = lt_v3mulf(ax, lt_v3dot(ax, v) * (1.0f - x));
+
+	return lt_v3add(v1, v2);
 }
 
 // ----- vec4
@@ -957,6 +957,8 @@ lt_mat4_t lt_m4inverse(const lt_mat4_t* m);
 #	define v2fill lt_v2fill
 #	define v3fill lt_v3fill
 #	define v4fill lt_v4fill
+
+#	define v3rotate lt_v3rotate
 
 #	define vproject lt_vproject
 #	define vpproject lt_vpproject
