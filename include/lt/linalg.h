@@ -271,6 +271,11 @@ lt_vec2_t lt_v2lerpc(lt_vec2_t a, lt_vec2_t b, f32 t) {
 	return lt_v2lerp(a, b, lt_clamp_f32(t, 0.0f, 1.0f));
 }
 
+static LT_INLINE
+lt_vec2_t lt_v2fill(f32 v)  {
+	return LT_VEC2(v, v);
+}
+
 // ----- vec3
 
 static LT_INLINE
@@ -458,6 +463,11 @@ lt_vec3_t lt_v3lerpc(lt_vec3_t a, lt_vec3_t b, f32 t) {
 	return lt_v3lerp(a, b, lt_clamp_f32(t, 0.0f, 1.0f));
 }
 
+static LT_INLINE
+lt_vec3_t lt_v3fill(f32 v)  {
+	return LT_VEC3(v, v, v);
+}
+
 // ----- vec4
 
 static LT_INLINE
@@ -588,6 +598,11 @@ lt_vec4_t lt_v4lerp(lt_vec4_t a, lt_vec4_t b, f32 t) {
 static LT_INLINE
 lt_vec4_t lt_v4lerpc(lt_vec4_t a, lt_vec4_t b, f32 t) {
 	return lt_v4lerp(a, b, lt_clamp_f32(t, 0.0f, 1.0f));
+}
+
+static LT_INLINE
+lt_vec4_t lt_v4fill(f32 v)  {
+	return LT_VEC4(v, v, v, v);
 }
 
 // ----- Generic
@@ -925,6 +940,9 @@ lt_mat4_t lt_m4inverse(const lt_mat4_t* m);
 #	define vnorm lt_vnorm
 #	define vabs lt_vabs
 #	define vequ lt_vequ
+#	define v2fill lt_v2fill
+#	define v3fill lt_v3fill
+#	define v4fill lt_v4fill
 
 #	define vproject lt_vproject
 #	define vpproject lt_vpproject
