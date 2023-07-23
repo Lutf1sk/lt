@@ -758,6 +758,18 @@ lt_vec4_t lt_v4fill(f32 v)  {
 		lt_vec4_t: lt_v4equ \
 	)((a), (b), (c)))
 
+#define lt_vlerp(a, b, c) (_Generic((a), \
+		lt_vec2_t: lt_v2lerp, \
+		lt_vec3_t: lt_v3lerp, \
+		lt_vec4_t: lt_v4lerp \
+	)((a), (b), (c)))
+
+#define lt_vlerpc(a, b, c) (_Generic((a), \
+		lt_vec2_t: lt_v2lerpc, \
+		lt_vec3_t: lt_v3lerpc, \
+		lt_vec4_t: lt_v4lerpc \
+	)((a), (b), (c)))
+
 // ----- quat
 
 static LT_INLINE
@@ -940,6 +952,8 @@ lt_mat4_t lt_m4inverse(const lt_mat4_t* m);
 #	define vnorm lt_vnorm
 #	define vabs lt_vabs
 #	define vequ lt_vequ
+#	define vlerp lt_vlerp
+#	define vlerpc lt_vlerpc
 #	define v2fill lt_v2fill
 #	define v3fill lt_v3fill
 #	define v4fill lt_v4fill
