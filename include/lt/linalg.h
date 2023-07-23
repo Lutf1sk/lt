@@ -261,6 +261,16 @@ int lt_v2equ(lt_vec2_t a, lt_vec2_t b, f32 epsilon) {
 	return fabs(a.x - b.x) < epsilon && fabs(a.y - b.y) < epsilon;
 }
 
+static LT_INLINE
+lt_vec2_t lt_v2lerp(lt_vec2_t a, lt_vec2_t b, f32 t) {
+	return lt_v2add(lt_v2mulf(a, t), lt_v2mulf(b, 1.0f - t));
+}
+
+static LT_INLINE
+lt_vec2_t lt_v2lerpc(lt_vec2_t a, lt_vec2_t b, f32 t) {
+	return lt_v2lerp(a, b, lt_clamp_f32(t, 0.0f, 1.0f));
+}
+
 // ----- vec3
 
 static LT_INLINE
@@ -438,6 +448,16 @@ int lt_v3equ(lt_vec3_t a, lt_vec3_t b, f32 epsilon) {
 	return fabs(a.x - b.x) < epsilon && fabs(a.y - b.y) < epsilon && fabs(a.z - b.z) < epsilon;
 }
 
+static LT_INLINE
+lt_vec3_t lt_v3lerp(lt_vec3_t a, lt_vec3_t b, f32 t) {
+	return lt_v3add(lt_v3mulf(a, t), lt_v3mulf(b, 1.0f - t));
+}
+
+static LT_INLINE
+lt_vec3_t lt_v3lerpc(lt_vec3_t a, lt_vec3_t b, f32 t) {
+	return lt_v3lerp(a, b, lt_clamp_f32(t, 0.0f, 1.0f));
+}
+
 // ----- vec4
 
 static LT_INLINE
@@ -558,6 +578,16 @@ lt_vec4_t lt_v4abs(lt_vec4_t v) {
 static LT_INLINE
 int lt_v4equ(lt_vec4_t a, lt_vec4_t b, f32 epsilon) {
 	return fabs(a.x - b.x) < epsilon && fabs(a.y - b.y) < epsilon && fabs(a.z - b.z) < epsilon && fabs(a.w - b.w) < epsilon;
+}
+
+static LT_INLINE
+lt_vec4_t lt_v4lerp(lt_vec4_t a, lt_vec4_t b, f32 t) {
+	return lt_v4add(lt_v4mulf(a, t), lt_v4mulf(b, 1.0f - t));
+}
+
+static LT_INLINE
+lt_vec4_t lt_v4lerpc(lt_vec4_t a, lt_vec4_t b, f32 t) {
+	return lt_v4lerp(a, b, lt_clamp_f32(t, 0.0f, 1.0f));
 }
 
 // ----- Generic
