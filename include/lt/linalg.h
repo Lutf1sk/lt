@@ -12,16 +12,16 @@
 
 typedef
 union lt_vec2 {
-	struct { float x, y; };
-	struct { float u, v; };
-	float data[2];
+	struct { f32 x, y; };
+	struct { f32 u, v; };
+	f32 data[2];
 } lt_vec2_t;
 
 typedef
 union lt_vec3 {
-	struct { float x, y, z; };
-	struct { float r, g, b; };
-	float data[3];
+	struct { f32 x, y, z; };
+	struct { f32 r, g, b; };
+	f32 data[3];
 
 	// Using this could be dangerous, since the layout is technically undefined
 	lt_vec2_t xy, rg;
@@ -30,9 +30,9 @@ union lt_vec3 {
 typedef
 LT_ALIGN(16)
 union lt_vec4 {
-	struct { float x, y, z, w; };
-	struct { float r, g, b, a; };
-	float data[4];
+	struct { f32 x, y, z, w; };
+	struct { f32 r, g, b, a; };
+	f32 data[4];
 
 	// Using these could be dangerous, since the layout is technically undefined
 	lt_vec2_t xy, rg;
@@ -90,8 +90,8 @@ union lt_vec4i {
 
 typedef
 union lt_quat {
-	struct { float x, y, z, w; };
-	float data[4];
+	struct { f32 x, y, z, w; };
+	f32 data[4];
 } lt_quat_t;
 
 #define LT_QUAT_INIT(x, y, z, w) { .data = { (x), (y), (z), (w) } }
@@ -107,14 +107,14 @@ LT_ALIGN(16)
 union lt_mat2 {
 	struct { lt_vec2_t i, j; };
 	lt_vec2_t vdata[2];
-	float data[2][2];
+	f32 data[2][2];
 } lt_mat2_t;
 
 typedef
 union lt_mat3 {
 	struct { lt_vec3_t i, j, k; };
 	lt_vec3_t vdata[3];
-	float data[3][3];
+	f32 data[3][3];
 } lt_mat3_t;
 
 #ifdef LT_AVX
@@ -128,7 +128,7 @@ LT_MAT4_ALIGN
 union lt_mat4 {
 	struct { lt_vec4_t i, j, k, l; };
 	lt_vec4_t vdata[4];
-	float data[4][4];
+	f32 data[4][4];
 } lt_mat4_t;
 
 #define LT_MAT2_INIT(i1, i2, j1, j2) { .data = { \
@@ -230,27 +230,27 @@ lt_vec2i_t lt_v2imul(lt_vec2i_t a, lt_vec2i_t b) {
 }
 
 static LT_INLINE
-lt_vec2_t lt_v2addf(lt_vec2_t a, float f) {
+lt_vec2_t lt_v2addf(lt_vec2_t a, f32 f) {
 	return LT_VEC2(a.x + f, a.y + f);
 }
 
 static LT_INLINE
-lt_vec2_t lt_v2subf(lt_vec2_t a, float f) {
+lt_vec2_t lt_v2subf(lt_vec2_t a, f32 f) {
 	return LT_VEC2(a.x - f, a.y - f);
 }
 
 static LT_INLINE
-lt_vec2_t lt_v2divf(lt_vec2_t a, float f) {
+lt_vec2_t lt_v2divf(lt_vec2_t a, f32 f) {
 	return LT_VEC2(a.x / f, a.y / f);
 }
 
 static LT_INLINE
-lt_vec2_t lt_v2modf(lt_vec2_t a, float f) {
+lt_vec2_t lt_v2modf(lt_vec2_t a, f32 f) {
 	return LT_VEC2(fmod(a.x, f), fmod(a.y, f));
 }
 
 static LT_INLINE
-lt_vec2_t lt_v2mulf(lt_vec2_t a, float f) {
+lt_vec2_t lt_v2mulf(lt_vec2_t a, f32 f) {
 	return LT_VEC2(a.x * f, a.y * f);
 }
 
@@ -438,27 +438,27 @@ lt_vec3i_t lt_v3imul(lt_vec3i_t a, lt_vec3i_t b) {
 }
 
 static LT_INLINE
-lt_vec3_t lt_v3addf(lt_vec3_t a, float f) {
+lt_vec3_t lt_v3addf(lt_vec3_t a, f32 f) {
 	return LT_VEC3(a.x + f, a.y + f, a.z + f);
 }
 
 static LT_INLINE
-lt_vec3_t lt_v3subf(lt_vec3_t a, float f) {
+lt_vec3_t lt_v3subf(lt_vec3_t a, f32 f) {
 	return LT_VEC3(a.x - f, a.y - f, a.z - f);
 }
 
 static LT_INLINE
-lt_vec3_t lt_v3divf(lt_vec3_t a, float f) {
+lt_vec3_t lt_v3divf(lt_vec3_t a, f32 f) {
 	return LT_VEC3(a.x / f, a.y / f, a.z / f);
 }
 
 static LT_INLINE
-lt_vec3_t lt_v3modf(lt_vec3_t a, float f) {
+lt_vec3_t lt_v3modf(lt_vec3_t a, f32 f) {
 	return LT_VEC3(fmod(a.x, f), fmod(a.y, f), fmod(a.z, f));
 }
 
 static LT_INLINE
-lt_vec3_t lt_v3mulf(lt_vec3_t a, float f) {
+lt_vec3_t lt_v3mulf(lt_vec3_t a, f32 f) {
 	return LT_VEC3(a.x * f, a.y * f, a.z * f);
 }
 
@@ -497,7 +497,7 @@ lt_vec3_t lt_v3mulm(lt_vec3_t v, const lt_mat3_t* m) {
 }
 
 static LT_INLINE
-lt_vec3_t lt_v3mulm4(lt_vec3_t v, float w, const lt_mat4_t* m) {
+lt_vec3_t lt_v3mulm4(lt_vec3_t v, f32 w, const lt_mat4_t* m) {
 	return lt_v4mulm(LT_VEC4(v.x, v.y, v.z, w), m).xyz;
 }
 
@@ -545,21 +545,21 @@ lt_vec3_t lt_v3crossn(lt_vec3_t a, lt_vec3_t b) {
 
 static LT_INLINE
 lt_vec3_t lt_v3project(lt_vec3_t normal, lt_vec3_t point) {
-	float nmag2 = lt_v3dot(normal, normal);
+	f32 nmag2 = lt_v3dot(normal, normal);
 	if (nmag2 <= 0.0f)
 		return point;
 
-	float factor = lt_v3dot(point, normal) / nmag2;
+	f32 factor = lt_v3dot(point, normal) / nmag2;
 	return lt_v3mulf(normal, factor);
 }
 
 static LT_INLINE
 lt_vec3_t lt_v3pproject(lt_vec3_t normal, lt_vec3_t point) {
-	float nmag2 = lt_v3dot(normal, normal);
+	f32 nmag2 = lt_v3dot(normal, normal);
 	if (nmag2 <= 0.0f)
 		return LT_VEC3(0.0f, 0.0f, 0.0f);
 
-	float factor = lt_v3dot(point, normal) / nmag2;
+	f32 factor = lt_v3dot(point, normal) / nmag2;
 	return LT_VEC3(
 		point.x - normal.x * factor,
 		point.y - normal.y * factor,
@@ -638,9 +638,9 @@ lt_vec3_t lt_v3itof(lt_vec3i_t v) {
 }
 
 static LT_INLINE
-lt_vec3_t lt_v3rotate(lt_vec3_t v, float angle, lt_vec3_t axis) {
+lt_vec3_t lt_v3rotate(lt_vec3_t v, f32 angle, lt_vec3_t axis) {
 	lt_vec3_t ax, v1, v2;
-	float x = cos(angle), y = sin(angle);
+	f32 x = cos(angle), y = sin(angle);
 
 	ax = lt_v3norm(axis);
 	v1 = lt_v3mulf(v, x);
@@ -700,27 +700,27 @@ lt_vec4i_t lt_v4imul(lt_vec4i_t a, lt_vec4i_t b) {
 }
 
 static LT_INLINE
-lt_vec4_t lt_v4addf(lt_vec4_t a, float f) {
+lt_vec4_t lt_v4addf(lt_vec4_t a, f32 f) {
 	return LT_VEC4(a.x + f, a.y + f, a.z + f, a.w + f);
 }
 
 static LT_INLINE
-lt_vec4_t lt_v4subf(lt_vec4_t a, float f) {
+lt_vec4_t lt_v4subf(lt_vec4_t a, f32 f) {
 	return LT_VEC4(a.x - f, a.y - f, a.z - f, a.w - f);
 }
 
 static LT_INLINE
-lt_vec4_t lt_v4divf(lt_vec4_t a, float f) {
+lt_vec4_t lt_v4divf(lt_vec4_t a, f32 f) {
 	return LT_VEC4(a.x / f, a.y / f, a.z / f, a.w / f);
 }
 
 static LT_INLINE
-lt_vec4_t lt_v4modf(lt_vec4_t a, float f) {
+lt_vec4_t lt_v4modf(lt_vec4_t a, f32 f) {
 	return LT_VEC4(fmod(a.x, f), fmod(a.y, f), fmod(a.z, f), fmod(a.w, f));
 }
 
 static LT_INLINE
-lt_vec4_t lt_v4mulf(lt_vec4_t a, float f) {
+lt_vec4_t lt_v4mulf(lt_vec4_t a, f32 f) {
 	return LT_VEC4(a.x * f, a.y * f, a.z * f, a.w * f);
 }
 
@@ -772,8 +772,8 @@ lt_vec4_t lt_v4neg(lt_vec4_t v) {
 
 static LT_INLINE
 f32 lt_v4mag(lt_vec4_t v) {
-	float h = sqrt(v.x * v.x + v.y * v.y);
-	float h2 = sqrt(v.z * v.z + h * h);
+	f32 h = sqrt(v.x * v.x + v.y * v.y);
+	f32 h2 = sqrt(v.z * v.z + h * h);
 	return sqrt(v.w * v.w + h2 * h2);
 }
 
