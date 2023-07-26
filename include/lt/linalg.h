@@ -386,6 +386,16 @@ lt_vec2i_t lt_v2round(lt_vec2_t v) {
 }
 
 static LT_INLINE
+lt_vec2i_t lt_v2floor(lt_vec2_t v) {
+	return LT_VEC2I(floor(v.x), floor(v.y));
+}
+
+static LT_INLINE
+lt_vec2i_t lt_v2ceil(lt_vec2_t v) {
+	return LT_VEC2I(ceil(v.x), ceil(v.y));
+}
+
+static LT_INLINE
 lt_vec2_t lt_v2itof(lt_vec2i_t v) {
 	return LT_VEC2(v.x, v.y);
 }
@@ -633,6 +643,16 @@ lt_vec3i_t lt_v3round(lt_vec3_t v) {
 }
 
 static LT_INLINE
+lt_vec3i_t lt_v3floor(lt_vec3_t v) {
+	return LT_VEC3I(floor(v.x), floor(v.y), floor(v.z));
+}
+
+static LT_INLINE
+lt_vec3i_t lt_v3ceil(lt_vec3_t v) {
+	return LT_VEC3I(ceil(v.x), ceil(v.y), ceil(v.z));
+}
+
+static LT_INLINE
 lt_vec3_t lt_v3itof(lt_vec3i_t v) {
 	return LT_VEC3(v.x, v.y, v.z);
 }
@@ -853,6 +873,16 @@ lt_vec4i_t lt_v4ifill(i32 v)  {
 static LT_INLINE
 lt_vec4i_t lt_v4round(lt_vec4_t v) {
 	return LT_VEC4I(round(v.x), round(v.y), round(v.z), round(v.w));
+}
+
+static LT_INLINE
+lt_vec4i_t lt_v4floor(lt_vec4_t v) {
+	return LT_VEC4I(floor(v.x), floor(v.y), floor(v.z), floor(v.w));
+}
+
+static LT_INLINE
+lt_vec4i_t lt_v4ceil(lt_vec4_t v) {
+	return LT_VEC4I(ceil(v.x), ceil(v.y), ceil(v.z), ceil(v.w));
 }
 
 static LT_INLINE
@@ -1088,6 +1118,18 @@ lt_vec4_t lt_v4itof(lt_vec4i_t v) {
 		lt_vec4_t: lt_v4round \
 	)((a)))
 
+#define lt_vfloor(a) (_Generic((a), \
+		lt_vec2_t: lt_v2floor, \
+		lt_vec3_t: lt_v3floor, \
+		lt_vec4_t: lt_v4floor \
+	)((a)))
+
+#define lt_vceil(a) (_Generic((a), \
+		lt_vec2_t: lt_v2ceil, \
+		lt_vec3_t: lt_v3ceil, \
+		lt_vec4_t: lt_v4ceil \
+	)((a)))
+
 #define lt_vitof(a) (_Generic((a), \
 		lt_vec2i_t: lt_v2itof, \
 		lt_vec3i_t: lt_v3itof, \
@@ -1295,6 +1337,8 @@ lt_mat4_t lt_m4inverse(const lt_mat4_t* m);
 #	define v3ifill lt_v3ifill
 #	define v4ifill lt_v4ifill
 #	define vround lt_vround
+#	define vfloor lt_vfloor
+#	define vceil lt_vceil
 #	define vitof lt_vitof
 
 #	define v3rotate lt_v3rotate
