@@ -331,6 +331,16 @@ lt_vec2_t lt_v2min(lt_vec2_t a, lt_vec2_t b) {
 }
 
 static LT_INLINE
+lt_vec2i_t lt_v2imax(lt_vec2i_t a, lt_vec2i_t b) {
+	return LT_VEC2I(lt_max_i32(a.x, b.x), lt_max_i32(a.y, b.y));
+}
+
+static LT_INLINE
+lt_vec2i_t lt_v2imin(lt_vec2i_t a, lt_vec2i_t b) {
+	return LT_VEC2I(lt_min_i32(a.x, b.x), lt_min_i32(a.y, b.y));
+}
+
+static LT_INLINE
 lt_vec2_t lt_v2clamp(lt_vec2_t v, lt_vec2_t min, lt_vec2_t max) {
 	return LT_VEC2(lt_clamp_f32(v.x, min.x, max.x), lt_clamp_f32(v.y, min.y, max.y));
 }
@@ -588,6 +598,16 @@ lt_vec3_t lt_v3min(lt_vec3_t a, lt_vec3_t b) {
 }
 
 static LT_INLINE
+lt_vec3i_t lt_v3imax(lt_vec3i_t a, lt_vec3i_t b) {
+	return LT_VEC3I(lt_max_i32(a.x, b.x), lt_max_i32(a.y, b.y), lt_max_i32(a.z, b.z));
+}
+
+static LT_INLINE
+lt_vec3i_t lt_v3imin(lt_vec3i_t a, lt_vec3i_t b) {
+	return LT_VEC3I(lt_min_i32(a.x, b.x), lt_min_i32(a.y, b.y), lt_min_i32(a.z, b.z));
+}
+
+static LT_INLINE
 lt_vec3_t lt_v3clamp(lt_vec3_t v, lt_vec3_t min, lt_vec3_t max) {
 	return LT_VEC3(lt_clamp_f32(v.x, min.x, max.x), lt_clamp_f32(v.y, min.y, max.y), lt_clamp_f32(v.z, min.z, max.z));
 }
@@ -818,6 +838,16 @@ lt_vec4_t lt_v4max(lt_vec4_t a, lt_vec4_t b) {
 static LT_INLINE
 lt_vec4_t lt_v4min(lt_vec4_t a, lt_vec4_t b) {
 	return LT_VEC4(lt_min_f32(a.x, b.x), lt_min_f32(a.y, b.y), lt_min_f32(a.z, b.z), lt_min_f32(a.w, b.w));
+}
+
+static LT_INLINE
+lt_vec4i_t lt_v4imax(lt_vec4i_t a, lt_vec4i_t b) {
+	return LT_VEC4I(lt_max_i32(a.x, b.x), lt_max_i32(a.y, b.y), lt_max_i32(a.z, b.z), lt_max_i32(a.w, b.w));
+}
+
+static LT_INLINE
+lt_vec4i_t lt_v4imin(lt_vec4_t a, lt_vec4i_t b) {
+	return LT_VEC4I(lt_min_i32(a.x, b.x), lt_min_i32(a.y, b.y), lt_min_i32(a.z, b.z), lt_min_i32(a.w, b.w));
 }
 
 static LT_INLINE
@@ -1055,13 +1085,19 @@ lt_vec4_t lt_v4itof(lt_vec4i_t v) {
 #define lt_vmax(a, b) (_Generic((a), \
 		lt_vec2_t: lt_v2max, \
 		lt_vec3_t: lt_v3max, \
-		lt_vec4_t: lt_v4max \
+		lt_vec4_t: lt_v4max, \
+		lt_vec2i_t: lt_v2imax, \
+		lt_vec3i_t: lt_v3imax, \
+		lt_vec4i_t: lt_v4imax \
 	)((a), (b)))
 
 #define lt_vmin(a, b) (_Generic((a), \
 		lt_vec2_t: lt_v2min, \
 		lt_vec3_t: lt_v3min, \
-		lt_vec4_t: lt_v4min \
+		lt_vec4_t: lt_v4min, \
+		lt_vec2i_t: lt_v2imin, \
+		lt_vec3i_t: lt_v3imin, \
+		lt_vec4i_t: lt_v4imin \
 	)((a), (b)))
 
 #define lt_vclamp(v, min, max) (_Generic((v), \
