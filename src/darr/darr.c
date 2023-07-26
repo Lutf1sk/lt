@@ -65,7 +65,8 @@ void* lt_darr_insert_(void* arr, usz idx, void* data, usz count) {
 	u8* arr_end_ptr = (u8*)arr + old_count * head->elem_size;
 
 	memmove(end_ptr, start_ptr, arr_end_ptr - start_ptr);
-	memcpy(start_ptr, data, size);
+	if (data)
+		memcpy(start_ptr, data, size);
 
 	return arr;
 }
