@@ -346,8 +346,18 @@ lt_vec2_t lt_v2clamp(lt_vec2_t v, lt_vec2_t min, lt_vec2_t max) {
 }
 
 static LT_INLINE
+lt_vec2i_t lt_v2iclamp(lt_vec2i_t v, lt_vec2i_t min, lt_vec2i_t max) {
+	return LT_VEC2I(lt_clamp_i32(v.x, min.x, max.x), lt_clamp_i32(v.y, min.y, max.y));
+}
+
+static LT_INLINE
 lt_vec2_t lt_v2clampf(lt_vec2_t v, f32 min, f32 max) {
 	return LT_VEC2(lt_clamp_f32(v.x, min, max), lt_clamp_f32(v.y, min, max));
+}
+
+static LT_INLINE
+lt_vec2i_t lt_v2iclampi(lt_vec2i_t v, i32 min, i32 max) {
+	return LT_VEC2I(lt_clamp_i32(v.x, min, max), lt_clamp_i32(v.y, min, max));
 }
 
 static LT_INLINE
@@ -613,8 +623,18 @@ lt_vec3_t lt_v3clamp(lt_vec3_t v, lt_vec3_t min, lt_vec3_t max) {
 }
 
 static LT_INLINE
+lt_vec3i_t lt_v3iclamp(lt_vec3i_t v, lt_vec3i_t min, lt_vec3i_t max) {
+	return LT_VEC3I(lt_clamp_i32(v.x, min.x, max.x), lt_clamp_i32(v.y, min.y, max.y), lt_clamp_i32(v.z, min.z, max.z));
+}
+
+static LT_INLINE
 lt_vec3_t lt_v3clampf(lt_vec3_t v, f32 min, f32 max) {
 	return LT_VEC3(lt_clamp_f32(v.x, min, max), lt_clamp_f32(v.y, min, max), lt_clamp_f32(v.z, min, max));
+}
+
+static LT_INLINE
+lt_vec3i_t lt_v3iclampi(lt_vec3i_t v, i32 min, i32 max) {
+	return LT_VEC3I(lt_clamp_i32(v.x, min, max), lt_clamp_i32(v.y, min, max), lt_clamp_i32(v.z, min, max));
 }
 
 static LT_INLINE
@@ -856,8 +876,18 @@ lt_vec4_t lt_v4clamp(lt_vec4_t v, lt_vec4_t min, lt_vec4_t max) {
 }
 
 static LT_INLINE
+lt_vec4i_t lt_v4iclamp(lt_vec4i_t v, lt_vec4i_t min, lt_vec4i_t max) {
+	return LT_VEC4I(lt_clamp_i32(v.x, min.x, max.x), lt_clamp_i32(v.y, min.y, max.y), lt_clamp_i32(v.z, min.z, max.z), lt_clamp_i32(v.w, min.w, max.w));
+}
+
+static LT_INLINE
 lt_vec4_t lt_v4clampf(lt_vec4_t v, f32 min, f32 max) {
 	return LT_VEC4(lt_clamp_f32(v.x, min, max), lt_clamp_f32(v.y, min, max), lt_clamp_f32(v.z, min, max), lt_clamp_f32(v.w, min, max));
+}
+
+static LT_INLINE
+lt_vec4i_t lt_v4iclampi(lt_vec4i_t v, i32 min, i32 max) {
+	return LT_VEC4I(lt_clamp_i32(v.x, min, max), lt_clamp_i32(v.y, min, max), lt_clamp_i32(v.z, min, max), lt_clamp_i32(v.w, min, max));
 }
 
 static LT_INLINE
@@ -1104,12 +1134,21 @@ lt_vec4_t lt_v4itof(lt_vec4i_t v) {
 		lt_vec2_t: lt_v2clamp, \
 		lt_vec3_t: lt_v3clamp, \
 		lt_vec4_t: lt_v4clamp \
+		lt_vec2i_t: lt_v2iclamp, \
+		lt_vec3i_t: lt_v3iclamp, \
+		lt_vec4i_t: lt_v4iclamp \
 	)((v), (min), (max)))
 
 #define lt_vclampf(v, min, max) (_Generic((v), \
 		lt_vec2_t: lt_v2clampf, \
 		lt_vec3_t: lt_v3clampf, \
 		lt_vec4_t: lt_v4clampf \
+	)((v), (min), (max)))
+
+#define lt_vclampi(v, min, max) (_Generic((v), \
+		lt_vec2i_t: lt_v2iclampi, \
+		lt_vec3i_t: lt_v3iclampi, \
+		lt_vec4i_t: lt_v4iclampi \
 	)((v), (min), (max)))
 
 #define lt_vmaxcomp(a) (_Generic((a), \
@@ -1352,6 +1391,7 @@ lt_mat4_t lt_m4inverse(const lt_mat4_t* m);
 #	define vmin lt_vmin
 #	define vclamp lt_vclamp
 #	define vclampf lt_vclampf
+#	define vclampi lt_vclampi
 #	define vmaxcomp lt_vmaxcomp
 #	define vmincomp lt_vmincomp
 
@@ -1419,6 +1459,14 @@ lt_mat4_t lt_m4inverse(const lt_mat4_t* m);
 #	define VEC2(...) LT_VEC2(__VA_ARGS__)
 #	define VEC3(...) LT_VEC3(__VA_ARGS__)
 #	define VEC4(...) LT_VEC4(__VA_ARGS__)
+
+#	define VEC2I_INIT(...) LT_VEC2I_INIT(__VA_ARGS__)
+#	define VEC3I_INIT(...) LT_VEC3I_INIT(__VA_ARGS__)
+#	define VEC4I_INIT(...) LT_VEC4I_INIT(__VA_ARGS__)
+
+#	define VEC2I(...) LT_VEC2I(__VA_ARGS__)
+#	define VEC3I(...) LT_VEC3I(__VA_ARGS__)
+#	define VEC4I(...) LT_VEC4I(__VA_ARGS__)
 
 #	define QUAT_INIT(...) LT_QUAT_INIT(__VA_ARGS__)
 #	define QUAT(...) LT_QUAT(__VA_ARGS__)

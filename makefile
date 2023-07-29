@@ -76,10 +76,16 @@ ifdef SSL
 	CC_FLAGS += -DLT_SSL=1
 endif
 
+ifdef DEBUG
+	CC_FLAGS += -O0 -g -rdynamic -fno-omit-frame-pointer
+else
+	CC_FLAGS += -Ofast
+endif
+
 # -----
 DEPS = $(patsubst %.o,%.d,$(OBJS))
 
-CC_FLAGS += -Wall -I./ -I./include/ -masm=intel -Ofast -fno-omit-frame-pointer -Wall -Werror -Wno-strict-aliasing -Wno-error=unused-variable -Wno-unused-function -std=gnu2x -fmax-errors=3
+CC_FLAGS += -Wall -I./ -I./include/ -masm=intel -Wall -Werror -Wno-strict-aliasing -Wno-error=unused-variable -Wno-unused-function -std=gnu2x -fmax-errors=3
 LNK_FLAGS += -L$(BASE_DIR)/bin
 
 OUT_PATH = $(LIB)
