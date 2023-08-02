@@ -52,6 +52,11 @@ lstr_t lt_lstr_from_cstr(char* cstr) {
 	return LSTR(cstr, strlen(cstr));
 }
 
+static LT_INLINE
+lstr_t lt_lstr_from_range(char* start, char* end) {
+	return LSTR(start, end - start);
+}
+
 lstr_t lt_lstr_trim_left(lstr_t str);
 lstr_t lt_lstr_trim_right(lstr_t str);
 lstr_t lt_lstr_trim(lstr_t str);
