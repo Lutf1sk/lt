@@ -56,7 +56,6 @@ typedef struct lt_texture lt_texture_t;
 typedef struct lt_model lt_model_t;
 
 // textedit.h
-typedef struct lt_led lt_led_t;
 typedef struct lt_texted lt_texted_t;
 
 // linalg.h
