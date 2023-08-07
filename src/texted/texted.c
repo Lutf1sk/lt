@@ -154,7 +154,7 @@ isz lt_texted_write_range(lt_texted_t* ed, usz x1, usz y1, usz x2, usz y2, lt_io
 		bytes += res;
 	}
 
-	if ((res = callb(usr, ed->lines[y2], lt_darr_count(ed->lines[y2]) - x2)) < 0)
+	if ((res = callb(usr, ed->lines[y2], x2)) < 0)
 		return res;
 	bytes += res;
 
