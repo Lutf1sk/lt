@@ -30,7 +30,7 @@ usz lt_word_align_bwd(usz val) {
 
 static LT_INLINE
 usz lt_align_fwd(usz val, usz align) {
-	usz align_mask = align - 1 ;
+	usz align_mask = align - 1;
 	return (val + align_mask) & ~align_mask;
 }
 
