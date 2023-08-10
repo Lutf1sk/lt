@@ -19,17 +19,6 @@ i32 lt_term_mouse_x = 0, lt_term_mouse_y = 0;
 static volatile u8 resized = 0;
 
 static
-lt_err_t lt_update_term_dimensions(void) {
-	struct winsize wsz;
-	if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &wsz) < 0)
-		return LT_ERR_UNKNOWN; // !!
-
-	lt_term_width = wsz.ws_col;
-	lt_term_height = wsz.ws_row;
-	return LT_SUCCESS;
-}
-
-static
 void lt_handle_winch(int sig) {
 	resized = 1;
 }
@@ -91,6 +80,16 @@ void lt_term_restore(void) {
 		write(STDOUT_FILENO, "\x1b[?2004l", 8);
 	if (term_flags & LT_TERM_ALTBUF)
 		write(STDOUT_FILENO, "\x1b[?1049l", 8);
+}
+
+lt_err_t lt_update_term_dimensions(void) {
+	struct winsize wsz;
+	if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &wsz) < 0)
+		return LT_ERR_UNKNOWN; // !!
+
+	lt_term_width = wsz.ws_col;
+	lt_term_height = wsz.ws_row;
+	return LT_SUCCESS;
 }
 
 static

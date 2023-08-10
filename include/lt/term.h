@@ -85,6 +85,7 @@ extern i32 lt_term_mouse_x, lt_term_mouse_y;
 lt_err_t lt_term_init(lt_term_flags_t flags);
 void lt_term_restore(void);
 
+lt_err_t lt_update_term_dimensions(void);
 u32 lt_term_getkey(void);
 
 void lt_term_write_direct(char* str, usz len);
