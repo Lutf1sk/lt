@@ -4,9 +4,6 @@
 #include <lt/err.h>
 #include <lt/fwd.h>
 
-#define LT_IMG_TGA_MAGIC (char[1]){ 0x00 }
-#define LT_IMG_BMP_MAGIC (char[2]){'B', 'M'}
-
 typedef
 enum lt_img_format {
 	LT_IMG_RGBA,
