@@ -53,7 +53,7 @@ lt_err_t lt_img_load_bmp(lt_img_t* img, void* data, usz len, lt_alloc_t* alloc) 
 	usz end = (usz)data + len;
 
 	lt_bmp_fileheader_t* fh = data;
-	if (len < sizeof(lt_bmp_fileheader_t) || fh->magic[0] != LT_IMG_BMP_MAGIC[0] || fh->magic[1] != LT_IMG_BMP_MAGIC[1])
+	if (len < sizeof(lt_bmp_fileheader_t) || fh->magic[0] != 'B' || fh->magic[1] != 'M')
 		return LT_ERR_INVALID_FORMAT;
 
 	u32* infoheader_start = (u32*)((usz)fh + sizeof(lt_bmp_fileheader_t));
