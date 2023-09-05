@@ -13,8 +13,9 @@ u32 lt_wang_hash(u32 seed) {
 
 static LT_INLINE
 u32 lt_pcg_hash(u32 seed) {
-	u32 state = input * 747796405 + 2891336453;
-	u32 word = ((state >> ((state >> 28) + 4)) ^ state) * 277803737;
+	u32 state = seed * 747796405u + 2891336453u;
+	u32 word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
+	return (word >> 22u) ^ word;
 }
 
 #endif
