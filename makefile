@@ -39,6 +39,7 @@ OBJS = \
 	src/lt/err.o \
 	src/mem/arena.o \
 	src/mem/heap.o \
+	src/mem/mset.o \
 	src/mem/page_size.o \
 	src/mem/pool.o \
 	src/mem/vmem.o \
@@ -86,7 +87,7 @@ endif
 # -----
 DEPS = $(patsubst %.o,%.d,$(OBJS))
 
-CC_FLAGS += -Wall -I./ -I./include/ -masm=intel -Wall -Werror -Wno-strict-aliasing -Wno-error=unused-variable -Wno-unused-function -std=gnu2x -fmax-errors=3
+CC_FLAGS += -mavx2 -Wall -I./ -I./include/ -masm=intel -Wall -Werror -Wno-strict-aliasing -Wno-error=unused-variable -Wno-unused-function -std=gnu2x -fmax-errors=3
 LNK_FLAGS += -L$(BASE_DIR)/bin
 
 OUT_PATH = $(LIB)
