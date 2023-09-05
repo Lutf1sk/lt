@@ -48,7 +48,7 @@ lt_mat4_t lt_m4frustum(f32 bottom, f32 top, f32 left, f32 right, f32 near, f32 f
 	m.data[3][0] = 0;
 	m.data[3][1] = 0;
 	m.data[3][2] = -2 * far * near / (far - near);
-	m.data[3][3] = 0;
+	m.data[3][3] = 1;
 
 	return m;
 }
