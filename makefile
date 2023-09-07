@@ -53,6 +53,7 @@ OBJS = \
 	src/thread/mutex.o \
 	src/thread/spinlock.o \
 	src/thread/thread.o \
+	src/time/sleep.o \
 	src/time/time.o \
 	src/utf8/utf8.o \
 	src/utf8/wcwidth.o \
@@ -97,7 +98,7 @@ all: $(OUT_PATH)
 $(OUT_PATH): $(OBJS)
 	@-mkdir -p bin/
 	@echo Linking $(LIB)...
-	@$(LNK) $(LNK_FLAGS) -r -o $(OUT_PATH) $(OBJS) $(LNK_LIBS)
+	@$(LNK) $(LNK_FLAGS) -r -o $(OUT_PATH) $(OBJS)
 
 .PHONY: clean all run analyze
 
