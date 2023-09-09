@@ -4,6 +4,8 @@ OBJS = \
 	src/arg/arg.o \
 	src/asm/asm.o \
 	src/asm/x64.o \
+	src/audio/audio.o \
+	src/audio/wav.o \
 	src/base64/base64.o \
 	src/conf/conf.o \
 	src/ctype/ctype.o \

@@ -56,6 +56,7 @@ typedef struct lt_texture lt_texture_t;
 typedef struct lt_model lt_model_t;
 
 // textedit.h
+typedef struct lt_led lt_led_t;
 typedef struct lt_texted lt_texted_t;
 
 // linalg.h
@@ -78,5 +79,9 @@ typedef struct lt_elf64_sym lt_elf64_sym_t;
 typedef struct lt_elf32_sym lt_elf32_sym_t;
 typedef struct lt_elf64_dyn lt_elf64_dyn_t;
 typedef struct lt_elf64 lt_elf64_t;
+
+// audio.h
+typedef struct lt_audio_stream lt_audio_stream_t;
+typedef struct lt_audio lt_audio_t;
 
 #endif
