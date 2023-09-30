@@ -88,7 +88,7 @@ else
 endif
 
 # -----
-DEPS = $(patsubst %.o,%.d,$(OBJS))
+DEPS = $(patsubst %.o,%.deps,$(OBJS))
 
 CC_FLAGS += -mavx2 -Wall -I./ -I./include/ -masm=intel -Wall -Werror -Wno-strict-aliasing -Wno-error=unused-variable -Wno-unused-function -std=gnu2x -fmax-errors=3
 LNK_FLAGS += -L$(BASE_DIR)/bin
@@ -112,7 +112,7 @@ analyze:
 
 %.o: %.c makefile
 	@echo Compiling $<...
-	@$(CC) -MM -MT $@ -MF $(patsubst %.o,%.d,$@) $< $(CC_FLAGS)
+	@$(CC) -MM -MT $@ -MF $(patsubst %.o,%.deps,$@) $< $(CC_FLAGS)
 	@$(CC) -c $< -o $@ $(CC_FLAGS)
 
 -include $(DEPS)
