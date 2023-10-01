@@ -81,6 +81,10 @@ ifdef SSL
 	CC_FLAGS += -DLT_SSL=1
 endif
 
+ifdef ASOUND
+	CC_FLAGS += -DLT_ASOUND=1
+endif
+
 ifdef DEBUG
 	CC_FLAGS += -O0 -g -rdynamic -fno-omit-frame-pointer
 else
