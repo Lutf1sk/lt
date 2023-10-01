@@ -1,3 +1,5 @@
+#ifdef LT_ASOUND
+
 #include <lt/audio.h>
 #include <lt/debug.h>
 #include <lt/io.h>
@@ -127,3 +129,5 @@ isz lt_audio_stream_read(lt_audio_stream_t* s, void* data, usz frame_count) {
 lt_err_t lt_audio_load(lt_audio_t* audio, void* data, usz len, lt_alloc_t* alloc) {
 	return lt_audio_load_wav(audio, data, len, alloc);
 }
+
+#endif
