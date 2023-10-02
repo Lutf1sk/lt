@@ -1,80 +1,85 @@
-LIB = bin/lt.a
+OUT = lt.a
 
-OBJS = \
-	src/arg/arg.o \
-	src/asm/asm.o \
-	src/asm/x64.o \
-	src/audio/audio.o \
-	src/audio/wav.o \
-	src/base64/base64.o \
-	src/conf/conf.o \
-	src/ctype/ctype.o \
-	src/darr/darr.o \
-	src/debug/assert.o \
-	src/debug/breakpoint.o \
-	src/debug/debug.o \
-	src/debug/stack_trace.o \
-	src/dwarf/dwarf.o \
-	src/elf/dwarf.o \
-	src/elf/elf.o \
-	src/err/err.o \
-	src/font/font.o \
-	src/font/psf.o \
-	src/gfx/gl.o \
-	src/gl/gl.o \
-	src/gl/glad.o \
-	src/gui/gui.o \
-	src/hashtab/hashtab.o \
-	src/http/http.o \
-	src/img/bmp.o \
-	src/img/img.o \
-	src/img/tga.o \
-	src/io/alloc.o \
-	src/io/cli.o \
-	src/io/file.o \
-	src/io/fmt.o \
-	src/io/std.o \
-	src/io/str.o \
-	src/json/json.o \
-	src/linalg/matrix.o \
-	src/lt/dynl.o \
-	src/lt/err.o \
-	src/mem/arena.o \
-	src/mem/heap.o \
-	src/mem/mset.o \
-	src/mem/page_size.o \
-	src/mem/pool.o \
-	src/mem/vmem.o \
-	src/net/socket.o \
-	src/net/sockstream.o \
-	src/ssl/ssl.o \
-	src/str/str.o \
-	src/strstream/strstream.o \
-	src/term/term.o \
-	src/texted/texted.o \
-	src/thread/mutex.o \
-	src/thread/spinlock.o \
-	src/thread/thread.o \
-	src/time/sleep.o \
-	src/time/time.o \
-	src/utf8/utf8.o \
-	src/utf8/wcwidth.o \
-	src/vk/vk.o \
-	src/vk/volk.o \
-	src/window/win32.o \
-	src/window/window.o \
-	src/window/x11.o \
-	src/window/xproto.o
+SRC = \
+	src/arg/arg.c \
+	src/asm/asm.c \
+	src/asm/x64.c \
+	src/audio/audio.c \
+	src/audio/wav.c \
+	src/base64/base64.c \
+	src/conf/conf.c \
+	src/ctype/ctype.c \
+	src/darr/darr.c \
+	src/debug/assert.c \
+	src/debug/breakpoint.c \
+	src/debug/debug.c \
+	src/debug/stack_trace.c \
+	src/dwarf/dwarf.c \
+	src/elf/dwarf.c \
+	src/elf/elf.c \
+	src/err/err.c \
+	src/font/font.c \
+	src/font/psf.c \
+	src/gfx/gl.c \
+	src/gl/gl.c \
+	src/gl/glad.c \
+	src/gui/gui.c \
+	src/hashtab/hashtab.c \
+	src/http/http.c \
+	src/img/bmp.c \
+	src/img/img.c \
+	src/img/tga.c \
+	src/io/alloc.c \
+	src/io/cli.c \
+	src/io/file.c \
+	src/io/fmt.c \
+	src/io/std.c \
+	src/io/str.c \
+	src/json/json.c \
+	src/linalg/matrix.c \
+	src/lt/dynl.c \
+	src/lt/err.c \
+	src/mem/arena.c \
+	src/mem/heap.c \
+	src/mem/mset.c \
+	src/mem/page_size.c \
+	src/mem/pool.c \
+	src/mem/vmem.c \
+	src/net/socket.c \
+	src/net/sockstream.c \
+	src/ssl/ssl.c \
+	src/str/str.c \
+	src/strstream/strstream.c \
+	src/term/term.c \
+	src/texted/texted.c \
+	src/thread/mutex.c \
+	src/thread/spinlock.c \
+	src/thread/thread.c \
+	src/time/sleep.c \
+	src/time/time.c \
+	src/utf8/utf8.c \
+	src/utf8/wcwidth.c \
+	src/vk/vk.c \
+	src/vk/volk.c \
+	src/window/win32.c \
+	src/window/window.c \
+	src/window/x11.c \
+	src/window/xproto.c
 
-CC = gcc
-LNK = gcc
+#ifdef WINDOWS
+#	CC = x86_64-w64-mingw32-gcc
+#	LNK = x86_64-w64-mingw32-gcc
+#endif
 
-ifdef WINDOWS
-	CC = x86_64-w64-mingw32-gcc
-	LNK = x86_64-w64-mingw32-gcc
+# -----== COMPILER
+CC := cc
+CC_WARN := -Wall -Werror -Wno-strict-aliasing -Wno-error=unused-variable -Wno-unused-function -Wno-pedantic
+CC_FLAGS := -I./include/ -std=gnu2x -fmax-errors=3 $(CC_WARN) -mavx2 -masm=intel
+
+ifdef DEBUG
+	CC_FLAGS += -fno-omit-frame-pointer -O0 -g
 else
-	CC_FLAGS += -g -rdynamic
-	LNK_FLAGS += -g -rdynamic
+	CC_FLAGS += -O2
 endif
 
 ifdef SSL
@@ -85,39 +90,45 @@ ifdef ASOUND
 	CC_FLAGS += -DLT_ASOUND=1
 endif
 
+# -----== LINKER
+LNK := cc
+LNK_LIBS := -lpthread -ldl -lm
+LNK_FLAGS := -o $(OUT) $(LNK_LIBS)
+
 ifdef DEBUG
-	CC_FLAGS += -O0 -g -rdynamic -fno-omit-frame-pointer
-else
-	CC_FLAGS += -Ofast
+	LNK_FLAGS += -g -rdynamic
 endif
 
-# -----
-DEPS = $(patsubst %.o,%.deps,$(OBJS))
+# -----== TARGETS
+ifdef DEBUG
+	BIN_PATH := bin/debug
+else
+	BIN_PATH := bin/release
+endif
 
-CC_FLAGS += -mavx2 -Wall -I./ -I./include/ -masm=intel -Wall -Werror -Wno-strict-aliasing -Wno-error=unused-variable -Wno-unused-function -std=gnu2x -fmax-errors=3
-LNK_FLAGS += -L$(BASE_DIR)/bin
+OUT_PATH := $(BIN_PATH)/$(OUT)
 
-OUT_PATH = $(LIB)
+OBJS := $(patsubst %.c,$(BIN_PATH)/%.o,$(SRC))
+DEPS := $(patsubst %.o,%.deps,$(OBJS))
 
 all: $(OUT_PATH)
 
 $(OUT_PATH): $(OBJS)
-	@-mkdir -p bin/
-	@echo Linking $(LIB)...
-	@$(LNK) $(LNK_FLAGS) -r -o $(OUT_PATH) $(OBJS)
+	-mkdir -p bin/
+	$(LNK) $(LNK_FLAGS) -r -o $(OUT_PATH) $(OBJS)
 
-.PHONY: clean all run analyze
+install: all
+	cp $(OUT_PATH) /usr/local/bin/
 
 clean:
-	-rm $(OBJS) $(DEPS) $(OUT_PATH)
+	-rm $(OUT_PATH) $(OBJS) $(DEPS)
 
-analyze:
-	@clang-check --analyze --extra-arg="-I./include" $(patsubst %.o,%.c,$(OBJS))
-
-%.o: %.c makefile
-	@echo Compiling $<...
-	@$(CC) -MM -MT $@ -MF $(patsubst %.o,%.deps,$@) $< $(CC_FLAGS)
-	@$(CC) -c $< -o $@ $(CC_FLAGS)
+$(BIN_PATH)/%.o: %.c makefile
+	@-mkdir -p $(BIN_PATH)/$(dir $<)
+	@$(CC) $(CC_FLAGS) -MM -MT $@ -MF $(patsubst %.o,%.deps,$@) $<
+	$(CC) $(CC_FLAGS) -c $< -o $@
 
 -include $(DEPS)
+
+.PHONY: all install clean
 
