@@ -86,3 +86,33 @@ void lt_werrbf(char* fmt, ...) {
 	lt_stack_trace(1);
 }
 
+// Debug info
+void lt_ierr(lstr_t str) {
+	lt_fprintf(lt_stderr, FG_BCYAN"info"RESET": %S", str);
+}
+
+void lt_ierrf(char* fmt, ...) {
+	lt_fprintf(lt_stderr, FG_BCYAN"info"RESET": ");
+
+	va_list list;
+	va_start(list, fmt);
+	lt_vfprintf(lt_stderr, fmt, list);
+	va_end(list);
+}
+
+void lt_ierrb(lstr_t str) {
+	lt_fprintf(lt_stderr, FG_BCYAN"info"RESET": %S", str);
+	lt_stack_trace(1);
+}
+
+void lt_ierrbf(char* fmt, ...) {
+	lt_fprintf(lt_stderr, FG_BCYAN"info"RESET": ");
+
+	va_list list;
+	va_start(list, fmt);
+	lt_vfprintf(lt_stderr, fmt, list);
+	va_end(list);
+
+	lt_stack_trace(1);
+}
+

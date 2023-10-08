@@ -97,6 +97,12 @@ void lt_werrf(char* fmt, ...);
 void lt_werrb(lstr_t str);
 void lt_werrbf(char* fmt, ...);
 
+// Debug info
+void lt_ierr(lstr_t str);
+void lt_ierrf(char* fmt, ...);
+void lt_ierrb(lstr_t str);
+void lt_ierrbf(char* fmt, ...);
+
 // Dynamic loading
 void* lt_dynl_open(char* path);
 void lt_dynl_close(void* handle);
