@@ -22,6 +22,14 @@ struct lt_spotify_device {
 	char name[64];
 } lt_spotify_device_t;
 
+typedef
+struct lt_spotify_track {
+	char id[32];
+	char album[128];
+	char name[128];
+	char artists[256];
+} lt_spotify_track_t;
+
 lt_err_t lt_spotify_init(lt_spotify_t* spt, lstr_t client_id, lstr_t client_secret);
 void lt_spotify_destroy(lt_spotify_t* spt, lt_alloc_t* alloc);
 
@@ -36,5 +44,7 @@ lt_darr(lt_spotify_device_t) lt_spotify_device_list(lt_spotify_t* spt, lt_alloc_
 
 lt_err_t lt_spotify_play_track(lt_spotify_t* spt, lstr_t device_id, lstr_t track_id, lt_alloc_t* alloc);
 lt_err_t lt_spotify_queue_track(lt_spotify_t* spt, lstr_t device_id, lstr_t track_id, lt_alloc_t* alloc);
+
+lt_err_t lt_spotify_get_track(lt_spotify_t* spt, lstr_t track_id, lt_spotify_track_t* out_track, lt_alloc_t* alloc);
 
 #endif

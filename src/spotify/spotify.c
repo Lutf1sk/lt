@@ -59,7 +59,7 @@ lt_err_t spotify_request(lt_spotify_t* spt, char* method, char* endpoint, char* 
 			return err;
 	}
 
-	lt_printf("%s %s %uw %S\n", method, endpoint, out_res->status_code, out_res->status_msg);
+// 	lt_printf("%s %s %uw %S\n", method, endpoint, out_res->status_code, out_res->status_msg);
 	return LT_SUCCESS;
 }
 
@@ -340,7 +340,7 @@ lt_darr(lt_spotify_device_t) lt_spotify_device_list(lt_spotify_t* spt, lt_alloc_
 	spotify_request(spt, "GET", "/v1/me/player/devices", "", NLSTR(), &res, alloc);
 
 	lt_json_t* body_json = lt_json_parse(alloc, res.body.str, res.body.len);
-	if (!body_json)
+	if (!body_json || body_json->stype != LT_JSON_OBJECT)
 		goto err0;
 
 	lt_darr(lt_spotify_device_t) arr = lt_darr_create(lt_spotify_device_t, 4, alloc);
@@ -372,8 +372,8 @@ lt_darr(lt_spotify_device_t) lt_spotify_device_list(lt_spotify_t* spt, lt_alloc_
 		lt_darr_push(arr, dev);
 	}
 
+	// lt_json_free(body_json, alloc);
 	lt_http_response_destroy(&res, alloc);
-
 	return arr;
 
 // err2:	// lt_json_free(body_json, alloc);
@@ -406,11 +406,79 @@ lt_err_t lt_spotify_play_track(lt_spotify_t* spt, lstr_t device_id, lstr_t track
 lt_err_t lt_spotify_queue_track(lt_spotify_t* spt, lstr_t device_id, lstr_t track_id, lt_alloc_t* alloc) {
 	// !!
 	char buf[4096];
-	buf[lt_sprintf(buf, "/v1/me/player/queue?uri=spotify%%3Atrack%%3A%S", track_id)] = 0;
+	buf[lt_sprintf(buf, "/v1/me/player/queue?uri=spotify%%3Atrack%%3A%S&device_id=%S", track_id, device_id)] = 0;
 
 	lt_http_response_t res;
 	spotify_request(spt, "POST", buf, "", NLSTR(), &res, alloc);
 	lt_http_response_destroy(&res, alloc);
 
 	return LT_SUCCESS;
+}
+
+lt_err_t lt_spotify_get_track(lt_spotify_t* spt, lstr_t track_id, lt_spotify_track_t* out_track, lt_alloc_t* alloc) {
+	// !!
+	char buf[4096];
+	buf[lt_sprintf(buf, "/v1/tracks/%S", track_id)] = 0;
+
+	lt_http_response_t res;
+	spotify_request(spt, "GET", buf, "", NLSTR(), &res, alloc);
+
+	lt_json_t* body_json = lt_json_parse(alloc, res.body.str, res.body.len);
+	if (!body_json || body_json->stype != LT_JSON_OBJECT)
+		goto err0;
+	lt_json_t* name_json = lt_json_find_child(body_json, CLSTR("name"));
+	if (!name_json || name_json->stype != LT_JSON_STRING)
+		goto err0;
+
+	lstr_t name = name_json->str_val;
+
+	lt_json_t* album_json = lt_json_find_child(body_json, CLSTR("album"));
+	if (!album_json || album_json->stype != LT_JSON_OBJECT)
+		goto err0;
+	lt_json_t* album_name_json = lt_json_find_child(album_json, CLSTR("name"));
+	if (!album_name_json || album_name_json->stype != LT_JSON_STRING)
+		goto err0;
+
+	lstr_t album = album_name_json->str_val;
+
+	if (album.len >= sizeof(out_track->album))
+		return LT_ERR_UNKNOWN;
+	memcpy(out_track->album, album.str, album.len);
+	out_track->album[album.len] = 0;
+
+	if (name.len >= sizeof(out_track->name))
+		return LT_ERR_UNKNOWN;
+	memcpy(out_track->name, name.str, name.len);
+	out_track->name[name.len] = 0;
+
+	lt_json_t* artists_json = lt_json_find_child(body_json, CLSTR("artists"));
+	if (!artists_json || artists_json->stype != LT_JSON_ARRAY)
+		goto err0;
+
+	// !!
+	char* it = out_track->artists, *end = it + sizeof(out_track->artists) - 1;
+	for (lt_json_t* child_it = artists_json->child; child_it; child_it = child_it->next) {
+		if (child_it->stype != LT_JSON_OBJECT)
+			continue;
+
+		lt_json_t* name_json = lt_json_find_child(child_it, CLSTR("name"));
+		if (!name_json || name_json->stype != LT_JSON_STRING)
+			continue;
+
+		memcpy(it, name_json->str_val.str, name_json->str_val.len);
+		it += name_json->str_val.len;
+
+		if (child_it->next) {
+			*it++ = ',';
+			*it++ = ' ';
+		}
+	}
+	*it = 0;
+
+	lt_http_response_destroy(&res, alloc);
+	return LT_SUCCESS;
+
+// err1:	// lt_json_free(body_json, alloc);
+err0:	lt_http_response_destroy(&res, alloc);
+		return LT_ERR_UNKNOWN;
 }
