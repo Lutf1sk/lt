@@ -123,7 +123,7 @@ install: all
 	cp $(OUT_PATH) /usr/local/bin/
 
 clean:
-	-rm $(OUT_PATH) $(OBJS) $(DEPS)
+	-rm -r bin
 
 $(BIN_PATH)/%.o: %.c makefile
 	@-mkdir -p $(BIN_PATH)/$(dir $<)
