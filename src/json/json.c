@@ -259,6 +259,9 @@ void lt_json_print(lt_file_t* file, lt_json_t* json) {
 }
 
 lt_json_t* lt_json_find_child(lt_json_t* json, lstr_t key) {
+	if (!json)
+		return NULL;
+
 	LT_ASSERT(json->stype == LT_JSON_OBJECT);
 	if (json->stype != LT_JSON_OBJECT)
 		return NULL;
