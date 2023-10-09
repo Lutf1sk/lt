@@ -84,4 +84,10 @@ typedef struct lt_elf64 lt_elf64_t;
 typedef struct lt_audio_stream lt_audio_stream_t;
 typedef struct lt_audio lt_audio_t;
 
+// ssl.h
+typedef struct lt_ssl_connection lt_ssl_connection_t;
+
+// http.h
+typedef struct lt_http_response lt_http_response_t;
+
 #endif
