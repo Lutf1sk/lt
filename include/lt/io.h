@@ -63,4 +63,6 @@ isz lt_alloc_io_callb(lt_io_alloc_ctx_t* cx, void* data, usz len);
 isz lt_vaprintf(lstr_t* out, lt_alloc_t* alloc, char* fmt, va_list args);
 isz lt_aprintf(lstr_t* out, lt_alloc_t* alloc, char* fmt, ...);
 
+lstr_t lt_lstr_build(lt_alloc_t* alloc, char* fmt, ...);
+
 #endif

@@ -59,3 +59,15 @@ isz lt_aprintf(lstr_t* out, lt_alloc_t* alloc, char* fmt, ...) {
 	return res;
 }
 
+lstr_t lt_lstr_build(lt_alloc_t* alloc, char* fmt, ...) {
+	va_list argl;
+	va_start(argl, fmt);
+	lstr_t str;
+	isz res = lt_vaprintf(&str, alloc, fmt, argl);
+	if (res < 0) {
+		lt_werrbf("allocation failed\n");
+		return NLSTR();
+	}
+	va_end(argl);
+	return str;
+}
