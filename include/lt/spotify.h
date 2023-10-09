@@ -45,6 +45,10 @@ lt_darr(lt_spotify_device_t) lt_spotify_device_list(lt_spotify_t* spt, lt_alloc_
 lt_err_t lt_spotify_play_track(lt_spotify_t* spt, lstr_t device_id, lstr_t track_id, lt_alloc_t* alloc);
 lt_err_t lt_spotify_queue_track(lt_spotify_t* spt, lstr_t device_id, lstr_t track_id, lt_alloc_t* alloc);
 
+lt_err_t lt_spotify_next_track(lt_spotify_t* spt, lstr_t device_id, lt_alloc_t* alloc);
+lt_err_t lt_spotify_prev_track(lt_spotify_t* spt, lstr_t device_id, lt_alloc_t* alloc);
+
+lt_err_t lt_spotify_current_track(lt_spotify_t* spt, lt_spotify_track_t* out_track, lt_alloc_t* alloc);
 lt_err_t lt_spotify_get_track(lt_spotify_t* spt, lstr_t track_id, lt_spotify_track_t* out_track, lt_alloc_t* alloc);
 
 #endif
