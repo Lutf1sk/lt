@@ -251,7 +251,8 @@ lt_conf_t* lt_conf_find_int(lt_conf_t* cf, lstr_t key_path, i64* out) {
 	cf = lt_conf_find(cf, key_path);
 	if (!cf || cf->stype != LT_CONF_INT)
 		return NULL;
-	*out = cf->int_val;
+	if (out)
+		*out = cf->int_val;
 	return cf;
 }
 
@@ -259,7 +260,8 @@ lt_conf_t* lt_conf_find_uint(lt_conf_t* cf, lstr_t key_path, u64* out) {
 	cf = lt_conf_find(cf, key_path);
 	if (!cf || cf->stype != LT_CONF_INT)
 		return NULL;
-	*out = cf->uint_val;
+	if (out)
+		*out = cf->uint_val;
 	return cf;
 }
 
@@ -267,7 +269,8 @@ lt_conf_t* lt_conf_find_bool(lt_conf_t* cf, lstr_t key_path, b8* out) {
 	cf = lt_conf_find(cf, key_path);
 	if (!cf || cf->stype != LT_CONF_BOOL)
 		return NULL;
-	*out = cf->bool_val;
+	if (out)
+		*out = cf->bool_val;
 	return cf;
 }
 
@@ -275,7 +278,8 @@ lt_conf_t* lt_conf_find_str(lt_conf_t* cf, lstr_t key_path, lstr_t* out) {
 	cf = lt_conf_find(cf, key_path);
 	if (!cf || cf->stype != LT_CONF_STRING)
 		return NULL;
-	*out = cf->str_val;
+	if (out)
+		*out = cf->str_val;
 	return cf;
 }
 
@@ -283,7 +287,8 @@ lt_conf_t* lt_conf_find_float(lt_conf_t* cf, lstr_t key_path, f64* out) {
 	cf = lt_conf_find(cf, key_path);
 	if (!cf || cf->stype != LT_CONF_FLOAT)
 		return NULL;
-	*out = cf->float_val;
+	if (out)
+		*out = cf->float_val;
 	return cf;
 }
 
@@ -291,14 +296,16 @@ lt_conf_t* lt_conf_find_object(lt_conf_t* cf, lstr_t key_path, lt_conf_t** out) 
 	cf = lt_conf_find(cf, key_path);
 	if (!cf || cf->stype != LT_CONF_OBJECT)
 		return NULL;
-	*out = cf;
+	if (out)
+		*out = cf;
 	return cf;
 }
 lt_conf_t* lt_conf_find_array(lt_conf_t* cf, lstr_t key_path, lt_conf_t** out) {
 	cf = lt_conf_find(cf, key_path);
 	if (!cf || cf->stype != LT_CONF_ARRAY)
 		return NULL;
-	*out = cf;
+	if (out)
+		*out = cf;
 	return cf;
 }
 
