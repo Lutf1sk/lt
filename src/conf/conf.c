@@ -302,6 +302,55 @@ lt_conf_t* lt_conf_find_array(lt_conf_t* cf, lstr_t key_path, lt_conf_t** out) {
 	return cf;
 }
 
+i64 lt_conf_int(lt_conf_t* cf, lstr_t key_path) {
+	cf = lt_conf_find(cf, key_path);
+	if (!cf || cf->stype != LT_CONF_INT)
+		lt_ferrf("missing required integer field '%S.%S'\n", cf->key, key_path);
+	return cf->int_val;
+}
+
+u64 lt_conf_uint(lt_conf_t* cf, lstr_t key_path) {
+	cf = lt_conf_find(cf, key_path);
+	if (!cf || cf->stype != LT_CONF_INT)
+		lt_ferrf("missing required integer field '%S.%S'\n", cf->key, key_path);
+	return cf->uint_val;
+}
+
+b8 lt_conf_bool(lt_conf_t* cf, lstr_t key_path) {
+	cf = lt_conf_find(cf, key_path);
+	if (!cf || cf->stype != LT_CONF_BOOL)
+		lt_ferrf("missing required boolean field '%S.%S'\n", cf->key, key_path);
+	return cf->bool_val;
+}
+
+lstr_t lt_conf_str(lt_conf_t* cf, lstr_t key_path) {
+	cf = lt_conf_find(cf, key_path);
+	if (!cf || cf->stype != LT_CONF_STRING)
+		lt_ferrf("missing required string field '%S.%S'\n", cf->key, key_path);
+	return cf->str_val;
+}
+
+f64 lt_conf_float(lt_conf_t* cf, lstr_t key_path) {
+	cf = lt_conf_find(cf, key_path);
+	if (!cf || cf->stype != LT_CONF_FLOAT)
+		lt_ferrf("missing required floating-point field '%S.%S'\n", cf->key, key_path);
+	return cf->float_val;
+}
+
+lt_conf_t* lt_conf_object(lt_conf_t* cf, lstr_t key_path) {
+	cf = lt_conf_find(cf, key_path);
+	if (!cf || cf->stype != LT_CONF_OBJECT)
+		lt_ferrf("missing required object field '%S.%S'\n", cf->key, key_path);
+	return cf;
+}
+
+lt_conf_t* lt_conf_array(lt_conf_t* cf, lstr_t key_path)  {
+	cf = lt_conf_find(cf, key_path);
+	if (!cf || cf->stype != LT_CONF_ARRAY)
+		lt_ferrf("missing required array field '%S.%S'\n", cf->key, key_path);
+	return cf;
+}
+
 i64 lt_conf_find_int_default(lt_conf_t* cf, lstr_t key_path, i64 default_) {
 	cf = lt_conf_find(cf, key_path);
 	if (!cf || cf->stype != LT_CONF_INT)

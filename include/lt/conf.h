@@ -64,6 +64,14 @@ lt_conf_t* lt_conf_find_float(lt_conf_t* parent, lstr_t key_path, f64* out);
 lt_conf_t* lt_conf_find_object(lt_conf_t* parent, lstr_t key_path, lt_conf_t** out);
 lt_conf_t* lt_conf_find_array(lt_conf_t* parent, lstr_t key_path, lt_conf_t** out);
 
+i64 lt_conf_int(lt_conf_t* parent, lstr_t key_path);
+u64 lt_conf_uint(lt_conf_t* parent, lstr_t key_path);
+b8 lt_conf_bool(lt_conf_t* parent, lstr_t key_path);
+lstr_t lt_conf_str(lt_conf_t* parent, lstr_t key_path);
+f64 lt_conf_float(lt_conf_t* parent, lstr_t key_path);
+lt_conf_t* lt_conf_object(lt_conf_t* parent, lstr_t key_path);
+lt_conf_t* lt_conf_array(lt_conf_t* parent, lstr_t key_path);
+
 i64 lt_conf_find_int_default(lt_conf_t* parent, lstr_t key_path, i64 default_);
 u64 lt_conf_find_uint_default(lt_conf_t* parent, lstr_t key_path, u64 default_);
 b8 lt_conf_find_bool_default(lt_conf_t* parent, lstr_t key_path, b8 default_);
