@@ -1,4 +1,5 @@
 #include <lt/ssl.h>
+#include <lt/debug.h>
 
 #ifdef LT_SSL
 
@@ -14,30 +15,42 @@ static SSL_CTX* ssl_ctx = NULL;
 
 lt_err_t lt_ssl_init(void) {
 	SSL_library_init();
-	OpenSSL_add_all_algorithms();
 	SSL_load_error_strings();
+	OpenSSL_add_all_algorithms();
 
-	ssl_ctx = SSL_CTX_new(TLS_client_method());
+	const SSL_METHOD* method = TLS_client_method();
+	if (!method)
+		return LT_ERR_UNKNOWN;
+
+	ssl_ctx = SSL_CTX_new(method);
 	if (!ssl_ctx)
 		return LT_ERR_UNKNOWN;
-	SSL_CTX_set_options(ssl_ctx, SSL_OP_NO_SSLv2|SSL_OP_NO_SSLv3);
+
 	return LT_SUCCESS;
 }
 
-lt_ssl_connection_t* lt_ssl_connect(lt_socket_t* socket) {
+lt_ssl_connection_t* lt_ssl_connect(lt_socket_t* socket, lstr_t sni_host) {
 	SSL* ssl = SSL_new(ssl_ctx);
 	if (!ssl)
 		return NULL;
 	SSL_set_fd(ssl, socket->fd);
 
-	char err_buf[512];
-
-	if (SSL_connect(ssl) != 1) {
-		ERR_print_errors_fp(stderr);
-		SSL_free(ssl);
+	char cstr_host[512];
+	if (sni_host.len >= sizeof(cstr_host))
 		return NULL;
+
+	if (sni_host.str) {
+		memcpy(cstr_host, sni_host.str, sni_host.len);
+		cstr_host[sni_host.len] = 0;
+		if (SSL_set_tlsext_host_name(ssl, cstr_host) != 1)
+			goto err0;
 	}
+	if (SSL_connect(ssl) != 1)
+		goto err0;
 	return (void*)ssl;
+
+err0:	SSL_free(ssl);
+		return NULL;
 }
 
 void lt_ssl_connection_destroy(lt_ssl_connection_t* ssl) {
