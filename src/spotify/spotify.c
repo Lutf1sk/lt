@@ -163,7 +163,7 @@ lt_err_t lt_spotify_create_token(lt_spotify_t* spt, lt_alloc_t* alloc) {
 	if ((err = lt_socket_connect(sock, &sockaddr)))
 		goto err0;
 
-	lt_ssl_connection_t* conn = lt_ssl_connect(sock);
+	lt_ssl_connection_t* conn = lt_ssl_connect(sock, CLSTR(ACCOUNTS_HOST));
 	if (!conn)
 		fail_to(err = LT_ERR_UNKNOWN, err0);
 
@@ -252,7 +252,7 @@ lt_err_t lt_spotify_refresh_token(lt_spotify_t* spt, lt_alloc_t* alloc) {
 	if ((err = lt_socket_connect(sock, &sockaddr)))
 		goto err0;
 
-	lt_ssl_connection_t* conn = lt_ssl_connect(sock);
+	lt_ssl_connection_t* conn = lt_ssl_connect(sock, CLSTR(ACCOUNTS_HOST));
 	if (!conn)
 		fail_to(err = LT_ERR_UNKNOWN, err0);
 
@@ -327,7 +327,7 @@ lt_err_t lt_spotify_connect(lt_spotify_t* spt, lt_alloc_t* alloc) {
 		return LT_ERR_UNKNOWN;
 	if ((err = lt_socket_connect(spt->sock, &sockaddr)))
 		goto err0;
-	if (!(spt->conn = lt_ssl_connect(spt->sock)))
+	if (!(spt->conn = lt_ssl_connect(spt->sock, CLSTR(API_HOST))))
 		fail_to(err = LT_ERR_UNKNOWN, err0);
 
 	return LT_SUCCESS;
