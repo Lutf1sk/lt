@@ -144,6 +144,7 @@ lt_err_t lt_lstr_hex_uint(lstr_t str, u64* out) {
 		val += hex_conv_tab[c]; // TODO: check for overflow
 	}
 
-	return val;
+	*out = val;
+	return LT_SUCCESS;
 }
 
