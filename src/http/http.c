@@ -23,6 +23,7 @@ lt_err_t lt_http_parse_response(lt_http_response_t* response, lt_io_callback_t c
 		goto err0;
 
 	#define X2CRLF (((u32)'\r' << 24) | ((u32)'\n' << 16) | ((u32)'\r' << 8) | (u32)'\n')
+	#define X1CRLF (((u32)'\r' << 8) | (u32)'\n')
 
 	// Read until "\r\n\r\n" is encountered
 	u32 history = 0;
@@ -89,7 +90,12 @@ lt_err_t lt_http_parse_response(lt_http_response_t* response, lt_io_callback_t c
 	if (!entries)
 		fail_to(err = LT_ERR_OUT_OF_MEMORY, err1);
 
-	b8 transfer_enc_present = 0;
+
+#define ENC_NONE 0
+#define ENC_UNKNOWN 1
+#define ENC_CHUNKED 2
+	b8 transfer_enc = ENC_NONE;
+
 	b8 content_length_present = 0;
 	u64 content_length = 0;
 
@@ -111,8 +117,13 @@ lt_err_t lt_http_parse_response(lt_http_response_t* response, lt_io_callback_t c
 		lstr_t val = LSTR(line.str + (key_len + 1), line.len  - (key_len + 1));
 		val = lt_lstr_trim_left(val);
 
-		if (lt_lstr_case_eq(key, CLSTR("transfer-encoding")))
-			transfer_enc_present = 1;
+		if (lt_lstr_case_eq(key, CLSTR("transfer-encoding"))) {
+			transfer_enc = ENC_UNKNOWN;
+			if (lt_lstr_case_eq(val, CLSTR("chunked")))
+				transfer_enc = ENC_CHUNKED;
+			else
+				lt_werrf("unsupported transfer encoding '%S'\n", val);
+		}
 		else if (lt_lstr_case_eq(key, CLSTR("content-length"))) {
 			if (lt_lstr_uint(val, &content_length) != LT_SUCCESS)
 				return LT_ERR_INVALID_SYNTAX;
@@ -136,29 +147,63 @@ lt_err_t lt_http_parse_response(lt_http_response_t* response, lt_io_callback_t c
 		}
 		body.len = content_length;
 	}
-	else if (transfer_enc_present) {
-		lt_strstream_t stream;
-		if ((err = lt_strstream_create(&stream, alloc)))
+	else if (transfer_enc == ENC_CHUNKED) {
+		lt_strstream_t body_stream;
+		if ((err = lt_strstream_create(&body_stream, alloc)))
 			goto err0;
+		lt_strstream_t size_stream;
+		if ((err = lt_strstream_create(&size_stream, alloc)))
+			goto chunked_err0;
 
-		// Read until "\r\n\r\n" is encountered
-		u32 history = 0;
 		for (;;) {
 			isz res;
-			if ((res = callb(usr, &history, 1)) < 0) {
-				lt_strstream_destroy(&stream);
-				fail_to(err = -res, err2);
+
+			// Read until "\r\n" is encountered
+			usz size_start_len = size_stream.str.len;
+			u16 history = 0;
+			for (;;) {
+				if ((res = callb(usr, &history, 1)) < 0)
+					fail_to(err = -res, chunked_err1);
+				if ((res = lt_strstream_writec(&size_stream, history)) < 0)
+					fail_to(err = -res, chunked_err1);
+				if (history == X1CRLF)
+					break;
+				history <<= 8;
 			}
-			if ((res = lt_strstream_writec(&stream, history)) < 0) {
-				lt_strstream_destroy(&stream);
-				fail_to(err = -res, err2);
-			}
-			if (history == X2CRLF)
+			lstr_t size_str = LSTR(size_stream.str.str + size_start_len, size_stream.str.len - size_start_len - 2);
+			size_str = lt_lstr_trim(size_str);
+			if (lt_lstr_eq(size_str, CLSTR("0")))
 				break;
-			history <<= 8;
+
+			usz size;
+			if ((err = lt_lstr_hex_uint(size_str, &size)))
+				goto chunked_err1;
+
+			lt_strstream_clear(&size_stream);
+
+			void* tmp_chunk = lt_malloc(alloc, size);
+			if (!tmp_chunk)
+				fail_to(err = LT_ERR_OUT_OF_MEMORY, chunked_err1);
+			if ((res = callb(usr, tmp_chunk, size)) < 0)
+				fail_to(err = -res, chunked_err1);
+			if ((res = lt_strstream_write(&body_stream, tmp_chunk, size)) < 0)
+				fail_to(err = -res, chunked_err1);
+			lt_mfree(alloc, tmp_chunk);
+
+			char crlf_buf[2];
+			if ((res = callb(usr, crlf_buf, 2)) < 0)
+				fail_to(err = -res, chunked_err1);
+			if (memcmp(crlf_buf, "\r\n", 2) != 0)
+				fail_to(err = LT_ERR_INVALID_FORMAT, chunked_err1);
+
+			continue;
+		chunked_err1:	lt_strstream_destroy(&size_stream);
+		chunked_err0:	lt_strstream_destroy(&body_stream);
+						goto err2;
 		}
 
-		body = stream.str;
+		lt_strstream_destroy(&size_stream);
+		body = body_stream.str;
 	}
 
 	response->str = stream.str;
