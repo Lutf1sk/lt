@@ -1,4 +1,4 @@
-#ifndef LT_SSL
+#ifdef LT_SSL
 
 #include <lt/spotify.h>
 #include <lt/ssl.h>
