@@ -4,12 +4,6 @@
 #include <lt/lt.h>
 #include <lt/window.h>
 
-#if defined(LT_UNIX)
-#	define LT_X11 1
-#elif defined(LT_WINDOWS)
-#	define LT_WIN32 1
-#endif
-
 #if defined(LT_X11)
 #	include <xcb/xcb.h>
 #	include <X11/Xlib.h>
