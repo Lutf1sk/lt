@@ -1,3 +1,5 @@
+#if defined(LT_X11)
+
 #include <lt/gfx.h>
 #include <lt/window.h>
 #include <lt/gl.h>
@@ -429,3 +431,4 @@ lt_err_t lt_texture_upload(lt_gfx_t* gfx, lt_texture_t* tex, lt_img_t* img) {
 	return LT_SUCCESS;
 }
 
+#endif
