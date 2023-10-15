@@ -1,4 +1,10 @@
+#ifndef LT_VK
+
+#include <lt/lt.h>
 #include <lt/vk.h>
+
+#include "volk.c"
+
 #include <lt/mem.h>
 #include <lt/io.h>
 
@@ -122,3 +128,4 @@ lt_err_t lt_vk_create_debug_messenger(VkInstance inst, VkAllocationCallbacks* al
 	return LT_SUCCESS;
 }
 
+#endif

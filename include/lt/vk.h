@@ -1,6 +1,8 @@
 #ifndef LT_VK_H
 #define LT_VK_H 1
 
+#ifndef LT_VK
+
 #include <lt/err.h>
 #include <lt/fwd.h>
 
@@ -19,5 +21,7 @@ lt_err_t lt_vk_create_window_surface(lt_window_t* window, VkInstance inst, VkAll
 
 lt_err_t lt_vk_create_generic_instance(VkAllocationCallbacks* alloc, VkInstance* inst);
 lt_err_t lt_vk_create_debug_messenger(VkInstance inst, VkAllocationCallbacks* alloc, VkDebugUtilsMessengerEXT* messenger);
+
+#endif
 
 #endif

@@ -1,16 +1,6 @@
 /* This file is part of volk library; see volk.h for version/license details */
 /* clang-format off */
 
-#include <lt/lt.h>
-
-#if defined(LT_LINUX)
-#	define VK_USE_PLATFORM_XCB_KHR 1
-#elif defined(LT_WINDOWS)
-#	define VK_USE_PLATFORM_WIN32_KHR 1
-#endif
-
-#include <lt/volk.h>
-
 #ifdef _WIN32
 	typedef const char* LPCSTR;
 	typedef struct HINSTANCE__* HINSTANCE;

@@ -62,7 +62,6 @@ SRC = \
 	src/utf8/utf8.c \
 	src/utf8/wcwidth.c \
 	src/vk/vk.c \
-	src/vk/volk.c \
 	src/window/win32.c \
 	src/window/window.c \
 	src/window/x11.c \
