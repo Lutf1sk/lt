@@ -1,7 +1,7 @@
 #ifndef LT_VK_H
 #define LT_VK_H 1
 
-#ifndef LT_VK
+#ifdef LT_VK
 
 #include <lt/err.h>
 #include <lt/fwd.h>

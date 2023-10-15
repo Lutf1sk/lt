@@ -1,4 +1,4 @@
-#ifndef LT_VK
+#ifdef LT_VK
 
 #include <lt/lt.h>
 #include <lt/vk.h>

@@ -281,9 +281,11 @@ u64 lt_json_uint_val(lt_json_t* json) {
 	return u;
 }
 
-// i64 lt_json_int_val(lt_json_t* json) {
-// 	return lt_lstr_int(json->str_val);
-// }
+i64 lt_json_int_val(lt_json_t* json) {
+	u64 i;
+	lt_lstr_int(json->str_val, &i);
+	return i;
+}
 
 // f64 lt_json_float_val(lt_json_t* json) {
 // 	return lt_lstr_float(json->str_val);

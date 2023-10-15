@@ -1,5 +1,6 @@
 #include <lt/str.h>
 #include <lt/ctype.h>
+#include <lt/mem.h>
 
 b8 lt_lstr_case_eq(lstr_t s1, lstr_t s2) {
 	if (s1.len != s2.len)
@@ -27,6 +28,15 @@ lstr_t lt_lstr_trim_right(lstr_t str) {
 LT_FLATTEN
 lstr_t lt_lstr_trim(lstr_t str) {
 	return lt_lstr_trim_left(lt_lstr_trim_right(str));
+}
+
+char* lt_cstr_from_lstr(lstr_t lstr, lt_alloc_t* alloc) {
+	char* cstr = lt_malloc(alloc, lstr.len + 1);
+	if (!cstr)
+		return NULL;
+	memcpy(cstr, lstr.str, lstr.len);
+	cstr[lstr.len] = 0;
+	return cstr;
 }
 
 lt_err_t lt_lstr_float(lstr_t str, f64* out) {
@@ -147,4 +157,3 @@ lt_err_t lt_lstr_hex_uint(lstr_t str, u64* out) {
 	*out = val;
 	return LT_SUCCESS;
 }
-

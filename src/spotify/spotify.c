@@ -17,10 +17,10 @@
 #define AUTH_REDIRECT "http%3A%2F%2Flocalhost%3A7788"
 
 #define ACCOUNTS_HOST "accounts.spotify.com"
-#define ACCOUNTS_PORT "443"
+#define ACCOUNTS_PORT 443
 
 #define API_HOST "api.spotify.com"
-#define API_PORT "443"
+#define API_PORT 443
 
 static
 lt_err_t spotify_request(lt_spotify_t* spt, char* method, char* endpoint, char* headers, lstr_t body, lt_http_response_t* out_res, lt_alloc_t* alloc) {
@@ -154,7 +154,7 @@ lt_err_t lt_spotify_create_token(lt_spotify_t* spt, lt_alloc_t* alloc) {
 	lt_err_t err;
 
 	lt_sockaddr_t sockaddr;
-	if ((err = lt_sockaddr_resolve(ACCOUNTS_HOST, ACCOUNTS_PORT, LT_SOCKTYPE_TCP, &sockaddr)))
+	if ((err = lt_sockaddr_resolve(CLSTR(ACCOUNTS_HOST), ACCOUNTS_PORT, LT_SOCKTYPE_TCP, &sockaddr, alloc)))
 		return err;
 
 	lt_socket_t* sock = lt_socket_create(LT_SOCKTYPE_TCP, alloc);
@@ -243,7 +243,7 @@ lt_err_t lt_spotify_refresh_token(lt_spotify_t* spt, lt_alloc_t* alloc) {
 	spt->auth_token = NLSTR();
 
 	lt_sockaddr_t sockaddr;
-	if ((err = lt_sockaddr_resolve(ACCOUNTS_HOST, ACCOUNTS_PORT, LT_SOCKTYPE_TCP, &sockaddr)))
+	if ((err = lt_sockaddr_resolve(CLSTR(ACCOUNTS_HOST), ACCOUNTS_PORT, LT_SOCKTYPE_TCP, &sockaddr, alloc)))
 		return err;
 
 	lt_socket_t* sock = lt_socket_create(LT_SOCKTYPE_TCP, alloc);
@@ -320,7 +320,7 @@ lt_err_t lt_spotify_connect(lt_spotify_t* spt, lt_alloc_t* alloc) {
 	lt_err_t err;
 
 	lt_sockaddr_t sockaddr;
-	if ((err = lt_sockaddr_resolve(API_HOST, API_PORT, LT_SOCKTYPE_TCP, &sockaddr)))
+	if ((err = lt_sockaddr_resolve(CLSTR(API_HOST), API_PORT, LT_SOCKTYPE_TCP, &sockaddr, alloc)))
 		return err;
 
 	if (!(spt->sock = lt_socket_create(LT_SOCKTYPE_TCP, alloc)))

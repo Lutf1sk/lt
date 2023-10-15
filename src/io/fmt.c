@@ -157,7 +157,7 @@ isz lt_io_vprintf(lt_io_callback_t callb, void* usr, char* fmt, va_list argl) {
 
 		case 'r': {
 			char val = *++it;
-			isz repeat = va_arg(argl, usz);
+			usz repeat = va_arg(argl, usz);
 			for (usz i = 0; i < repeat; ++i)
 				written += callb(usr, &val, 1);
 		}	break;

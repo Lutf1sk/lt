@@ -2,6 +2,7 @@
 #define LT_STR_H
 
 #include <lt/err.h>
+#include <lt/fwd.h>
 
 extern int memcmp(const void* ptr1, const void* ptr2, size_t size);
 
@@ -51,6 +52,8 @@ static LT_INLINE
 lstr_t lt_lstr_from_cstr(char* cstr) {
 	return LSTR(cstr, strlen(cstr));
 }
+
+char* lt_cstr_from_lstr(lstr_t lstr, lt_alloc_t* alloc);
 
 static LT_INLINE
 lstr_t lt_lstr_from_range(char* start, char* end) {

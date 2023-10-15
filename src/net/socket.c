@@ -1,5 +1,7 @@
 #include <lt/net.h>
 #include <lt/lt.h>
+#include <lt/str.h>
+#include <lt/io.h>
 #include <lt/mem.h>
 
 #if defined(LT_UNIX)
@@ -50,9 +52,16 @@ int lt_socktype_to_native(lt_socktype_t type) {
 	}
 }
 
-lt_err_t lt_sockaddr_resolve(char* addr, char* port, lt_socktype_t type, lt_sockaddr_t* out_addr_) {
+lt_err_t lt_sockaddr_resolve(lstr_t addr, u16 port, lt_socktype_t type, lt_sockaddr_t* out_addr_, lt_alloc_t* alloc) {
 	INIT_IF_NECESSARY();
 	lt_sockaddr_impl_t* out_addr = (lt_sockaddr_impl_t*)out_addr_;
+
+	char* caddr = lt_cstr_from_lstr(addr, alloc);
+	if (!caddr)
+		return LT_ERR_OUT_OF_MEMORY;
+
+	char cport[16];
+	cport[lt_sprintf(cport, "%uw", port)] = 0;
 
 	struct addrinfo hints;
 	memset(&hints, 0, sizeof(hints));
@@ -60,10 +69,11 @@ lt_err_t lt_sockaddr_resolve(char* addr, char* port, lt_socktype_t type, lt_sock
 	hints.ai_socktype = lt_socktype_to_native(type);
 
 	struct addrinfo* resolved;
-	if (getaddrinfo(addr, port, &hints, &resolved) != 0)
-		return LT_ERR_UNKNOWN; // !!
-	if (!resolved)
-		return LT_ERR_UNKNOWN; // !!
+	isz res = getaddrinfo(caddr, cport, &hints, &resolved);
+
+	lt_mfree(alloc, caddr);
+	if (res != 0 || !resolved)
+		return LT_ERR_NOT_FOUND;
 
 	out_addr->addr_len = resolved->ai_addrlen;
 	out_addr->addr = *resolved->ai_addr;

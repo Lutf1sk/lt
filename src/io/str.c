@@ -21,4 +21,3 @@ isz lt_sprintf(char* str, char* fmt, ...) {
 	va_end(argl);
 	return bytes;
 }
-

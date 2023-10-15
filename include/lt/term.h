@@ -86,6 +86,8 @@ lt_err_t lt_term_init(lt_term_flags_t flags);
 void lt_term_restore(void);
 
 lt_err_t lt_update_term_dimensions(void);
+
+b8 lt_term_key_available(void);
 u32 lt_term_getkey(void);
 
 void lt_term_write_direct(char* str, usz len);

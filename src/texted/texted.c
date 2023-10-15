@@ -4,6 +4,7 @@
 #include <lt/ctype.h>
 #include <lt/utf8.h>
 #include <lt/str.h>
+#include <lt/mem.h>
 
 static
 void merge_line(lt_texted_t* ed, usz line) {
@@ -73,7 +74,7 @@ void goto_selection_end(lt_texted_t* ed) {
 
 lt_err_t lt_texted_create(lt_texted_t* ed, lt_alloc_t* alloc) {
 	ed->select_y = ed->cursor_y = 0;
-	ed->select_x = ed->target_x = 0;
+	ed->select_x = ed->cursor_x = ed->target_x = 0;
 	ed->usr = NULL;
 	ed->find_visual_x = NULL;
 	ed->find_cursor_x = NULL;

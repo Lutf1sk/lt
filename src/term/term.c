@@ -187,6 +187,14 @@ u32 convert_xterm_mod(u32 mod) {
 	}
 }
 
+b8 lt_term_key_available(void) {
+	struct pollfd pfd;
+	pfd.fd = STDIN_FILENO;
+	pfd.events = POLLIN;
+
+	return poll(&pfd, 1, 1) != 0;
+}
+
 u32 lt_term_getkey(void) {
 	if (resized) {
 		resized = 0;

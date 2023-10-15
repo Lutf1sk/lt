@@ -1,6 +1,8 @@
 #ifndef LT_RAND_H
 #define LT_RAND_H 1
 
+#include <lt/lt.h>
+
 static LT_INLINE
 u32 lt_wang_hash(u32 seed) {
 	seed = (seed ^ 61) ^ (seed >> 16);
