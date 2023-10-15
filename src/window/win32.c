@@ -1,6 +1,6 @@
-#include "window_def.h"
-
 #if defined(LT_WIN32)
+#	include "window_def.h"
+
 #	include <lt/mem.h>
 #	include <lt/io.h>
 #	include <windowsx.h>
