@@ -1,3 +1,5 @@
+#ifndef LT_SSL
+
 #include <lt/spotify.h>
 #include <lt/ssl.h>
 #include <lt/net.h>
@@ -558,3 +560,6 @@ lt_err_t lt_spotify_get_track(lt_spotify_t* spt, lstr_t track_id, lt_spotify_tra
 err0:	lt_http_response_destroy(&res, alloc);
 		return LT_ERR_UNKNOWN;
 }
+
+
+#endif
