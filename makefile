@@ -86,9 +86,14 @@ endif
 ifdef SSL
 	CC_FLAGS += -DLT_SSL=1
 endif
-
 ifdef ASOUND
 	CC_FLAGS += -DLT_ASOUND=1
+endif
+ifdef VK
+	CC_FLAGS += -DLT_VK=1
+endif
+ifdef X11
+	CC_FLAGS += -DLT_X11=1
 endif
 
 # -----== LINKER
