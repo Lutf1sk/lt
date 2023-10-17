@@ -264,4 +264,43 @@
 		LT_MERGE_SORT_BODY(T, is_lesser);					\
 	}
 
+#define LT_DEFINE_BINARY_SEARCH_FUNC(T, Tkey, name, is_lesser, is_equal)	\
+	T* name(T* arr, Tkey key, usz count) {									\
+		if (!count)															\
+			return NULL;													\
+																			\
+		T* start = arr;														\
+		T* end = arr + count;												\
+																			\
+		while (end - start > 0) {											\
+			T* mid = start + ((end - start) >> 1);							\
+			if (is_equal(*mid, key))										\
+				return mid;													\
+			if (is_lesser(*mid, key))										\
+				start = mid + 1;											\
+			else															\
+				end = mid;													\
+		}																	\
+																			\
+		return NULL;														\
+	}
+
+#define LT_DEFINE_BINARY_SEARCH_NEAREST_FUNC(T, Tkey, name, is_lesser, is_equal)	\
+	T* name(T* arr, Tkey val, usz count) {											\
+		T* start = arr;																\
+		T* end = arr + count;														\
+																					\
+		while (end - start > 0) {													\
+			T* mid = start + ((end - start) >> 1);									\
+			if (is_equal(*mid, val))												\
+				return mid;															\
+			if (is_lesser(*mid, val))												\
+				start = mid + 1;													\
+			else																	\
+				end = mid;															\
+		}																			\
+																					\
+		return start;																\
+	}
+
 #endif
