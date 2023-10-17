@@ -112,11 +112,15 @@ lt_err_t lt_lstr_uint(lstr_t str, u64* out) {
 
 	char* it = str.str, *end = it + str.len;
 	while (it < end) {
-		val *= 10; // TODO: check for overflow
 		char c = *it++;
+
 		if (!lt_is_digit(c))
 			return LT_ERR_INVALID_FORMAT;
-		val += c - '0'; // TODO: check for overflow
+		if (val > LT_U64_MAX/10) // !! does not catch all cases
+			return LT_ERR_OVERFLOW;
+
+		val *= 10;
+		val += c - '0';
 	}
 
 	*out = val;
@@ -148,10 +152,16 @@ lt_err_t lt_lstr_hex_uint(lstr_t str, u64* out) {
 
 	char* it = str.str, *end = it + str.len;
 	while (it < end) {
-		u8 c = *it++; // TODO: check for invalid character
+		u8 c = *it++;
+		u8 hex = hex_conv_tab[c];
 
-		val <<= 4; // TODO: check for overflow
-		val += hex_conv_tab[c]; // TODO: check for overflow
+		if (!hex && c != '0')
+			return LT_ERR_INVALID_FORMAT;
+		if (val & 0xF000000000000000)
+			return LT_ERR_OVERFLOW;
+
+		val <<= 4;
+		val |= hex;
 	}
 
 	*out = val;
