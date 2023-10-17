@@ -495,8 +495,8 @@ static lt_keycode_t btnmap[] = {
 	[1] = LT_KEY_MB1,
 	[2] = LT_KEY_MB3,
 	[3] = LT_KEY_MB2,
-	[4] = 0,
-	[5] = 0,
+	[4] = LT_KEY_SCROLL_UP,
+	[5] = LT_KEY_SCROLL_DOWN,
 };
 
 static
@@ -547,7 +547,7 @@ void handle_event(lt_window_t* win, xcb_generic_event_t* gev) {
 	case XCB_BUTTON_RELEASE: {
 		xcb_button_release_event_t* ev = (xcb_button_release_event_t*)gev;
 		lt_keycode_t btn = btnmap[ev->detail];
-		if (btn)
+		if (btn && btn != LT_KEY_SCROLL_UP && btn != LT_KEY_SCROLL_DOWN)
 			win->key_press_map[btn] = 0;
 	}	break;
 
@@ -616,6 +616,8 @@ b8 translate_event(lt_window_t* win, xcb_generic_event_t* gev, lt_window_event_t
 }
 
 usz lt_window_poll_events(lt_window_t* win, lt_window_event_t* events, usz max_events) {
+	win->key_press_map[LT_KEY_SCROLL_UP] = 0;
+	win->key_press_map[LT_KEY_SCROLL_DOWN] = 0;
 	memcpy(win->old_key_press_map, win->key_press_map, sizeof(win->key_press_map));
 
 	usz ev_count = 0;

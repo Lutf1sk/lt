@@ -73,8 +73,9 @@ enum lt_keycode {
 
 	LT_KEY_MB1 = 349, LT_KEY_MB2 = 350, LT_KEY_MB3 = 351, LT_KEY_MB4 = 352,
 	LT_KEY_MB5 = 353, LT_KEY_MB6 = 354, LT_KEY_MB7 = 355, LT_KEY_MB8 = 356,
+	LT_KEY_SCROLL_UP = 357, LT_KEY_SCROLL_DOWN = 358,
 
-	LT_KEY_MAX = 357,
+	LT_KEY_MAX = 359,
 } lt_keycode_t;
 
 typedef
