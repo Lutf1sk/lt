@@ -28,7 +28,7 @@ void lt_stack_trace(usz skip_frames) {
 	void* frame = LT_FRAME_ADDR;
 
 	while (frame > MIN_FRAME && skip_frames--)
-	frame = LT_FRAME_PREV_ADDR(frame);
+		frame = LT_FRAME_PREV_ADDR(frame);
 
 	while (frame > MIN_FRAME) {
 		usz ret_addr = (usz)LT_FRAME_RETURN_ADDR(frame) - 1; // Subtract one, since a call instruction always pushes the adress of the NEXT instruction
