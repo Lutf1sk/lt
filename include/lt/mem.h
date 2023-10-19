@@ -127,7 +127,7 @@ void lt_amrestore(lt_arena_t* arena, void* restore_point);
 #include <lt/align.h>
 
 static LT_INLINE
-void* lt_amalloc_lean(lt_arena_t* arena, usz size, usz align) {
+void* lt_amalloc_lean(lt_arena_t* arena, usz size) {
 	size = lt_align_fwd(size, LT_ALLOC_DEFAULT_ALIGN);
 	u8* start = arena->top;
 	u8* new_top = start + size;
