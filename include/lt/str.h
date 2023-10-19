@@ -14,6 +14,14 @@ b8 lt_lstr_eq(lstr_t s1, lstr_t s2) {
 	return !((s1.len - s2.len) | memcmp(s1.str, s2.str, s1.len));
 }
 
+static LT_INLINE
+i32 lt_lstr_cmp(lstr_t s1, lstr_t s2) {
+	isz dlen = s1.len - s2.len;
+	if (dlen)
+		return (dlen >> (8 * sizeof(isz) - 1)) * 2 + 1;
+	return memcmp(s1.str, s2.str, s1.len);
+}
+
 b8 lt_lstr_case_eq(lstr_t s1, lstr_t s2);
 
 static LT_INLINE
