@@ -30,7 +30,7 @@ lt_arena_t* lt_amcreatem(lt_alloc_t* parent, void* mem, usz size, usz flags) {
 	arena->top = (u8*)mem + lt_align_fwd(sizeof(lt_arena_t), LT_ALLOC_DEFAULT_ALIGN);
 	arena->flags = flags;
 	arena->parent = parent;
-	arena->interf = LT_ALLOC_INTERFACE(lt_amalloc, lt_amalloc_for_caller, lt_amfree, lt_amrealloc, lt_amrealloc_for_caller, lt_amsize);
+	arena->interf = LT_ALLOC_INTERFACE(lt_amalloc, lt_amalloc_for_caller, lt_amfree, lt_amrealloc, lt_amrealloc_for_caller);
 	return arena;
 }
 
@@ -132,21 +132,17 @@ void* lt_amrealloc(lt_arena_t* arena, void* ptr, usz new_size) {
 	return lt_amrealloc_for_caller(arena, ptr, new_size, LT_RETURN_ADDR);
 }
 
-usz lt_amsize(lt_arena_t* arena, void* ptr) {
-	return node_from_ptr(ptr)->size;
-}
+// void lt_amleak_check(lt_arena_t* arena) {
+// 	if ((u8*)arena->base == (u8*)arena->top + sizeof(lt_arena_t))
+// 		return;
 
-void lt_amleak_check(lt_arena_t* arena) {
-	if ((u8*)arena->base == (u8*)arena->top + sizeof(lt_arena_t))
-		return;
-
-	node_t* it = LT_ADDPTR(arena->base, lt_align_fwd(sizeof(lt_arena_t), LT_ALLOC_DEFAULT_ALIGN));
-	while (it < (node_t*)arena->top) {
-		if (!it->free) {
-			lt_werrf("block 0x%hz leaked from ", ptr_from_node(it));
-			lt_print_instr_ptr(it->caller);
-		}
-		it = LT_ADDPTR(ptr_from_node(it), it->size);
-	}
-}
+// 	node_t* it = LT_ADDPTR(arena->base, lt_align_fwd(sizeof(lt_arena_t), LT_ALLOC_DEFAULT_ALIGN));
+// 	while (it < (node_t*)arena->top) {
+// 		if (!it->free) {
+// 			lt_werrf("block 0x%hz leaked from ", ptr_from_node(it));
+// 			lt_print_instr_ptr(it->caller);
+// 		}
+// 		it = LT_ADDPTR(ptr_from_node(it), it->size);
+// 	}
+// }
 

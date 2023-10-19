@@ -44,7 +44,6 @@ typedef void*(*lt_alloc_callback_t)(void* usr, usz size);
 typedef void(*lt_free_callback_t)(void* usr, void* mem);
 typedef void*(*lt_realloc_for_caller_callback_t)(void* usr, void* mem, usz size, void* caller);
 typedef void*(*lt_realloc_callback_t)(void* usr, void* mem, usz size);
-typedef void*(*lt_size_callback_t)(void* usr, void* mem);
 
 typedef
 struct lt_alloc {
@@ -53,24 +52,21 @@ struct lt_alloc {
 	lt_free_callback_t free;
 	lt_realloc_callback_t realloc;
 	lt_realloc_for_caller_callback_t realloc_for_caller;
-	lt_size_callback_t size;
 } lt_alloc_t;
 
-#define LT_ALLOC_INTERFACE_INIT(alloc, alloc_for_caller, free, realloc, realloc_for_caller, size) { \
+#define LT_ALLOC_INTERFACE_INIT(alloc, alloc_for_caller, free, realloc, realloc_for_caller) { \
 		(lt_alloc_callback_t)(alloc), \
 		(lt_alloc_for_caller_callback_t)(alloc_for_caller), \
 		(lt_free_callback_t)(free), \
 		(lt_realloc_callback_t)(realloc), \
 		(lt_realloc_for_caller_callback_t)(realloc_for_caller), \
-		(lt_size_callback_t)(size) \
 	}
-#define LT_ALLOC_INTERFACE(alloc, alloc_for_caller, free, realloc, realloc_for_caller, size) ((lt_alloc_t) { \
+#define LT_ALLOC_INTERFACE(alloc, alloc_for_caller, free, realloc, realloc_for_caller) ((lt_alloc_t) { \
 		(lt_alloc_callback_t)(alloc), \
 		(lt_alloc_for_caller_callback_t)(alloc_for_caller), \
 		(lt_free_callback_t)(free), \
 		(lt_realloc_callback_t)(realloc), \
 		(lt_realloc_for_caller_callback_t)(realloc_for_caller), \
-		(lt_size_callback_t)(size) \
 	})
 
 static LT_NOINLINE
@@ -89,12 +85,6 @@ static LT_NOINLINE
 void* lt_mrealloc(void* alloc_, void* mem, usz size) {
 	lt_alloc_t* alloc = alloc_;
 	return alloc->realloc_for_caller(alloc, mem, size, (u8*)LT_RETURN_ADDR - 1);
-}
-
-static LT_INLINE
-void* lt_msize(void* alloc_, void* mem) {
-	lt_alloc_t* alloc = alloc_;
-	return alloc->size(alloc, mem);
 }
 
 static LT_NOINLINE
@@ -134,14 +124,29 @@ void lt_amdestroy(lt_arena_t* arena);
 void* lt_amsave(lt_arena_t* arena);
 void lt_amrestore(lt_arena_t* arena, void* restore_point);
 
+#include <lt/align.h>
+
+static LT_INLINE
+void* lt_amalloc_lean(lt_arena_t* arena, usz size, usz align) {
+	size = lt_align_fwd(size, LT_ALLOC_DEFAULT_ALIGN);
+	u8* start = arena->top;
+	u8* new_top = start + size;
+	if (new_top > (u8*)arena->base + arena->size) {
+		lt_werrf("arena allocation failed, not enough memory\n");
+		return NULL;
+	}
+	arena->top = new_top;
+	return start;
+}
+
+
 void* lt_amalloc(lt_arena_t* arena, usz size);
 void* lt_amalloc_for_caller(lt_arena_t* arena, usz size, void* caller);
 void lt_amfree(lt_arena_t* arena, void* ptr);
 void* lt_amrealloc(lt_arena_t* arena, void* ptr, usz new_size);
 void* lt_amrealloc_for_caller(lt_arena_t* arena, void* ptr, usz new_size, void* caller);
-usz lt_amsize(lt_arena_t* arena, void* ptr);
 
-void lt_amleak_check(lt_arena_t* arena);
+// void lt_amleak_check(lt_arena_t* arena);
 
 
 // pool.c
@@ -164,6 +169,5 @@ void lt_pmreset(lt_pool_t* pool);
 
 void* lt_pmalloc(lt_pool_t* pool);
 void lt_pmfree(lt_pool_t* pool, void* chunk);
-usz lt_pmsize(lt_pool_t* pool, void* chunk);
 
 #endif
