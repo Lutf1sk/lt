@@ -265,7 +265,7 @@
 	}
 
 #define LT_DEFINE_BINARY_SEARCH_FUNC(T, Tkey, name, is_lesser, is_equal)	\
-	T* name(T* arr, Tkey key, usz count) {									\
+	T* name(T* arr, usz count, Tkey key) {									\
 		if (!count)															\
 			return NULL;													\
 																			\
@@ -286,7 +286,7 @@
 	}
 
 #define LT_DEFINE_BINARY_SEARCH_NEAREST_FUNC(T, Tkey, name, is_lesser, is_equal)	\
-	T* name(T* arr, Tkey val, usz count) {											\
+	T* name(T* arr, usz count, Tkey key) {											\
 		T* start = arr;																\
 		T* end = arr + count;														\
 																					\
