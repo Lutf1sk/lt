@@ -292,9 +292,9 @@
 																					\
 		while (end - start > 0) {													\
 			T* mid = start + ((end - start) >> 1);									\
-			if (is_equal(*mid, val))												\
+			if (is_equal(*mid, key))												\
 				return mid;															\
-			if (is_lesser(*mid, val))												\
+			if (is_lesser(*mid, key))												\
 				start = mid + 1;													\
 			else																	\
 				end = mid;															\
