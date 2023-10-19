@@ -37,6 +37,9 @@ SRC = \
 	src/io/str.c \
 	src/json/json.c \
 	src/linalg/matrix.c \
+	src/lpc/lex.c \
+	src/lpc/parse.c \
+	src/lpc/gen.c \
 	src/lt/dynl.c \
 	src/lt/err.c \
 	src/mem/arena.c \

@@ -90,4 +90,10 @@ typedef struct lt_ssl_connection lt_ssl_connection_t;
 // http.h
 typedef struct lt_http_response lt_http_response_t;
 
+// lpc.h
+typedef struct lt_lpc_expr lt_lpc_expr_t;
+typedef struct lt_lpc_stmt lt_lpc_stmt_t;
+typedef struct lt_lpc_tk lt_lpc_tk_t;
+typedef struct lt_lpc_parse_ctx lt_lpc_parse_ctx_t;
+
 #endif
