@@ -167,3 +167,11 @@ lt_err_t lt_lstr_hex_uint(lstr_t str, u64* out) {
 	*out = val;
 	return LT_SUCCESS;
 }
+
+lstr_t lt_lstr_path_dir(lstr_t path) {
+	for (isz i = path.len - 1; i >= 0; --i)
+		if (path.str[i] == '/')
+			return LSTR(path.str, i + 1);
+
+	return CLSTR("");
+}

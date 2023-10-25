@@ -11,7 +11,7 @@ extern usz strnlen(const char* str, usz max);
 
 static LT_INLINE
 b8 lt_lstr_eq(lstr_t s1, lstr_t s2) {
-	return !((s1.len - s2.len) | memcmp(s1.str, s2.str, s1.len));
+	return !((s1.len - s2.len) || memcmp(s1.str, s2.str, s1.len));
 }
 
 static LT_INLINE
@@ -76,5 +76,7 @@ lt_err_t lt_lstr_float(lstr_t, f64* out);
 lt_err_t lt_lstr_int(lstr_t, i64* out);
 lt_err_t lt_lstr_uint(lstr_t, u64* out);
 lt_err_t lt_lstr_hex_uint(lstr_t str, u64* out);
+
+lstr_t lt_lstr_path_dir(lstr_t path);
 
 #endif
