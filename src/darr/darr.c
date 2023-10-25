@@ -80,6 +80,6 @@ void* lt_darr_dup_(void* arr) {
 	LT_ASSERT(new_head);
 	memcpy(new_head, head, LT_DARR_ALIGNED_SIZE + head->count * head->elem_size);
 
-	return (u8*)head + LT_DARR_ALIGNED_SIZE;
+	return (u8*)new_head + LT_DARR_ALIGNED_SIZE;
 }
 
