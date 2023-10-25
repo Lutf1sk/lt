@@ -7,6 +7,7 @@ SRC = \
 	src/audio/audio.c \
 	src/audio/wav.c \
 	src/base64/base64.c \
+	src/c/preprocess.c \
 	src/conf/conf.c \
 	src/ctype/ctype.c \
 	src/darr/darr.c \
@@ -77,11 +78,11 @@ SRC = \
 
 # -----== COMPILER
 CC := cc
-CC_WARN := -Wall -Werror -Wno-strict-aliasing -Wno-error=unused-variable -Wno-unused-function -Wno-pedantic
+CC_WARN := -Wall -Werror -Wno-strict-aliasing -Wno-error=unused-variable -Wno-unused-function -Wno-pedantic -Wno-unused-label
 CC_FLAGS := -I./include/ -std=gnu2x -fmax-errors=3 $(CC_WARN) -mavx2 -masm=intel
 
 ifdef DEBUG
-	CC_FLAGS += -fno-omit-frame-pointer -O0 -g
+	CC_FLAGS += -fsanitize=undefined -fsanitize=address -fno-omit-frame-pointer -O0 -g
 else
 	CC_FLAGS += -O2
 endif
