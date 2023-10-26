@@ -1,5 +1,6 @@
 #include <lt/dwarf.h>
 #include <lt/debug.h>
+#include <lt/mem.h>
 
 void lt_dwarf_lns_init(lt_dwarf_lns_t* m, lt_dwarf_stmt_prologue_t* p) {
 	m->addr = 0;
@@ -50,11 +51,11 @@ usz exec_ext_instr(lt_dwarf_lns_t* m, u8* instr) {
 	u8* op_ptr = it++;
 	u8 opcode = *op_ptr;
 	switch (opcode) {
-	case LT_DWARF_LNE_END_SEQUENCE:							break;
-	case LT_DWARF_LNE_SET_DISCRIMINATOR:	lt_dwarf_uleb128(&it);	break;
+	case LT_DWARF_LNE_END_SEQUENCE:								break;
+	case LT_DWARF_LNE_SET_DISCRIMINATOR: lt_dwarf_uleb128(&it);	break;
 
 	case LT_DWARF_LNE_SET_ADDRESS:
-		m->addr = *(u64*)it;
+		memcpy(&m->addr, it, sizeof(u64));
 		it += sizeof(u64);
 		break;
 
@@ -93,8 +94,10 @@ usz lt_dwarf_execute(lt_dwarf_lns_t* m, lt_dwarf_stmt_prologue_t* p, u8* instr) 
 		break;
 
 	case LT_DWARF_LNS_FIXED_ADVANCE_PC:
-		m->addr += *(u16*)it;
-		it += 2;
+		u16 offs;
+		memcpy(&offs, it, sizeof(u16));
+		m->addr += offs;
+		it += sizeof(u16);
 		break;
 
 	// special opcodes

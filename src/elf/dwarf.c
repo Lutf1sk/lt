@@ -21,7 +21,9 @@ void consume_content(lt_elf64_t* e, u8** it, u32 (*fmts)[2], usz fmt_count, lstr
 		case LT_DWARF_LNCT_PATH:
 			LT_ASSERT(fmts[i][1] == LT_DWARF_FORM_LINE_STRP);
 			if (out_path) {
-				*out_path = lt_elf64_str(e, e->dbgline_strtab_sh, *(u32*)*it);
+				u32 offs;
+				memcpy(&offs, *it, sizeof(u32));
+				*out_path = lt_elf64_str(e, e->dbgline_strtab_sh, offs);
 			}
 			*it += sizeof(u32);
 			break;
