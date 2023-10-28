@@ -33,7 +33,7 @@ typedef int32_t i32;
 typedef int64_t i64;
 typedef size_t usz;
 
-#define LT_TOP_BIT(T) ((T)((T)1 << (isz)(sizeof(T) * 8 - 1)))
+#define LT_TOP_BIT(T) ((T)((u64)1 << (u64)(sizeof(T) * 8 - 1)))
 
 #define LT_I8_MAX (~(i8)0 & ~LT_TOP_BIT(i8))
 #define LT_I16_MAX (~(i16)0 & ~LT_TOP_BIT(i16))
