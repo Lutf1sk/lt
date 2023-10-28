@@ -21,6 +21,8 @@
 #	define LT_GCC
 #elif defined(_MSC_VER)
 #	define LT_MSVC
+#elif defined(__LTCC__)
+#	define LT_LTCC
 #else
 #	error Unsupported compiler
 #endif
@@ -62,6 +64,15 @@
 #	define LT_PACKED_STRUCT(name) __pragma(pack(push, 1)) struct name __pragma(pack(pop))
 #	define LT_NORETURN __declspec(noreturn)
 #	define LT_NODISCARD _Check_return_
+#	define LT_NONNULL
+#elif defined(LT_LTCC)
+#	define LT_ALIGN(n)
+#	define LT_INLINE inline
+#	define LT_NOINLINE
+#	define LT_FLATTEN
+#	define LT_PACKED_STRUCT(name) struct name
+#	define LT_NORETURN
+#	define LT_NODISCARD
 #	define LT_NONNULL
 #endif
 
