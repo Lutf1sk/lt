@@ -7,6 +7,7 @@ SRC = \
 	src/audio/audio.c \
 	src/audio/wav.c \
 	src/base64/base64.c \
+	src/c/lex.c \
 	src/c/preprocess.c \
 	src/conf/conf.c \
 	src/ctype/ctype.c \
