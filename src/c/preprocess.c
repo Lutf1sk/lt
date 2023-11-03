@@ -180,6 +180,8 @@ lt_err_t gen_template(lt_c_preproc_ctx_t* cx, lstr_t str, lt_darr(lstr_t) params
 	lt_c_preproc_template_t template;
 	template.it = str.str;
 	template.end = str.str + str.len;
+	template.params = params;
+	template.args = args;
 	template.prev = cx->template;
 
 	cx->template = &template;
@@ -204,6 +206,8 @@ lt_err_t gen_template(lt_c_preproc_ctx_t* cx, lstr_t str, lt_darr(lstr_t) params
 			lt_c_preproc_template_t* templ = lt_amalloc_lean(cx->arena, sizeof(lt_c_preproc_template_t));
 			templ->it = str;
 			templ->end = str + len;
+			templ->params = cx->template->params;
+			templ->args = cx->template->args;
 			templ->prev = cx->template;
 
 			cx->template = templ;
@@ -215,42 +219,43 @@ lt_err_t gen_template(lt_c_preproc_ctx_t* cx, lstr_t str, lt_darr(lstr_t) params
 
 		char fc = template_read(cx);
 
-		if (template.prev && fc == '#' && ss->str.len > 0 && ss->str.str[ss->str.len - 1] == '#') {
-			ss->str.len--;
+		if (fc == '#') {
+			if (template_read(cx) != '#') {
+				lt_strstream_clear(&is);
+				template_consume_identifier(cx, &is);
+				lstr_t ident = is.str;
 
-			isz i = ss->str.len;
-			while (i > 0 && lt_is_space(ss->str.str[i - 1]))
-				--i;
+				if (!cx->template->params)
+					fail(LT_ERR_INVALID_SYNTAX, "stray '#'", ident);
 
-			isz i_end = i;
-			while (i > 0 && lt_is_ident_body(ss->str.str[i - 1]))
-				--i;
+				for (usz i = 0; i < lt_darr_count(cx->template->params); ++i) {
+					if (!lt_lstr_eq(ident, cx->template->params[i]))
+						continue;
 
-			prefix_start = i;
-			ss->str.len = i_end;
+					if ((err = write_escaped_str(cx->template->args[i], ss)))
+						return err;
+					goto next;
+				}
 
-			template_consume(cx, NULL);
-			template_consume_whitespace(cx);
-		}
-		else if (fc == '#') {
-			template_consume(cx, NULL);
-
-			lt_strstream_clear(&is);
-			template_consume_identifier(cx, &is);
-			lstr_t ident = is.str;
-
-			if (!params)
 				fail(LT_ERR_INVALID_SYNTAX, "'%S' is not a macro argument", ident);
-
-			for (usz i = 0; i < lt_darr_count(params); ++i) {
-				if (!lt_lstr_eq(ident, params[i]))
-					continue;
-
-				write_escaped_str(args[i], ss);
-				goto next;
 			}
+			else {
+				template_consume(cx, NULL);
 
-			fail(LT_ERR_INVALID_SYNTAX, "'%S' is not a macro argument", ident);
+				isz i = ss->str.len;
+				while (i > 0 && lt_is_space(ss->str.str[i - 1]))
+					--i;
+
+				isz i_end = i;
+				while (i > 0 && lt_is_ident_body(ss->str.str[i - 1]))
+					--i;
+
+				prefix_start = i;
+				ss->str.len = i_end;
+
+				template_consume(cx, NULL);
+				template_consume_whitespace(cx);
+			}
 		}
 		else if (fc == '"') {
 			template_consume(cx, ss);
@@ -281,12 +286,12 @@ lt_err_t gen_template(lt_c_preproc_ctx_t* cx, lstr_t str, lt_darr(lstr_t) params
 		template_consume_identifier(cx, &is);
 		lstr_t ident = is.str;
 
-		if (params) {
-			for (usz i = 0; i < lt_darr_count(params); ++i) {
-				if (!lt_lstr_eq(ident, params[i]))
+		if (cx->template->params) {
+			for (usz i = 0; i < lt_darr_count(cx->template->params); ++i) {
+				if (!lt_lstr_eq(ident, cx->template->params[i]))
 					continue;
 
-				if ((err = gen_template(cx, args[i], NULL, NULL, ss)))
+				if ((err = gen_template(cx, cx->template->args[i], NULL, NULL, ss)))
 					return err;
 				goto next;
 			}
@@ -310,7 +315,7 @@ lt_err_t gen_template(lt_c_preproc_ctx_t* cx, lstr_t str, lt_darr(lstr_t) params
 		}
 
 		template_consume_whitespace(cx);
-		if (template_consume(cx, NULL) != '(') {
+		if (template_read(cx) != '(') {
 			lt_strstream_writels(ss, ident);
 			continue;
 		}
@@ -320,7 +325,7 @@ lt_err_t gen_template(lt_c_preproc_ctx_t* cx, lstr_t str, lt_darr(lstr_t) params
 			fail(err, "failed to create string stream");
 
 		char c;
-		usz scopes = 1;
+		usz scopes = 0;
 		do {
 			if (!(c = template_consume(cx, &as)))
 				fail(LT_ERR_INVALID_SYNTAX, "expected ')' after macro arguments");
@@ -328,13 +333,17 @@ lt_err_t gen_template(lt_c_preproc_ctx_t* cx, lstr_t str, lt_darr(lstr_t) params
 			scopes -= c == ')';
 		} while (scopes);
 		lstr_t arg_template = as.str;
-		arg_template.len--;
+		arg_template.str++;
+		arg_template.len -= 2;
 
 		if ((err = lt_strstream_create(&as, &cx->arena->interf)))
 			fail(err, "failed to create string stream");
 
-		if ((err = gen_template(cx, arg_template, params, args, &as)))
+		lt_c_preproc_template_t* templ_old = cx->template;
+		cx->template = NULL;
+		if ((err = gen_template(cx, arg_template, templ_old->params, templ_old->args, &as)))
 			return err;
+		cx->template = templ_old;
 
 		lt_darr(lstr_t) gen_args = lt_darr_create(lstr_t, 8, &cx->arena->interf);
 		lt_darr(lstr_t) gen_params = def->params;
@@ -364,8 +373,10 @@ lt_err_t gen_template(lt_c_preproc_ctx_t* cx, lstr_t str, lt_darr(lstr_t) params
 			else
 				++it;
 		}
-		if (arg_start != it || lt_darr_count(gen_args) || (lt_darr_count(gen_args) == lt_darr_count(gen_params) - 1))
+		lstr_t arg = lt_lstr_from_range(arg_start, it);
+		if ((lt_darr_count(gen_params) == 1 && !lt_darr_count(gen_args)) || arg.len || lt_darr_count(gen_args) || ((def->flags & LT_CDEF_VARIADIC) && lt_darr_count(gen_args) + 1 >= lt_darr_count(gen_params))) {
 			lt_darr_push(gen_args, lt_lstr_trim(lt_lstr_from_range(arg_start, it)));
+		}
 
 		if (lt_darr_count(gen_params) != lt_darr_count(gen_args))
 			fail(LT_ERR_INVALID_SYNTAX, "invalid number of arguments to macro '%S', expected %uz, got %uz", def->name, lt_darr_count(gen_params), lt_darr_count(gen_args));
@@ -786,34 +797,64 @@ lstr_t consume_identifier(char** it, char* end) {
 }
 
 static
-lt_err_t filter_line(lt_c_preproc_ctx_t* cx, lstr_t str, lt_strstream_t* ss, b8* pcomment) {
+lt_err_t filter_special(lt_c_preproc_ctx_t* cx, lstr_t str, lt_strstream_t* ss) {
 	char* it = str.str, *end = it + str.len;
 
 	b8 comment = 0;
-
-	if (!pcomment)
-		pcomment = &comment;
 
 	while (it < end) {
 		char c = *it++;
 
 		if (it < end) {
 			if (c == '/' && *it == '*') {
-				*pcomment = 1;
+				comment = 1;
 				++it;
 				continue;
 			}
 			else if (c == '*' && *it == '/') {
-				*pcomment = 0;
+				comment = 0;
 				++it;
 				continue;
 			}
-			else if (!*pcomment && c == '/' && *it == '/')
-				break;
+			else if (!comment && c == '/' && *it == '/') {
+				while (it < end && *it++ != '\n')
+					;
+				continue;
+			}
 		}
 
-		if (*pcomment)
+		if (comment)
 			continue;
+
+		if (c == '"') {
+			lt_strstream_writec(ss, '"');
+			while (it < end) {
+				if (c != '\\' && *it == '"')
+					break;
+				c = *it++;
+				lt_strstream_writec(ss, c);
+			}
+			if (it >= end)
+				fail(LT_ERR_INVALID_SYNTAX, "expected '\"' after string literal");
+			lt_strstream_writec(ss, '"');
+			++it;
+			continue;
+		}
+
+		if (c == '\'') {
+			lt_strstream_writec(ss, '\'');
+			while (it < end) {
+				if (c != '\\' && *it == '\'')
+					break;
+				c = *it++;
+				lt_strstream_writec(ss, c);
+			}
+			if (it >= end)
+				fail(LT_ERR_INVALID_SYNTAX, "expected \' after character literal");
+			lt_strstream_writec(ss, '\'');
+			++it;
+			continue;
+		}
 
 		if (c != '\\') {
 			lt_strstream_writec(ss, c);
@@ -821,9 +862,7 @@ lt_err_t filter_line(lt_c_preproc_ctx_t* cx, lstr_t str, lt_strstream_t* ss, b8*
 		}
 
 		c = *it++;
-		if (c == '\n')
-			lt_strstream_writels(ss, CLSTR("\\n"));
-		else
+		if (c != '\n')
 			fail(LT_ERR_INVALID_SYNTAX, "stray '\\'");
 	}
 
@@ -844,14 +883,8 @@ lt_err_t parse_define(lt_c_preproc_ctx_t* cx, char* start, char* end) {
 		fail(LT_ERR_INVALID_SYNTAX, "expected a valid identifier after '#define'");
 
 	if (it >= end || *it != '(') {
-		char* name_str = lt_amalloc_lean(cx->arena, name.len);
-		memcpy(name_str, name.str, name.len);
-
 		lstr_t replace = lt_lstr_from_range(it, end);
-		char* replace_str = lt_amalloc_lean(cx->arena, replace.len);
-		memcpy(replace_str, replace.str, replace.len);
-
-		if ((err = lt_c_define(cx, LSTR(name_str, name.len), LSTR(replace_str, replace.len), NULL, 0)))
+		if ((err = lt_c_define(cx, name, replace, NULL, 0)))
 			return err;
 		return LT_SUCCESS;
 	}
@@ -886,18 +919,14 @@ lt_err_t parse_define(lt_c_preproc_ctx_t* cx, char* start, char* end) {
 			else
 				flags |= LT_CDEF_VARIADIC_LAST;
 
-			char* param_str = lt_amalloc_lean(cx->arena, param.len);
-			memcpy(param_str, param.str, param.len);
-			lt_darr_push(params, LSTR(param_str, param.len));
+			lt_darr_push(params, param);
 			break;
 		}
 
 		if (param.len == 0)
 			fail(LT_ERR_INVALID_SYNTAX, "expected a valid identifier as macro parameter name");
 
-		char* param_str = lt_amalloc_lean(cx->arena, param.len);
-		memcpy(param_str, param.str, param.len);
-		lt_darr_push(params, LSTR(param_str, param.len));
+		lt_darr_push(params, param);
 		comma = 1;
 	}
 
@@ -906,14 +935,9 @@ lt_err_t parse_define(lt_c_preproc_ctx_t* cx, char* start, char* end) {
 		fail(LT_ERR_INVALID_SYNTAX, "expected ')' after macro parameters");
 	++it;
 
-	char* name_str = lt_amalloc_lean(cx->arena, name.len);
-	memcpy(name_str, name.str, name.len);
-
 	lstr_t replace = lt_lstr_from_range(it, end);
-	char* replace_str = lt_amalloc_lean(cx->arena, replace.len);
-	memcpy(replace_str, replace.str, replace.len);
 
-	if ((err = lt_c_define(cx, LSTR(name_str, name.len), LSTR(replace_str, replace.len), params, flags)))
+	if ((err = lt_c_define(cx, name, replace, params, flags)))
 		return err;
 
 	return LT_SUCCESS;
@@ -1078,18 +1102,18 @@ lt_err_t lt_c_preproc(lt_c_preproc_ctx_t* cx, void* data, usz size, lstr_t file_
 	cx->line = 0;
 	cx->file_path = file_path;
 
-	char* it = data;
-	char* end = it + size;
-
 	lt_strstream_t ss;
 	if ((err = lt_strstream_create(&ss, &cx->arena->interf)))
 		return err;
 
-	lt_strstream_t ls;
-	if ((err = lt_strstream_create(&ls, &cx->arena->interf)))
+	if ((err = filter_special(cx, LSTR(data, size), &ss)))
 		return err;
 
-	b8 comment = 0;
+	char* it = ss.str.str;
+	char* end = it + ss.str.len;
+
+	if ((err = lt_strstream_create(&ss, &cx->arena->interf)))
+		return err;
 
 	while (it < end) {
 		char* line_start = it;
@@ -1101,18 +1125,13 @@ lt_err_t lt_c_preproc(lt_c_preproc_ctx_t* cx, void* data, usz size, lstr_t file_
 
 			if (*it == '\n') {
 				++cx->line;
-				if (it == line_start || *(it - 1) != '\\')
-					break;
+				++it;
+				break;
 			}
 			++it;
 		}
-		char* line_end = it++;
-
-		lt_strstream_clear(&ls);
-		if ((err = filter_line(cx, lt_lstr_from_range(line_start, line_end), &ls, &comment)))
-			return err;
-
-		lstr_t line = lt_lstr_trim(ls.str);
+		char* line_end = it;
+		lstr_t line = lt_lstr_trim(lt_lstr_from_range(line_start, line_end));
 		if (!line.len)
 			continue;
 
@@ -1122,7 +1141,7 @@ lt_err_t lt_c_preproc(lt_c_preproc_ctx_t* cx, void* data, usz size, lstr_t file_
 
 		lt_c_redefine(cx, CLSTR("__FILE__"), cx->file_path, NULL, 0);
 
-		if (comment || line.str[0] != '#') {
+		if (line.str[0] != '#') {
 			if (!is_dead(cx)) {
 				if ((err = gen_template(cx, line, NULL, NULL, &ss)))
 					return err;

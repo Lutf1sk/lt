@@ -16,8 +16,10 @@ lstr_t lt_c_tk_type_strtab[LT_CTK_MAX] = {
 	[LT_CTK_EQ]			= CLSTRI("="),
 	[LT_CTK_DEQ]		= CLSTRI("=="),
 	[LT_CTK_PLUS]		= CLSTRI("+"),
+	[LT_CTK_DPLUS]		= CLSTRI("++"),
 	[LT_CTK_PLUSEQ]		= CLSTRI("+="),
 	[LT_CTK_MINUS]		= CLSTRI("-"),
+	[LT_CTK_DMINUS]		= CLSTRI("--"),
 	[LT_CTK_MINUSEQ]	= CLSTRI("-="),
 	[LT_CTK_ASTER]		= CLSTRI("*"),
 	[LT_CTK_ASTEREQ]	= CLSTRI("*="),
@@ -113,6 +115,7 @@ lstr_t lt_c_tk_type_strtab[LT_CTK_MAX] = {
 
 	[LT_CTK_DOT]		= CLSTRI("."),
 	[LT_CTK_TDOT]		= CLSTRI("..."),
+	[LT_CTK_ARROW]		= CLSTRI("->"),
 	[LT_CTK_COLON]		= CLSTRI(":"),
 	[LT_CTK_COMMA]		= CLSTRI(","),
 	[LT_CTK_SEMICOLON]	= CLSTRI(";"),
@@ -139,7 +142,8 @@ lstr_t lt_c_tk_type_strtab[LT_CTK_MAX] = {
 #define OPER2	7
 #define OPER3	8
 #define OPER4	9
-#define DONE	10
+#define OPER5	10
+#define DONE	11
 #define JMP0(x) (x << 8)
 
 static u16 tkttab1[256] = {
@@ -159,8 +163,8 @@ static u16 tkttab1[256] = {
 	['['] = LT_CTK_LBRACKET	| JMP0(DONE),
 	[']'] = LT_CTK_RBRACKET	| JMP0(DONE),
 
-	['+'] = LT_CTK_PLUS		| JMP0(OPER0),
-	['-'] = LT_CTK_MINUS	| JMP0(OPER0),
+	['+'] = LT_CTK_PLUS		| JMP0(OPER1),
+	['-'] = LT_CTK_MINUS	| JMP0(OPER5),
 	['*'] = LT_CTK_ASTER	| JMP0(OPER0),
 	['/'] = LT_CTK_SLASH	| JMP0(OPER3),
 	['%'] = LT_CTK_PERCENT	| JMP0(OPER0),
@@ -363,7 +367,7 @@ lt_err_t lt_c_lex(lt_c_lex_ctx_t* cx, void* data, usz len, u32 flags, lt_alloc_t
 		lt_c_tk_type_t type = tktabent & 0xFF;
 
 		char* start = it++;
-		static void* jmptab[] = { &&jinval, &&jident, &&jnum, &&jstr, &&jchar, &&joper0, &&joper1, &&joper2, &&joper3, &&joper4, &&jend };
+		static void* jmptab[] = { &&jinval, &&jident, &&jnum, &&jstr, &&jchar, &&joper0, &&joper1, &&joper2, &&joper3, &&joper4, &&joper5, &&jend };
 		goto *jmptab[tktabent >> 8];
 
 	jinval:
@@ -506,8 +510,26 @@ lt_err_t lt_c_lex(lt_c_lex_ctx_t* cx, void* data, usz len, u32 flags, lt_alloc_t
 
 	joper4:
 		if (*it == c && it[1] == c) {
-			++it;
+			it += 2;
 			type += LT_CTK_TOFFS;
+			goto jend;
+		}
+		goto jend;
+
+	joper5:
+		if (*it == c) {
+			++it;
+			type += LT_CTK_DOFFS;
+			goto jend;
+		}
+		if (*it == '=') {
+			++it;
+			type += LT_CTK_EQOFFS;
+			goto jend;
+		}
+		if (*it == '>') {
+			++it;
+			type = LT_CTK_ARROW;
 			goto jend;
 		}
 		goto jend;

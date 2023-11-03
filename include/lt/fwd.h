@@ -95,5 +95,19 @@ typedef struct lt_lpc_expr lt_lpc_expr_t;
 typedef struct lt_lpc_stmt lt_lpc_stmt_t;
 typedef struct lt_lpc_tk lt_lpc_tk_t;
 typedef struct lt_lpc_parse_ctx lt_lpc_parse_ctx_t;
+typedef struct lt_lpc_lex_ctx lt_lpc_lex_ctx_t;
+
+// c.h
+typedef struct lt_c_type lt_c_type_t;
+typedef struct lt_c_expr lt_c_expr_t;
+typedef struct lt_c_stmt lt_c_stmt_t;
+typedef struct lt_c_tk lt_c_tk_t;
+typedef struct lt_c_parse_ctx lt_c_parse_ctx_t;
+typedef struct lt_c_define lt_c_define_t;
+typedef struct lt_c_preproc_template lt_c_preproc_template_t;
+typedef struct lt_c_preproc_scope lt_c_preproc_scope_t;
+typedef struct lt_c_preproc_ctx lt_c_preproc_ctx_t;
+typedef struct lt_c_sym lt_c_sym_t;
+typedef struct lt_c_symtab lt_c_symtab_t;
 
 #endif
