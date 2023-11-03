@@ -183,8 +183,52 @@ enum lt_lpc_expr_type {
 typedef
 struct lt_lpc_expr {
 	u8 type;
-	lt_lpc_expr_t* child0, *child1, *child2, *next;
-	lt_lpc_stmt_t* stmt;
+	union {
+		struct {
+			lt_lpc_expr_t* left;
+			lt_lpc_expr_t* right;
+		} binary;
+
+		struct {
+			lt_lpc_expr_t* child;
+		} unary;
+
+		struct {
+			lt_lpc_expr_t* array;
+			lt_lpc_expr_t* index;
+		} subscript;
+
+		struct {
+			lt_lpc_expr_t* type;
+			lt_lpc_expr_t* count;
+		} array;
+
+		struct {
+			lt_lpc_expr_t* func;
+			lt_lpc_expr_t* args;
+		} call;
+
+		struct {
+			lt_lpc_expr_t* ret_type;
+			lt_lpc_expr_t* arg_types;
+			lt_lpc_stmt_t* body;
+		} proc;
+
+		struct {
+			lt_lpc_expr_t* cond;
+			lt_lpc_expr_t* then;
+			lt_lpc_expr_t* else_;
+		} if_;
+
+		u64 uint_val;
+		i64 int_val;
+		lstr_t str_val;
+		i32 char_val;
+		b8 bool_val;
+		f64 float_val;
+	};
+
+	lt_lpc_expr_t* next;
 } lt_lpc_expr_t;
 
 typedef
@@ -214,8 +258,59 @@ typedef
 struct lt_lpc_stmt {
 	u8 type;
 	u8 state;
-	lt_lpc_stmt_t* child0, *child1, *child2, *next;
-	lt_lpc_expr_t* expr0, *expr1;
+
+	union {
+		struct {
+			lt_lpc_expr_t* cond;
+		} assert;
+
+		struct {
+			lt_lpc_expr_t* cond;
+			lt_lpc_stmt_t* then;
+			lt_lpc_stmt_t* else_;
+		} if_;
+
+		struct {
+			lt_lpc_expr_t* range;
+			lt_lpc_stmt_t* do_;
+			lstr_t name;
+		} for_;
+
+		struct {
+			lt_lpc_expr_t* type;
+			lt_lpc_expr_t* init;
+			lstr_t name;
+		} var;
+
+		struct {
+			lt_lpc_expr_t* value;
+		} return_;
+
+		struct {
+			lt_lpc_expr_t* path;
+		} import;
+
+		struct {
+			lt_lpc_expr_t* value;
+			lt_lpc_stmt_t* cases;
+			lt_lpc_stmt_t* else_;
+		} switch_;
+
+		struct {
+			lt_lpc_expr_t* values;
+			lt_lpc_stmt_t* then;
+		} case_;
+
+		struct {
+			lt_lpc_expr_t* expr;
+		} defer;
+
+		struct {
+			lt_lpc_expr_t* expr;
+		} expr;
+	};
+
+	lt_lpc_stmt_t* next;
 } lt_lpc_stmt_t;
 
 typedef
@@ -253,9 +348,6 @@ static LT_INLINE
 lstr_t lt_lpc_stmt_type_str(lt_lpc_stmt_type_t type) {
 	return lt_lpc_stmt_type_strtab[type];
 }
-
-void lt_lpc_free_expr(lt_lpc_expr_t* expr, lt_arena_t* alloc);
-void lt_lpc_free_stmt(lt_lpc_stmt_t* stmt, lt_arena_t* alloc);
 
 lt_lpc_sym_t** lt_lpc_lookup_sym(lt_lpc_sym_t** arr, usz count, lstr_t name);
 

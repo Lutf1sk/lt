@@ -68,20 +68,10 @@ lstr_t lt_lpc_stmt_type_strtab[LT_LPCS_MAX] = {
 	[LT_LPCS_EXPR] = CLSTR("expression"),
 };
 
-#define LT_ANSI_SHORTEN_NAMES 1
-#include <lt/ansi.h>
-
-#define fail_to(lbl, x, fmt, ...) \
+#define fail(...) \
 	do { \
-		x; \
-		lt_aprintf(&cx->err_str, &cx->alloc->interf, fmt, __VA_ARGS__); \
-		goto lbl; \
-	} while (0)
-
-#define fail(err, fmt, ...) \
-	do { \
-		lt_aprintf(&cx->err_str, &cx->alloc->interf, fmt, __VA_ARGS__); \
-		return err; \
+		lt_aprintf(&cx->err_str, &cx->alloc->interf, __VA_ARGS__); \
+		return LT_ERR_INVALID_SYNTAX; \
 	} while (0)
 
 static LT_INLINE
@@ -110,20 +100,6 @@ lt_lpc_expr_t* new_expr(lt_arena_t* alloc) {
 	return new;
 }
 
-void lt_lpc_free_expr(lt_lpc_expr_t* expr, lt_arena_t* alloc) {
-	if (expr->child0)
-		lt_lpc_free_expr(expr->child0, alloc);
-	if (expr->child1)
-		lt_lpc_free_expr(expr->child1, alloc);
-	if (expr->child2)
-		lt_lpc_free_expr(expr->child2, alloc);
-	if (expr->next)
-		lt_lpc_free_expr(expr->next, alloc);
-
-	if (expr->stmt)
-		lt_lpc_free_stmt(expr->stmt, alloc);
-}
-
 static
 lt_lpc_stmt_t* new_stmt(lt_arena_t* alloc) {
 	lt_lpc_stmt_t* new = lt_amalloc_lean(alloc, sizeof(lt_lpc_stmt_t));
@@ -131,23 +107,6 @@ lt_lpc_stmt_t* new_stmt(lt_arena_t* alloc) {
 		memset(new, 0, sizeof(lt_lpc_stmt_t));
 	return new;
 }
-
-void lt_lpc_free_stmt(lt_lpc_stmt_t* stmt, lt_arena_t* alloc) {
-	if (stmt->next)
-		lt_lpc_free_stmt(stmt->next, alloc);
-	if (stmt->child0)
-		lt_lpc_free_stmt(stmt->child0, alloc);
-	if (stmt->child1)
-		lt_lpc_free_stmt(stmt->child1, alloc);
-	if (stmt->child2)
-		lt_lpc_free_stmt(stmt->child2, alloc);
-
-	if (stmt->expr0)
-		lt_lpc_free_expr(stmt->expr0, alloc);
-	if (stmt->expr1)
-		lt_lpc_free_expr(stmt->expr1, alloc);
-}
-
 
 static LT_INLINE
 lt_lpc_tk_type_t read_type(lt_lpc_parse_ctx_t* cx) {
@@ -159,7 +118,7 @@ lt_lpc_tk_type_t read_type(lt_lpc_parse_ctx_t* cx) {
 static LT_INLINE
 lt_err_t consume(lt_lpc_parse_ctx_t* cx, lt_lpc_tk_t* out) {
 	if (cx->it >= cx->end)
-		fail(LT_ERR_INVALID_SYNTAX, "unexpected end of file", 0);
+		fail("unexpected end of file");
 
 	if (out)
 		*out = *cx->it;
@@ -171,10 +130,10 @@ lt_err_t consume(lt_lpc_parse_ctx_t* cx, lt_lpc_tk_t* out) {
 static LT_INLINE
 lt_err_t consume_type(lt_lpc_parse_ctx_t* cx, lt_lpc_tk_type_t type, lt_lpc_tk_t* out) {
 	if (cx->it >= cx->end)
-		fail(LT_ERR_INVALID_SYNTAX, "unexpected end of file", 0);
+		fail("unexpected end of file");
 
 	if (cx->it->type != type)
-		fail(LT_ERR_INVALID_SYNTAX, "unexpected `%S`, expected `%S`", str_from_tk(cx, *cx->it), lt_lpc_tk_type_str(type));
+		fail("unexpected `%S`, expected `%S`", str_from_tk(cx, *cx->it), lt_lpc_tk_type_str(type));
 
 	if (out)
 		*out = *cx->it;
@@ -231,25 +190,25 @@ lt_err_t parse_new_expr_primary(lt_lpc_parse_ctx_t* cx, lt_lpc_expr_t** out) {
 	switch (read_type(cx)) {
 	case LT_LPCTK_KWIF:
 		if (!(expr = new_expr(cx->alloc)))
-			fail(LT_ERR_OUT_OF_MEMORY, "out of memory", 0);
+			return LT_ERR_OUT_OF_MEMORY;
 		consume(cx, NULL);
-		if ((err = parse_new_expr(cx, &expr->child0)))
-			goto err0;
+		if ((err = parse_new_expr(cx, &expr->if_.cond)))
+			return err;
 		if ((err = consume_type(cx, LT_LPCTK_KWTHEN, NULL)))
-			goto err0;
-		if ((err = parse_new_expr(cx, &expr->child1)))
-			goto err0;
+			return err;
+		if ((err = parse_new_expr(cx, &expr->if_.then)))
+			return err;
 		if ((err = consume_type(cx, LT_LPCTK_KWELSE, NULL)))
-			goto err0;
-		if ((err = parse_new_expr(cx, &expr->child2)))
-			goto err0;
+			return err;
+		if ((err = parse_new_expr(cx, &expr->if_.else_)))
+			return err;
 		*out = expr;
 		expr->type = LT_LPCE_IF;
 		return LT_SUCCESS;
 
 	case LT_LPCTK_IDENT:
 		if (!(expr = new_expr(cx->alloc)))
-			fail(LT_ERR_OUT_OF_MEMORY, "out of memory", 0);
+			return LT_ERR_OUT_OF_MEMORY;
 		consume(cx, NULL);
 		expr->type = LT_LPCE_IDENT;
 		*out = expr;
@@ -257,7 +216,7 @@ lt_err_t parse_new_expr_primary(lt_lpc_parse_ctx_t* cx, lt_lpc_expr_t** out) {
 
 	case LT_LPCTK_NUM:
 		if (!(expr = new_expr(cx->alloc)))
-			fail(LT_ERR_OUT_OF_MEMORY, "out of memory", 0);
+			return LT_ERR_OUT_OF_MEMORY;
 		consume(cx, NULL);
 		expr->type = LT_LPCE_NUM;
 		*out = expr;
@@ -265,7 +224,7 @@ lt_err_t parse_new_expr_primary(lt_lpc_parse_ctx_t* cx, lt_lpc_expr_t** out) {
 
 	case LT_LPCTK_CHAR:
 		if (!(expr = new_expr(cx->alloc)))
-			fail(LT_ERR_OUT_OF_MEMORY, "out of memory", 0);
+			return LT_ERR_OUT_OF_MEMORY;
 		consume(cx, NULL);
 		expr->type = LT_LPCE_NUM;
 		*out = expr;
@@ -273,7 +232,7 @@ lt_err_t parse_new_expr_primary(lt_lpc_parse_ctx_t* cx, lt_lpc_expr_t** out) {
 
 	case LT_LPCTK_STR:
 		if (!(expr = new_expr(cx->alloc)))
-			fail(LT_ERR_OUT_OF_MEMORY, "out of memory", 0);
+			return LT_ERR_OUT_OF_MEMORY;
 		consume(cx, NULL);
 		expr->type = LT_LPCE_STR;
 		*out = expr;
@@ -284,15 +243,15 @@ lt_err_t parse_new_expr_primary(lt_lpc_parse_ctx_t* cx, lt_lpc_expr_t** out) {
 		if ((err = parse_new_expr(cx, &expr)))
 			return err;
 		if ((err = consume_type(cx, LT_LPCTK_RPAREN, NULL)))
-			goto err0;
+			return err;
 		*out = expr;
 		return LT_SUCCESS;
 
 	case LT_LPCTK_KWIMPORT:
 		if (!(expr = new_expr(cx->alloc)))
-			fail(LT_ERR_OUT_OF_MEMORY, "out of memory", 0);
+			return LT_ERR_OUT_OF_MEMORY;
 		consume(cx, NULL);
-		if ((err = parse_new_expr(cx, &expr->child0)))
+		if ((err = parse_new_expr(cx, &expr->unary.child)))
 			return err;
 		expr->type = LT_LPCE_IMPORT;
 		*out = expr;
@@ -300,26 +259,25 @@ lt_err_t parse_new_expr_primary(lt_lpc_parse_ctx_t* cx, lt_lpc_expr_t** out) {
 
 	case LT_LPCTK_KWPROC:
 		if (!(expr = new_expr(cx->alloc)))
-			fail(LT_ERR_OUT_OF_MEMORY, "out of memory", 0);
+			return LT_ERR_OUT_OF_MEMORY;
 		parse_function_def(cx, NULL);
 		++cx->scope_depth;
 		if ((err = consume_type(cx, LT_LPCTK_KWBEGIN, NULL)))
-			goto err0;
-		if ((err = parse_new_block(cx, &expr->stmt)))
-			goto err0;
+			return err;
+		if ((err = parse_new_block(cx, &expr->proc.body)))
+			return err;
 		if ((err = consume_type(cx, LT_LPCTK_KWEND, NULL)))
-			goto err0;
+			return err;
 		--cx->scope_depth;
 		expr->type = LT_LPCE_PROC;
 		*out = expr;
 		return LT_SUCCESS;
 
 	default:
-		fail(LT_ERR_INVALID_SYNTAX, "unexpected `%S`, expected a valid expression", str_from_tk(cx, *cx->it));
+		fail("unexpected `%S`, expected a valid expression", str_from_tk(cx, *cx->it));
 	}
 
-err0:	lt_lpc_free_expr(expr, cx->alloc);
-		return err;
+	return err;
 }
 
 static
@@ -332,51 +290,54 @@ lt_err_t parse_new_expr_unary(lt_lpc_parse_ctx_t* cx, lt_lpc_expr_t** out) {
 		switch (read_type(cx)) {
 		case LT_LPCTK_MINUS:
 			if (!(*current = new_expr(cx->alloc)))
-				fail_to(err0, err = LT_ERR_OUT_OF_MEMORY, "out of memory", 0);
+				return LT_ERR_OUT_OF_MEMORY;
 			consume(cx, NULL);
 			(*current)->type = LT_LPCE_NEG;
+			current = &(*current)->unary.child;
 			break;
 
 		case LT_LPCTK_EXC:
 			if (!(*current = new_expr(cx->alloc)))
-				fail_to(err0, err = LT_ERR_OUT_OF_MEMORY, "out of memory", 0);
+				return LT_ERR_OUT_OF_MEMORY;
 			consume(cx, NULL);
 			(*current)->type = LT_LPCE_LOGINV;
+			current = &(*current)->unary.child;
 			break;
 
 		case LT_LPCTK_TILDE:
 			if (!(*current = new_expr(cx->alloc)))
-				fail_to(err0, err = LT_ERR_OUT_OF_MEMORY, "out of memory", 0);
+				return LT_ERR_OUT_OF_MEMORY;
 			consume(cx, NULL);
 			(*current)->type = LT_LPCE_INV;
+			current = &(*current)->unary.child;
 			break;
 
 		case LT_LPCTK_ASTER:
 			if (!(*current = new_expr(cx->alloc)))
-				fail_to(err0, err = LT_ERR_OUT_OF_MEMORY, "out of memory", 0);
+				return LT_ERR_OUT_OF_MEMORY;
 			consume(cx, NULL);
 			(*current)->type = LT_LPCE_PTR;
+			current = &(*current)->unary.child;
 			break;
 
 		case LT_LPCTK_LBRACKET:
 			if (!(*current = new_expr(cx->alloc)))
-				fail_to(err0, err = LT_ERR_OUT_OF_MEMORY, "out of memory", 0);
+				return LT_ERR_OUT_OF_MEMORY;
 			consume(cx, NULL);
 
 			if (read_type(cx) != LT_LPCTK_RBRACKET) {
-				if ((err = parse_new_expr(cx, &(*current)->child1)))
-					goto err0;
+				if ((err = parse_new_expr(cx, &(*current)->binary.right))) // !!
+					return err;
 			}
 			if ((err = consume_type(cx, LT_LPCTK_RBRACKET, NULL)))
-				goto err0;
+				return err;
 			(*current)->type = LT_LPCE_ARRAY;
+			current = &(*current)->array.type;
 			break;
 
 		default:
 			goto prefix_done;
 		}
-
-		current = &(*current)->child0;
 	}
 
 prefix_done:
@@ -387,59 +348,57 @@ prefix_done:
 		switch (read_type(cx)) {
 		case LT_LPCTK_LPAREN: {
 			if (!(postfix = new_expr(cx->alloc)))
-				fail_to(err0, err = LT_ERR_OUT_OF_MEMORY, "out of memory", 0);
+				return LT_ERR_OUT_OF_MEMORY;
 			consume(cx, NULL);
 
-			lt_lpc_expr_t** current = &postfix->child1;
+			lt_lpc_expr_t** current = &postfix->call.args;
 			while (read_type(cx) != LT_LPCTK_RPAREN) {
-				if (current != &postfix->child1 && (err = consume_type(cx, LT_LPCTK_COMMA, NULL)))
-					goto err1;
+				if (current != &postfix->call.args && (err = consume_type(cx, LT_LPCTK_COMMA, NULL)))
+					return err;
 				if ((err = parse_new_expr(cx, current)))
-					goto err1;
+					return err;
 				current = &(*current)->next;
 			}
 			consume(cx, NULL);
 			postfix->type = LT_LPCE_CALL;
+			postfix->call.func = primary;
 		}	break;
 
 		case LT_LPCTK_LBRACKET:
 			consume(cx, NULL);
 			if (!(postfix = new_expr(cx->alloc)))
-				fail_to(err0, err = LT_ERR_OUT_OF_MEMORY, "out of memory", 0);
-			if ((err = parse_new_expr(cx, &postfix->child1)))
-				goto err0;
+				return LT_ERR_OUT_OF_MEMORY;
+			if ((err = parse_new_expr(cx, &postfix->subscript.index)))
+				return err;
 			if ((err = consume_type(cx, LT_LPCTK_RBRACKET, NULL)))
-				goto err0;
+				return err;
 			postfix->type = LT_LPCE_SUBSCRIPT;
+			postfix->subscript.array = primary;
 			break;
 
 		case LT_LPCTK_AMP:
 			consume(cx, NULL);
 			if (!(postfix = new_expr(cx->alloc)))
-				fail_to(err0, err = LT_ERR_OUT_OF_MEMORY, "out of memory", 0);
+				return LT_ERR_OUT_OF_MEMORY;
 			postfix->type = LT_LPCE_REF;
+			postfix->unary.child = primary;
 			break;
 
 		case LT_LPCTK_ASTER:
 			consume(cx, NULL);
 			if (!(postfix = new_expr(cx->alloc)))
-				fail_to(err0, err = LT_ERR_OUT_OF_MEMORY, "out of memory", 0);
+				return LT_ERR_OUT_OF_MEMORY;
 			postfix->type = LT_LPCE_DEREF;
+			postfix->unary.child = primary;
 			break;
 
 		default:
 			*out = primary;
 			return LT_SUCCESS;
 		}
-
-		postfix->child0 = primary;
 		primary = postfix;
 	}
-
-err1:	lt_lpc_free_expr(postfix, cx->alloc);
-err0:	if (primary)
-			lt_lpc_free_expr(primary, cx->alloc);
-		return err;
+	return err;
 }
 
 typedef
@@ -513,22 +472,18 @@ lt_err_t parse_new_expr_binary(lt_lpc_parse_ctx_t* cx, usz max_precedence, lt_lp
 
 		consume(cx, NULL);
 		if ((err = parse_new_expr_binary(cx, op->precedence, &right)))
-			goto err0;
+			return err;
 
 		lt_lpc_expr_t* expr = new_expr(cx->alloc);
 		if (!expr)
-			fail_to(err1, err = LT_ERR_OUT_OF_MEMORY, "out of memory", 0);
+			return LT_ERR_OUT_OF_MEMORY;
 
 		expr->type = op->expr_type;
-		expr->child0 = left;
-		expr->child1 = right;
+		expr->binary.left = left;
+		expr->binary.right = right;
 
 		left = expr;
 	}
-
-err1:	lt_lpc_free_expr(right, cx->alloc);
-err0:	lt_lpc_free_expr(left, cx->alloc);
-		return err;
 }
 
 static LT_INLINE
@@ -546,17 +501,13 @@ lt_err_t parse_new_block(lt_lpc_parse_ctx_t* cx, lt_lpc_stmt_t** out) {
 	lt_lpc_tk_type_t type = read_type(cx);
 	while (type != LT_LPCTK_KWEND && type != LT_LPCTK_KWELSE && type != LT_LPCTK_KWELIF && type != LT_LPCTK_KWCASE) {
 		if ((err = parse_new_stmt(cx, current)))
-			goto err0;
+			return err;
 		current = &(*current)->next;
 		type = read_type(cx);
 	}
 
 	*out = root;
 	return LT_SUCCESS;
-
-err0:	if (root)
-			lt_lpc_free_stmt(root, cx->alloc);
-		return err;
 }
 
 static
@@ -565,51 +516,51 @@ lt_err_t parse_new_stmt(lt_lpc_parse_ctx_t* cx, lt_lpc_stmt_t** out) {
 
 	lt_lpc_stmt_t* stmt = new_stmt(cx->alloc);
 	if (!stmt)
-		fail(LT_ERR_OUT_OF_MEMORY, "out of memory", 0);
+		return LT_ERR_OUT_OF_MEMORY;
 
 	switch (read_type(cx)) {
 	case LT_LPCTK_KWASSERT:
 		consume(cx, NULL);
-		if ((err = parse_new_expr(cx, &stmt->expr0)))
-			goto err0;
+		if ((err = parse_new_expr(cx, &stmt->assert.cond)))
+			return err;
 		if ((err = consume_type(cx, LT_LPCTK_SEMICOLON, NULL)))
-			goto err0;
+			return err;
 		stmt->type = LT_LPCS_ASSERT;
 		*out = stmt;
 		return LT_SUCCESS;
 
 	case LT_LPCTK_KWIF: {
 		consume(cx, NULL);
-		if ((err = parse_new_expr(cx, &stmt->expr0)))
-			goto err0;
+		if ((err = parse_new_expr(cx, &stmt->if_.cond)))
+			return err;
 		if ((err = consume_type(cx, LT_LPCTK_KWDO, NULL)))
-			goto err0;
-		if ((err = parse_new_block(cx, &stmt->child0)))
-			goto err0;
+			return err;
+		if ((err = parse_new_block(cx, &stmt->if_.then)))
+			return err;
 
-		lt_lpc_stmt_t** current = &stmt->child1;
+		lt_lpc_stmt_t** current = &stmt->if_.else_;
 		while (read_type(cx) == LT_LPCTK_KWELIF) {
 			consume(cx, NULL);
 			if (!(*current = new_stmt(cx->alloc)))
-				fail_to(err0, err = LT_ERR_OUT_OF_MEMORY, "out of memory", 0);
+				return LT_ERR_OUT_OF_MEMORY;
 			(*current)->type = LT_LPCS_IF;
-			if ((err = parse_new_expr(cx, &(*current)->expr0)))
-				goto err0;
+			if ((err = parse_new_expr(cx, &(*current)->if_.cond)))
+				return err;
 			if ((err = consume_type(cx, LT_LPCTK_KWDO, NULL)))
-				goto err0;
-			if ((err = parse_new_block(cx, &(*current)->child0)))
-				goto err0;
-			current = &(*current)->next;
+				return err;
+			if ((err = parse_new_block(cx, &(*current)->if_.then)))
+				return err;
+			current = &(*current)->if_.else_;
 		}
 
 		if (read_type(cx) == LT_LPCTK_KWELSE) {
 			consume(cx, NULL);
-			if ((err = parse_new_block(cx, &stmt->child2)))
-				goto err0;
+			if ((err = parse_new_block(cx, current)))
+				return err;
 		}
 
 		if ((err = consume_type(cx, LT_LPCTK_KWEND, NULL)))
-			goto err0;
+			return err;
 
 		stmt->type = LT_LPCS_IF;
 		*out = stmt;
@@ -618,44 +569,44 @@ lt_err_t parse_new_stmt(lt_lpc_parse_ctx_t* cx, lt_lpc_stmt_t** out) {
 	case LT_LPCTK_KWSWITCH: {
 		consume(cx, NULL);
 
-		if ((err = parse_new_expr(cx, &stmt->expr0)))
-			goto err0;
+		if ((err = parse_new_expr(cx, &stmt->switch_.value)))
+			return err;
 
-		lt_lpc_stmt_t** current = &stmt->child0;
+		lt_lpc_stmt_t** current = &stmt->switch_.cases;
 		while (read_type(cx) == LT_LPCTK_KWCASE) {
 			consume(cx, NULL);
 
 			if (!(*current = new_stmt(cx->alloc)))
-				fail_to(err0, err = LT_ERR_OUT_OF_MEMORY, "out of memory", 0);
+				return LT_ERR_OUT_OF_MEMORY;
 			(*current)->type = LT_LPCS_CASE;
 
-			lt_lpc_expr_t** current_expr = &(*current)->expr0;
+			lt_lpc_expr_t** current_expr = &(*current)->case_.values;
 			if ((err = parse_new_expr(cx, current_expr)))
-				goto err0;
+				return err;
 			current_expr = &(*current_expr)->next;
 			while (read_type(cx) == LT_LPCTK_COMMA) {
 				consume(cx, NULL);
 				if ((err = parse_new_expr(cx, current_expr)))
-					goto err0;
+					return err;
 				current_expr = &(*current_expr)->next;
 			}
 
 			if ((err = consume_type(cx, LT_LPCTK_KWDO, NULL)))
-				goto err0;
-			if ((err = parse_new_block(cx, &(*current)->child0)))
-				goto err0;
+				return err;
+			if ((err = parse_new_block(cx, &(*current)->case_.then)))
+				return err;
 
 			current = &(*current)->next;
 		}
 
 		if (read_type(cx) == LT_LPCTK_KWELSE) {
 			consume(cx, NULL);
-			if ((err = parse_new_block(cx, &stmt->child1)))
-				goto err0;
+			if ((err = parse_new_block(cx, &stmt->switch_.else_)))
+				return err;
 		}
 
 		if ((err = consume_type(cx, LT_LPCTK_KWEND, NULL)))
-			goto err0;
+			return err;
 
 		stmt->type = LT_LPCS_SWITCH;
 		*out = stmt;
@@ -664,19 +615,19 @@ lt_err_t parse_new_stmt(lt_lpc_parse_ctx_t* cx, lt_lpc_stmt_t** out) {
 	case LT_LPCTK_KWIMPORT:
 		consume(cx, NULL);
 		if ((err = consume_type(cx, LT_LPCTK_IDENT, NULL)))
-			goto err0;
+			return err;
 		if ((err = consume_type(cx, LT_LPCTK_SEMICOLON, NULL)))
-			goto err0;
+			return err;
 		stmt->type = LT_LPCS_IMPORT;
 		*out = stmt;
 		return LT_SUCCESS;
 
 	case LT_LPCTK_KWRETURN:
 		consume(cx, NULL);
-		if ((err = parse_new_expr(cx, &stmt->expr0)))
-			goto err0;
+		if ((err = parse_new_expr(cx, &stmt->return_.value)))
+			return err;
 		if ((err = consume_type(cx, LT_LPCTK_SEMICOLON, NULL)))
-			goto err0;
+			return err;
 		stmt->type = LT_LPCS_RETURN;
 		*out = stmt;
 		return LT_SUCCESS;
@@ -697,30 +648,30 @@ lt_err_t parse_new_stmt(lt_lpc_parse_ctx_t* cx, lt_lpc_stmt_t** out) {
 		consume(cx, NULL);
 
 		if (read_type(cx) != LT_LPCTK_KWDO) {
-			if ((err = parse_new_expr(cx, &stmt->expr0)))
-				goto err0;
+			if ((err = parse_new_expr(cx, &stmt->for_.range))) // !!
+				return err;
 			if (read_type(cx) == LT_LPCTK_COLON) {
 				consume(cx, NULL);
-				if ((err = parse_new_expr(cx, &stmt->expr1)))
-					goto err0;
+				if ((err = parse_new_expr(cx, &stmt->for_.range)))
+					return err;
 			}
 		}
 		if ((err = consume_type(cx, LT_LPCTK_KWDO, NULL)))
-			goto err0;
-		if ((err = parse_new_block(cx, &stmt->child0)))
-			goto err0;
+			return err;
+		if ((err = parse_new_block(cx, &stmt->for_.do_)))
+			return err;
 		if ((err = consume_type(cx, LT_LPCTK_KWEND, NULL)))
-			goto err0;
+			return err;
 		stmt->type = LT_LPCS_FOR;
 		*out = stmt;
 		return LT_SUCCESS;
 
 	case LT_LPCTK_KWDEFER:
 		consume(cx, NULL);
-		if ((err = parse_new_expr(cx, &stmt->expr0)))
-			goto err0;
+		if ((err = parse_new_expr(cx, &stmt->defer.expr)))
+			return err;
 		if ((err = consume_type(cx, LT_LPCTK_SEMICOLON, NULL)))
-			goto err0;
+			return err;
 		stmt->type = LT_LPCS_DEFER;
 		*out = stmt;
 		return LT_SUCCESS;
@@ -732,51 +683,48 @@ lt_err_t parse_new_stmt(lt_lpc_parse_ctx_t* cx, lt_lpc_stmt_t** out) {
 			consume(cx, NULL);
 
 			lt_lpc_tk_type_t type = read_type(cx);
-			if (type != LT_LPCTK_COLON && type != LT_LPCTK_EQ && (err = parse_new_expr(cx, &stmt->expr0)))
-				goto err0;
+			if (type != LT_LPCTK_COLON && type != LT_LPCTK_EQ && (err = parse_new_expr(cx, &stmt->var.type)))
+				return err;
 
 			type = read_type(cx);
 			if (type == LT_LPCTK_COLON) {
 				consume(cx, NULL);
-				if ((err = parse_new_expr(cx, &stmt->expr1)))
-					goto err0;
+				if ((err = parse_new_expr(cx, &stmt->var.init)))
+					return err;
 			}
 			else if (type == LT_LPCTK_EQ) {
 				consume(cx, NULL);
-				if ((err = parse_new_expr(cx, &stmt->expr1)))
-					goto err0;
+				if ((err = parse_new_expr(cx, &stmt->var.init)))
+					return err;
 			}
 
 			if ((err = consume_type(cx, LT_LPCTK_SEMICOLON, NULL)))
-				goto err0;
+				return err;
 
 			lt_lpc_sym_t symbol;
 			symbol.name = str_from_tk(cx, ident_tk);
 			symbol.definition = stmt;
 
 			if (cx->scope_depth == 0 && (err = lt_lpc_insert_global(cx, &symbol)))
-				;//goto err0;
+				return err;
 
 			stmt->type = LT_LPCS_VAR;
 			*out = stmt;
 			return LT_SUCCESS;
 		}
 	case LT_LPCTK_NUM: case LT_LPCTK_LPAREN: case LT_LPCTK_MINUS:
-		if ((err = parse_new_expr(cx, &stmt->expr0)) == LT_SUCCESS) {
+		if ((err = parse_new_expr(cx, &stmt->expr.expr)) == LT_SUCCESS) {
 			if ((err = consume_type(cx, LT_LPCTK_SEMICOLON, NULL)))
-				goto err0;
+				return err;
 			stmt->type = LT_LPCS_EXPR;
 			*out = stmt;
 			return LT_SUCCESS;
 		}
-		goto err0;
+		return err;
 
 	default:
-		fail_to(err0, err = LT_ERR_INVALID_SYNTAX, "unexpected `%S`, expected a valid statement", str_from_tk(cx, *cx->it)); // !!
+		fail("unexpected `%S`, expected a valid statement", str_from_tk(cx, *cx->it)); // !!
 	}
-
-err0:	lt_lpc_free_stmt(stmt, cx->alloc);
-		return err;
 }
 
 #include <lt/sort.h>
@@ -795,10 +743,8 @@ lt_err_t lt_lpc_insert_global(lt_lpc_parse_ctx_t* cx, lt_lpc_sym_t* sym) {
 	usz glob_count = lt_darr_count(cx->globals);
 	lt_lpc_sym_t** at = lt_lpc_lookup_nearest_sym(cx->globals, glob_count, sym->name);
 
-	if (at < cx->globals + glob_count && sym_is_equal(*at, sym->name)) {
-// 		lt_aprintf(&cx->err_str, &cx->alloc->interf, "multiple definitions of symbol '%S'", sym->name);
-		return LT_ERR_REDEFINED;
-	}
+	if (at < cx->globals + glob_count && sym_is_equal(*at, sym->name))
+		return LT_SUCCESS;//fail("multiple definitions of symbol '%S'", sym->name);
 
 	lt_lpc_sym_t* new_sym = lt_amalloc_lean(cx->alloc, sizeof(lt_lpc_sym_t));
 	*new_sym = *sym;
@@ -813,7 +759,7 @@ lt_err_t lt_lpc_parse(lt_lpc_parse_ctx_t* cx, lt_lpc_tk_t* tokens, usz token_cou
 
 	cx->globals = lt_darr_create(lt_lpc_sym_t*, 8192, &alloc->interf);
 	if (!cx->globals)
-		fail(LT_ERR_OUT_OF_MEMORY, "out of memory", 0);
+		return LT_ERR_OUT_OF_MEMORY;
 
 	cx->scope_depth = 0;
 
@@ -825,15 +771,11 @@ lt_err_t lt_lpc_parse(lt_lpc_parse_ctx_t* cx, lt_lpc_tk_t* tokens, usz token_cou
 	lt_lpc_stmt_t** current = &cx->root;
 	while (cx->it < cx->end) {
 		if ((err = parse_new_stmt(cx, current)))
-			goto err0;
+			return err;
 		current = &(*current)->next;
 	}
 
 	return LT_SUCCESS;
-
-err0:	if (cx->root)
-			lt_lpc_free_stmt(cx->root, alloc);
-		return err;
 }
 
 static
@@ -874,18 +816,19 @@ lt_err_t resolve_expr(lt_lpc_parse_ctx_t* cx, lt_lpc_expr_t* expr) {
 	case LT_LPCE_LOGOR:
 	case LT_LPCE_LOGAND:
 	case LT_LPCE_RANGE:
-		if ((err = resolve_expr(cx, expr->child0)))
+		if ((err = resolve_expr(cx, expr->binary.left)))
 			return err;
-		if ((err = resolve_expr(cx, expr->child1)))
+		if ((err = resolve_expr(cx, expr->binary.right)))
 			return err;
 		break;
 
+	case LT_LPCE_IMPORT:
 	case LT_LPCE_DEREF:
 	case LT_LPCE_REF:
 	case LT_LPCE_NEG:
 	case LT_LPCE_INV:
 	case LT_LPCE_LOGINV:
-		if ((err = resolve_expr(cx, expr->child0)))
+		if ((err = resolve_expr(cx, expr->unary.child)))
 			return err;
 		break;
 
@@ -900,37 +843,32 @@ lt_err_t resolve_expr(lt_lpc_parse_ctx_t* cx, lt_lpc_expr_t* expr) {
 		break;
 
 	case LT_LPCE_PROC:
-		for (lt_lpc_stmt_t* it = expr->stmt; it; it = it->next)
+		for (lt_lpc_stmt_t* it = expr->proc.body; it; it = it->next)
 			if ((err = resolve_stmt(cx, it)))
-			return err;
+				return err;
 		break;
 
 	case LT_LPCE_IF:
-		if ((err = resolve_expr(cx, expr->child0)))
+		if ((err = resolve_expr(cx, expr->if_.cond)))
 			return err;
-		if ((err = resolve_expr(cx, expr->child1)))
+		if ((err = resolve_expr(cx, expr->if_.then)))
 			return err;
-		if ((err = resolve_expr(cx, expr->child2)))
-			return err;
-		break;
-
-	case LT_LPCE_IMPORT:
-		if ((err = resolve_expr(cx, expr->child0)))
+		if ((err = resolve_expr(cx, expr->if_.else_)))
 			return err;
 		break;
 
 	case LT_LPCE_CALL:
-		if ((err = resolve_expr(cx, expr->child0)))
+		if ((err = resolve_expr(cx, expr->call.func)))
 			return err;
-		for (lt_lpc_expr_t* it = expr->child1; it; it = it->next)
+		for (lt_lpc_expr_t* it = expr->call.args; it; it = it->next)
 			if ((err = resolve_expr(cx, it)))
 				return err;
 		break;
 
 	case LT_LPCE_SUBSCRIPT:
-		if ((err = resolve_expr(cx, expr->child0)))
+		if ((err = resolve_expr(cx, expr->subscript.array)))
 			return err;
-		if ((err = resolve_expr(cx, expr->child1)))
+		if ((err = resolve_expr(cx, expr->subscript.index)))
 			return err;
 		break;
 
@@ -953,48 +891,42 @@ lt_err_t resolve_stmt(lt_lpc_parse_ctx_t* cx, lt_lpc_stmt_t* stmt) {
 		LT_ASSERT_NOT_REACHED();
 
 	case LT_LPCS_ASSERT:
-		if ((err = resolve_expr(cx, stmt->expr0)))
+		if ((err = resolve_expr(cx, stmt->assert.cond)))
 			return err;
 		break;
 
 	case LT_LPCS_IF:
-		if ((err = resolve_expr(cx, stmt->expr0)))
+		if ((err = resolve_expr(cx, stmt->if_.cond)))
 			return err;
 
-		for (lt_lpc_stmt_t* it = stmt->child0; it; it = it->next)
+		for (lt_lpc_stmt_t* it = stmt->if_.then; it; it = it->next)
 			if ((err = resolve_stmt(cx, it)))
 				return err;
 
-		for (lt_lpc_stmt_t* it = stmt->child1; it; it = it->next) {
-			if ((err = resolve_expr(cx, it->expr0)))
+		for (lt_lpc_stmt_t* it = stmt->if_.else_; it; it = it->next)
+			if ((err = resolve_stmt(cx, it)))
 				return err;
-			for (lt_lpc_stmt_t* it2 = it->child0; it2; it2 = it2->next)
-				if ((err = resolve_stmt(cx, it2)))
-					return err;
-		}
-		if (stmt->expr1 && (err = resolve_expr(cx, stmt->expr1)))
-			return err;
 		break;
 
 	case LT_LPCS_FOR:
-		if (stmt->expr0 && (err = resolve_expr(cx, stmt->expr0)))
+		if (stmt->for_.range && (err = resolve_expr(cx, stmt->for_.range)))
 			return err;
-		if (stmt->expr1 && (err = resolve_expr(cx, stmt->expr1)))
-			return err;
-		for (lt_lpc_stmt_t* it = stmt->child0; it; it = it->next)
+// 		if (stmt->expr1 && (err = resolve_expr(cx, stmt->expr1)))
+// 			return err;
+		for (lt_lpc_stmt_t* it = stmt->for_.do_; it; it = it->next)
 			if ((err = resolve_stmt(cx, it)))
 				return err;
 		break;
 
 	case LT_LPCS_VAR:
-		if (stmt->expr0 && (err = resolve_expr(cx, stmt->expr0)))
+		if (stmt->var.type && (err = resolve_expr(cx, stmt->var.type)))
 			return err;
-		if (stmt->expr1 && (err = resolve_expr(cx, stmt->expr1)))
+		if (stmt->var.init && (err = resolve_expr(cx, stmt->var.init)))
 			return err;
 		break;
 
 	case LT_LPCS_RETURN:
-		if (stmt->expr0 && (err = resolve_expr(cx, stmt->expr0)))
+		if (stmt->return_.value && (err = resolve_expr(cx, stmt->return_.value)))
 			return err;
 		break;
 
@@ -1003,19 +935,22 @@ lt_err_t resolve_stmt(lt_lpc_parse_ctx_t* cx, lt_lpc_stmt_t* stmt) {
 		break;
 
 	case LT_LPCS_SWITCH:
-		for (lt_lpc_stmt_t* it = stmt->child0; it; it = it->next)
+		if ((err = resolve_expr(cx, stmt->switch_.value)))
+			return err;
+		for (lt_lpc_stmt_t* it = stmt->switch_.cases; it; it = it->next)
 			if ((err = resolve_stmt(cx, it)))
-			return err;
-		if (stmt->child1 && (err = resolve_stmt(cx, stmt->child1)))
-			return err;
+				return err;
+		for (lt_lpc_stmt_t* it = stmt->switch_.else_; it; it = it->next)
+			if ((err = resolve_stmt(cx, it)))
+				return err;
 		break;
 
 	case LT_LPCS_CASE:
-		for (lt_lpc_expr_t* it = stmt->expr0; it; it = it->next)
+		for (lt_lpc_expr_t* it = stmt->case_.values; it; it = it->next)
 			if ((err = resolve_expr(cx, it)))
 			return err;
-		for (lt_lpc_stmt_t* it = stmt->child0; it; it = it->next)
-			if ((err = resolve_stmt(cx, stmt->child0)))
+		for (lt_lpc_stmt_t* it = stmt->case_.then; it; it = it->next)
+			if ((err = resolve_stmt(cx, it)))
 			return err;
 		break;
 
@@ -1024,12 +959,12 @@ lt_err_t resolve_stmt(lt_lpc_parse_ctx_t* cx, lt_lpc_stmt_t* stmt) {
 		break;
 
 	case LT_LPCS_DEFER:
-		if ((err = resolve_expr(cx, stmt->expr0)))
+		if ((err = resolve_expr(cx, stmt->defer.expr)))
 			return err;
 		break;
 
 	case LT_LPCS_EXPR:
-		if ((err = resolve_expr(cx, stmt->expr0)))
+		if ((err = resolve_expr(cx, stmt->expr.expr)))
 			return err;
 		break;
 	}
@@ -1088,8 +1023,8 @@ void lt_lpc_write_expr(lt_lpc_expr_t* expr, lt_io_callback_t callb, void* usr, u
 	case LT_LPCE_LOGAND:
 	case LT_LPCE_RANGE:
 		PRINTF("\n");
-		lt_lpc_write_expr(expr->child0, callb, usr, indent + 1);
-		lt_lpc_write_expr(expr->child1, callb, usr, indent + 1);
+		lt_lpc_write_expr(expr->binary.left, callb, usr, indent + 1);
+		lt_lpc_write_expr(expr->binary.right, callb, usr, indent + 1);
 		break;
 
 	case LT_LPCE_DEREF:
@@ -1097,8 +1032,9 @@ void lt_lpc_write_expr(lt_lpc_expr_t* expr, lt_io_callback_t callb, void* usr, u
 	case LT_LPCE_NEG:
 	case LT_LPCE_INV:
 	case LT_LPCE_LOGINV:
+	case LT_LPCE_IMPORT:
 		PRINTF("\n");
-		lt_lpc_write_expr(expr->child0, callb, usr, indent + 1);
+		lt_lpc_write_expr(expr->unary.child, callb, usr, indent + 1);
 		break;
 
 	case LT_LPCE_IDENT:
@@ -1113,38 +1049,33 @@ void lt_lpc_write_expr(lt_lpc_expr_t* expr, lt_io_callback_t callb, void* usr, u
 		PRINTF(" <string>\n");
 		break;
 
-	case LT_LPCE_PROC:
+	case LT_LPCE_PROC: // !! print args and return type
 		PRINTF(" <proc>\n");
-		for (lt_lpc_stmt_t* it = expr->stmt; it; it = it->next)
+		for (lt_lpc_stmt_t* it = expr->proc.body; it; it = it->next)
 			lt_lpc_write_stmt(it, callb, usr, indent + 1);
 		break;
 
 	case LT_LPCE_IF:
 		PRINTF("\n");
-		lt_lpc_write_expr(expr->child0, callb, usr, indent + 1);
+		lt_lpc_write_expr(expr->if_.cond, callb, usr, indent + 1);
 		PRINTF("%r|then\n", indent + 1);
-		lt_lpc_write_expr(expr->child1, callb, usr, indent + 2);
+		lt_lpc_write_expr(expr->if_.then, callb, usr, indent + 2);
 		PRINTF("%r|else\n", indent + 1);
-		lt_lpc_write_expr(expr->child2, callb, usr, indent + 2);
-		break;
-
-	case LT_LPCE_IMPORT:
-		PRINTF("\n");
-		lt_lpc_write_expr(expr->child0, callb, usr, indent + 1);
+		lt_lpc_write_expr(expr->if_.else_, callb, usr, indent + 2);
 		break;
 
 	case LT_LPCE_CALL:
 		PRINTF("\n");
-		lt_lpc_write_expr(expr->child0, callb, usr, indent + 1);
+		lt_lpc_write_expr(expr->call.func, callb, usr, indent + 1);
 		PRINTF("%r|args\n", indent + 1);
-		for (lt_lpc_expr_t* it = expr->child1; it; it = it->next)
+		for (lt_lpc_expr_t* it = expr->call.args; it; it = it->next)
 			lt_lpc_write_expr(it, callb, usr, indent + 2);
 		break;
 
 	case LT_LPCE_SUBSCRIPT:
 		PRINTF("\n");
-		lt_lpc_write_expr(expr->child0, callb, usr, indent + 1);
-		lt_lpc_write_expr(expr->child1, callb, usr, indent + 1);
+		lt_lpc_write_expr(expr->subscript.array, callb, usr, indent + 1);
+		lt_lpc_write_expr(expr->subscript.index, callb, usr, indent + 1);
 		break;
 
 	case LT_LPCE_PTR:
@@ -1164,39 +1095,30 @@ void lt_lpc_write_stmt(lt_lpc_stmt_t* stmt, lt_io_callback_t callb, void* usr, u
 
 	case LT_LPCS_ASSERT:
 		PRINTF("\n");
-		lt_lpc_write_expr(stmt->expr0, callb, usr, indent + 1);
+		lt_lpc_write_expr(stmt->assert.cond, callb, usr, indent + 1);
 		break;
 
 	case LT_LPCS_IF:
 		PRINTF("\n");
-		lt_lpc_write_expr(stmt->expr0, callb, usr, indent + 1);
+		lt_lpc_write_expr(stmt->if_.cond, callb, usr, indent + 1);
 
 		PRINTF("%r|do\n", indent + 1);
-		for (lt_lpc_stmt_t* it = stmt->child0; it; it = it->next)
+		for (lt_lpc_stmt_t* it = stmt->if_.then; it; it = it->next)
 			lt_lpc_write_stmt(it, callb, usr, indent + 2);
 
-		for (lt_lpc_stmt_t* it = stmt->child1; it; it = it->next) {
-			PRINTF("%r|elif\n", indent + 1);
-			lt_lpc_write_expr(it->expr0, callb, usr, indent + 2);
-			PRINTF("%r|do\n", indent + 2);
-			for (lt_lpc_stmt_t* it2 = it->child0; it2; it2 = it2->next)
-				lt_lpc_write_stmt(it2, callb, usr, indent + 3);
-		}
-
-		if (stmt->expr1) {
-			PRINTF("%r|else\n", indent + 1);
-			lt_lpc_write_expr(stmt->expr1, callb, usr, indent + 2);
-		}
+		PRINTF("%r|else\n", indent + 1);
+		for (lt_lpc_stmt_t* it = stmt->if_.else_; it; it = it->next)
+			lt_lpc_write_stmt(it, callb, usr, indent + 2);
 		break;
 
 	case LT_LPCS_FOR:
 		PRINTF("\n");
-		if (stmt->expr0)
-			lt_lpc_write_expr(stmt->expr0, callb, usr, indent + 1);
-		if (stmt->expr1)
-			lt_lpc_write_expr(stmt->expr1, callb, usr, indent + 1);
+		if (stmt->for_.range)
+			lt_lpc_write_expr(stmt->for_.range, callb, usr, indent + 1);
+// 		if (stmt->expr1)
+// 			lt_lpc_write_expr(stmt->expr1, callb, usr, indent + 1);
 		PRINTF("%r|do\n", indent + 1);
-		for (lt_lpc_stmt_t* it = stmt->child0; it; it = it->next)
+		for (lt_lpc_stmt_t* it = stmt->for_.do_; it; it = it->next)
 			lt_lpc_write_stmt(it, callb, usr, indent + 2);
 		break;
 
@@ -1204,14 +1126,16 @@ void lt_lpc_write_stmt(lt_lpc_stmt_t* stmt, lt_io_callback_t callb, void* usr, u
 		PRINTF(" <name> : ");
 		PRINTF("<inferred>\n");
 
-		if (stmt->expr1)
-			lt_lpc_write_expr(stmt->expr1, callb, usr, indent + 1);
+// 		if (stmt->var.type)
+// 			lt_lpc_write_expr(stmt->var.type, callb, usr, indent + 1);
+		if (stmt->var.init)
+			lt_lpc_write_expr(stmt->var.init, callb, usr, indent + 1);
 		break;
 
 	case LT_LPCS_RETURN:
 		PRINTF("\n");
-		if (stmt->expr0)
-			lt_lpc_write_expr(stmt->expr0, callb, usr, indent + 1);
+		if (stmt->return_.value)
+			lt_lpc_write_expr(stmt->return_.value, callb, usr, indent + 1);
 		break;
 
 	case LT_LPCS_IMPORT:
@@ -1221,19 +1145,20 @@ void lt_lpc_write_stmt(lt_lpc_stmt_t* stmt, lt_io_callback_t callb, void* usr, u
 
 	case LT_LPCS_SWITCH:
 		PRINTF("\n");
-		for (lt_lpc_stmt_t* it = stmt->child0; it; it = it->next)
+		lt_lpc_write_expr(stmt->switch_.value, callb, usr, indent + 1);
+		for (lt_lpc_stmt_t* it = stmt->switch_.cases; it; it = it->next)
 			lt_lpc_write_stmt(it, callb, usr, indent + 1);
-		if (stmt->child1) {
+		if (stmt->switch_.else_) {
 			PRINTF("%r|else\n", indent + 1);
-			lt_lpc_write_stmt(stmt->child1, callb, usr, indent + 2);
+			lt_lpc_write_stmt(stmt->switch_.else_, callb, usr, indent + 2);
 		}
 		break;
 
 	case LT_LPCS_CASE:
 		PRINTF("\n");
-		for (lt_lpc_expr_t* it = stmt->expr0; it; it = it->next)
+		for (lt_lpc_expr_t* it = stmt->case_.values; it; it = it->next)
 			lt_lpc_write_expr(it, callb, usr, indent + 1);
-		for (lt_lpc_stmt_t* it = stmt->child0; it; it = it->next)
+		for (lt_lpc_stmt_t* it = stmt->case_.then; it; it = it->next)
 			lt_lpc_write_stmt(it, callb, usr, indent + 2);
 		break;
 
@@ -1244,11 +1169,11 @@ void lt_lpc_write_stmt(lt_lpc_stmt_t* stmt, lt_io_callback_t callb, void* usr, u
 
 	case LT_LPCS_DEFER:
 		PRINTF("\n");
-		lt_lpc_write_expr(stmt->expr0, callb, usr, indent + 1);
+		lt_lpc_write_expr(stmt->defer.expr, callb, usr, indent + 1);
 		break;
 
 	case LT_LPCS_EXPR:
-		lt_lpc_write_expr(stmt->expr0, callb, usr, indent);
+		lt_lpc_write_expr(stmt->expr.expr, callb, usr, indent);
 		break;
 	}
 }

@@ -263,6 +263,7 @@ lt_err_t lt_lpc_lex(lt_lpc_lex_ctx_t* cx, void* data, usz len, lt_alloc_t* alloc
 		if (it >= end) {
 			cx->token_count = out - cx->tokens;
 			cx->tokens = lt_mrealloc(alloc, cx->tokens, cx->token_count * sizeof(lt_lpc_tk_t));
+			LT_ASSERT(cx->tokens);
 			return LT_SUCCESS;
 		}
 
