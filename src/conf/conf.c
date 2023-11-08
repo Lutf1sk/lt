@@ -210,6 +210,55 @@ lt_err_t parse_val(parse_ctx_t* cx, lt_conf_t* cf) {
 	}
 }
 
+lt_err_t lt_conf_add_child(lt_conf_t* cf, lt_conf_t* child) {
+	LT_ASSERT(cf->stype == LT_CONF_OBJECT || cf->stype == LT_CONF_ARRAY);
+	lt_darr_push(cf->children, *child);
+	++cf->child_count;
+	return LT_SUCCESS;
+}
+
+lt_err_t lt_conf_erase_str(lt_conf_t* cf, lstr_t str, lt_alloc_t* alloc) {
+	LT_ASSERT(cf->stype == LT_CONF_OBJECT || cf->stype == LT_CONF_ARRAY);
+
+	for (usz i = 0; i < cf->child_count; ++i) {
+		if (cf->children[i].stype == LT_CONF_STRING && !lt_lstr_eq(cf->children[i].str_val, str))
+			continue;
+
+		lt_conf_free(&cf->children[i], alloc);
+		lt_darr_erase(cf->children, i, 1);
+		--cf->child_count;
+		--i;
+	}
+
+	return LT_SUCCESS;
+}
+
+lt_err_t lt_conf_erase_index(lt_conf_t* cf, usz index, lt_alloc_t* alloc) {
+	LT_ASSERT(cf->stype == LT_CONF_OBJECT || cf->stype == LT_CONF_ARRAY);
+
+	LT_ASSERT(index < cf->child_count);
+
+	lt_conf_free(&cf->children[index], alloc);
+	lt_darr_erase(cf->children, index, 1);
+	--cf->child_count;
+	return LT_SUCCESS;
+}
+
+lt_err_t lt_conf_erase_key(lt_conf_t* cf, lstr_t key, lt_alloc_t* alloc) {
+	LT_ASSERT(cf->stype == LT_CONF_OBJECT);
+
+	for (usz i = 0; i < cf->child_count; ++i) {
+		if (!lt_lstr_eq(cf->children[i].key, key))
+			continue;
+
+		lt_conf_free(&cf->children[i], alloc);
+		lt_darr_erase(cf->children, i, 1);
+		--cf->child_count;
+		return LT_SUCCESS;
+	}
+	return LT_ERR_NOT_FOUND;
+}
+
 lt_err_t lt_conf_parse(lt_conf_t* cf, void* data, usz len, lt_conf_err_info_t* err_info, lt_alloc_t* alloc) {
 	parse_ctx_t cx;
 	cx.alloc = alloc;

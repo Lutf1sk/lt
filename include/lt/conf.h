@@ -50,6 +50,12 @@ struct lt_conf_err_info {
 #define LT_CONF_INIT(stype, key, ...) { (stype), (key), 0, __VA_ARGS__ }
 #define LT_CONF(stype, key, ...) ((lt_conf_t)LT_CONF_INIT(stype, key, __VA_ARGS__))
 
+lt_err_t lt_conf_add_child(lt_conf_t* cf, lt_conf_t* child);
+
+lt_err_t lt_conf_erase_str(lt_conf_t* cf, lstr_t str, lt_alloc_t* alloc);
+lt_err_t lt_conf_erase_index(lt_conf_t* cf, usz index, lt_alloc_t* alloc);
+lt_err_t lt_conf_erase_child(lt_conf_t* cf, lstr_t key, lt_alloc_t* alloc);
+
 lt_err_t lt_conf_parse(lt_conf_t* cf, void* data, usz len, lt_conf_err_info_t* err_str, lt_alloc_t* alloc);
 
 void lt_conf_free_err_info(lt_conf_err_info_t* err_info, lt_alloc_t* alloc);
