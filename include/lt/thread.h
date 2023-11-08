@@ -1,8 +1,8 @@
 #ifndef LT_THREAD_H
 #define LT_THREAD_H 1
 
-#include <lt/primitives.h>
 #include <lt/fwd.h>
+#include <lt/err.h>
 
 // thread.c
 typedef struct lt_thread lt_thread_t;
@@ -11,6 +11,11 @@ typedef void(*lt_thread_proc_t)(void*);
 
 lt_thread_t* lt_thread_create(lt_thread_proc_t proc, void* args, lt_alloc_t* alloc);
 b8 lt_thread_join(lt_thread_t* thread, lt_alloc_t* alloc);
+
+lt_err_t lt_thread_terminate(lt_thread_t* thread);
+lt_err_t lt_thread_kill(lt_thread_t* thread);
+lt_err_t lt_thread_stop(lt_thread_t* thread);
+lt_err_t lt_thread_continue(lt_thread_t* thread);
 
 // spinlock.c
 typedef

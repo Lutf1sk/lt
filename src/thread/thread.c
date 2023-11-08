@@ -4,6 +4,7 @@
 
 #if defined(LT_UNIX)
 #	include <pthread.h>
+#	include <signal.h>
 
 typedef
 struct lt_thread {
@@ -33,10 +34,34 @@ lt_thread_t* lt_thread_create(lt_thread_proc_t proc, void* args, lt_alloc_t* all
 }
 
 b8 lt_thread_join(lt_thread_t* thread, lt_alloc_t* alloc) {
-	if (pthread_join(thread->pthread, NULL))
+	if (pthread_join(thread->pthread, NULL) != 0)
 		return 0;
 	lt_mfree(alloc, thread);
 	return 1;
+}
+
+lt_err_t lt_thread_terminate(lt_thread_t* thread) {
+	if (pthread_kill(thread->pthread, SIGTERM))
+		return LT_ERR_UNKNOWN;
+	return LT_SUCCESS;
+}
+
+lt_err_t lt_thread_kill(lt_thread_t* thread) {
+	if (pthread_kill(thread->pthread, SIGKILL))
+		return LT_ERR_UNKNOWN;
+	return LT_SUCCESS;
+}
+
+lt_err_t lt_thread_stop(lt_thread_t* thread) {
+	if (pthread_kill(thread->pthread, SIGSTOP))
+		return LT_ERR_UNKNOWN;
+	return LT_SUCCESS;
+}
+
+lt_err_t lt_thread_continue(lt_thread_t* thread) {
+	if (pthread_kill(thread->pthread, SIGCONT))
+		return LT_ERR_UNKNOWN;
+	return LT_SUCCESS;
 }
 
 #elif defined(LT_WINDOWS)
