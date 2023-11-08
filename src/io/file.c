@@ -4,10 +4,13 @@
 
 #include "file_def.h"
 
+#include <stdio.h>
+
 #if defined(LT_UNIX)
 #	include <fcntl.h>
 #	include <sys/stat.h>
 #	include <unistd.h>
+#	include <errno.h>
 
 static
 int lt_mode_to_posix(lt_file_mode_t access) {
@@ -35,9 +38,9 @@ int lt_perms_to_posix(lt_file_perms_t perms) {
 
 #endif
 
-lt_file_t* lt_file_open(lstr_t path_, lt_file_mode_t mode, lt_file_perms_t perms, lt_alloc_t* alloc) {
+lt_file_t* lt_fopenp(lstr_t path_, lt_file_mode_t mode, lt_file_perms_t perms, lt_alloc_t* alloc) {
 	if (path_.len > LT_PATH_MAX)
-		return 0;
+		return NULL; // !! LT_ERR_PATH_TOO_LONG
 	char path[LT_PATH_MAX + 1];
 	memcpy(path, path_.str, path_.len);
 	path[path_.len] = 0;
@@ -67,6 +70,7 @@ lt_file_t* lt_file_open(lstr_t path_, lt_file_mode_t mode, lt_file_perms_t perms
 	file->size = stat_res.st_size;
 	file->block_size = stat_res.st_blksize;
 	return file;
+
 #elif defined(LT_WINDOWS)
 	u64 size = 0;
 	HANDLE h = INVALID_HANDLE_VALUE;
@@ -88,23 +92,128 @@ lt_file_t* lt_file_open(lstr_t path_, lt_file_mode_t mode, lt_file_perms_t perms
 	file->hnd = h;
 	file->size = size;
 	return file;
+
+#else
+	LT_NOT_IMPLEMENTED();
 #endif
 }
 
-lt_err_t lt_file_read_entire(lstr_t path, lstr_t* out, lt_alloc_t* alloc) {
-	lt_file_t* file = lt_file_open(path, LT_FILE_R, 0, alloc);
+void lt_fclose(lt_file_t* file, lt_alloc_t* alloc) {
+#if defined(LT_UNIX)
+	close(file->fd);
+
+#elif defined(LT_WINDOWS)
+	CloseHandle(file->hnd);
+
+#else
+	LT_NOT_IMPLEMENTED();
+#endif
+
+	lt_mfree(alloc, file);
+}
+
+b8 lt_fexistp(lstr_t path) {
+	if (path.len > LT_PATH_MAX)
+		return LT_ERR_PATH_TOO_LONG;
+	char cpath[LT_PATH_MAX + 1];
+	memcpy(cpath, path.str, path.len);
+	cpath[path.len] = 0;
+
+#if defined(LT_UNIX)
+	struct stat stat_res;
+	if (stat(cpath, &stat_res) == 0)
+		return 1;
+	return errno == EACCES; // if the error was permission denied, the file might still exist, just in an inaccesible state or location
+#else
+	LT_NOT_IMPLEMENTED();
+#endif
+}
+
+lt_err_t lt_fremovep(lstr_t path) {
+	if (path.len > LT_PATH_MAX)
+		return LT_ERR_PATH_TOO_LONG;
+	char cpath[LT_PATH_MAX + 1];
+	memcpy(cpath, path.str, path.len);
+	cpath[path.len] = 0;
+
+	if (remove(cpath) < 0)
+		return LT_ERR_UNKNOWN;
+	return LT_SUCCESS;
+}
+
+lt_err_t lt_fmovep(lstr_t from, lstr_t to) {
+	if (from.len > LT_PATH_MAX || to.len > LT_PATH_MAX)
+		return LT_ERR_PATH_TOO_LONG;
+
+	char cfrom[LT_PATH_MAX + 1];
+	memcpy(cfrom, from.str, from.len);
+	cfrom[from.len] = 0;
+
+	char cto[LT_PATH_MAX + 1];
+	memcpy(cto, to.str, to.len);
+	cto[to.len] = 0;
+
+	if (rename(cfrom, cto) < 0)
+		return LT_ERR_UNKNOWN; // !!
+	return LT_SUCCESS;
+}
+
+lt_err_t lt_flinkp(lstr_t from, lstr_t to) {
+	if (from.len > LT_PATH_MAX || to.len > LT_PATH_MAX)
+		return LT_ERR_PATH_TOO_LONG;
+
+	char cfrom[LT_PATH_MAX + 1];
+	memcpy(cfrom, from.str, from.len);
+	cfrom[from.len] = 0;
+
+	char cto[LT_PATH_MAX + 1];
+	memcpy(cto, to.str, to.len);
+	cto[to.len] = 0;
+
+#if defined(LT_UNIX)
+	if (link(cto, cfrom) < 0)
+		return LT_ERR_UNKNOWN; // !!
+#else
+	LT_NOT_IMPLEMENTED();
+#endif
+	return LT_SUCCESS;
+}
+
+lt_err_t lt_fsymlinkp(lstr_t from, lstr_t to) {
+	if (from.len > LT_PATH_MAX || to.len > LT_PATH_MAX)
+		return LT_ERR_PATH_TOO_LONG;
+
+	char cfrom[LT_PATH_MAX + 1];
+	memcpy(cfrom, from.str, from.len);
+	cfrom[from.len] = 0;
+
+	char cto[LT_PATH_MAX + 1];
+	memcpy(cto, to.str, to.len);
+	cto[to.len] = 0;
+
+#if defined(LT_UNIX)
+	if (symlink(cto, cfrom) < 0)
+		return LT_ERR_UNKNOWN; // !!
+#else
+	LT_NOT_IMPLEMENTED();
+#endif
+	return LT_SUCCESS;
+}
+
+lt_err_t lt_freadallp(lstr_t path, lstr_t* out, lt_alloc_t* alloc) {
+	lt_file_t* file = lt_fopenp(path, LT_FILE_R, 0, alloc);
 	if (!file)
 		return LT_ERR_UNKNOWN; // !!
 
-	usz size = lt_file_size(file);
+	usz size = lt_fsize(file);
 	char* data = lt_malloc(alloc, size);
 	if (!data) {
-		lt_file_close(file, alloc);
+		lt_fclose(file, alloc);
 		return LT_ERR_OUT_OF_MEMORY;
 	}
 
-	isz res = lt_file_read(file, data, size);
-	lt_file_close(file, alloc);
+	isz res = lt_fread(file, data, size);
+	lt_fclose(file, alloc);
 	if (res < 0) {
 		lt_mfree(alloc, data);
 		return -res;
@@ -113,35 +222,26 @@ lt_err_t lt_file_read_entire(lstr_t path, lstr_t* out, lt_alloc_t* alloc) {
 	return LT_SUCCESS;
 }
 
-void lt_file_close(lt_file_t* file, lt_alloc_t* alloc) {
+isz lt_fread(lt_file_t* file, void* data, usz size) {
 #if defined(LT_UNIX)
-	close(file->fd);
-#elif defined(LT_WINDOWS)
-	CloseHandle(file->hnd);
-#endif
-	lt_mfree(alloc, file);
-}
-
-isz lt_file_read(lt_file_t* file, void* data, usz size) {
-#if defined(LT_UNIX)
-
 	isz read_bytes = read(file->fd, data, size);
 	if (read_bytes < 0)
 		return -LT_ERR_UNKNOWN; // !!
 	return read_bytes;
 
 #elif defined(LT_WINDOWS)
-
 	DWORD read_bytes = 0;
 	BOOL err = ReadFile(file->hnd, data, size, &read_bytes, NULL);
 	if (err == FALSE)
 		return -LT_ERR_UNKNOWN; // !!
 	return read_bytes;
 
+#else
+	LT_NOT_IMPLEMENTED();
 #endif
 }
 
-isz lt_file_write(lt_file_t* file, void* data, usz size) {
+isz lt_fwrite(lt_file_t* file, void* data, usz size) {
 #if defined(LT_UNIX)
 	isz write_bytes = write(file->fd, data, size);
 	if (write_bytes < 0)
@@ -154,21 +254,24 @@ isz lt_file_write(lt_file_t* file, void* data, usz size) {
 	if (err == FALSE)
 		return -LT_ERR_UNKNOWN; // !!
 	return write_bytes;
+
+#else
+	LT_NOT_IMPLEMENTED();
 #endif
 }
 
-usz lt_file_size(lt_file_t* file) {
+usz lt_fsize(lt_file_t* file) {
 	return file->size;
 }
 
 isz lt_vfprintf(lt_file_t* file, char* fmt, va_list argl) {
-	return lt_io_vprintf((lt_io_callback_t)lt_file_write, file, fmt, argl);
+	return lt_io_vprintf((lt_io_callback_t)lt_fwrite, file, fmt, argl);
 }
 
 isz lt_fprintf(lt_file_t* file, char* fmt, ...) {
 	va_list argl;
 	va_start(argl, fmt);
-	isz res = lt_io_vprintf((lt_io_callback_t)lt_file_write, file, fmt, argl);
+	isz res = lt_io_vprintf((lt_io_callback_t)lt_fwrite, file, fmt, argl);
 	va_end(argl);
 	return res;
 }

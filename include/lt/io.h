@@ -34,15 +34,23 @@ enum lt_file_perms {
 	LT_FILE_PERMIT_X = 1,
 } lt_file_perms_t;
 
-lt_file_t* lt_file_open(lstr_t path, lt_file_mode_t access, lt_file_perms_t perms, lt_alloc_t* alloc);
-void lt_file_close(lt_file_t* file, lt_alloc_t* alloc);
+lt_file_t* lt_fopenp(lstr_t path, lt_file_mode_t access, lt_file_perms_t perms, lt_alloc_t* alloc);
+void lt_fclose(lt_file_t* file, lt_alloc_t* alloc);
 
-lt_err_t lt_file_read_entire(lstr_t path, lstr_t* out, lt_alloc_t* alloc);
+b8 lt_fexistp(lstr_t path);
 
-isz lt_file_read(lt_file_t* file, void* data, usz size);
-isz lt_file_write(lt_file_t* file, void* data, usz size);
+lt_err_t lt_fremovep(lstr_t path);
+lt_err_t lt_fmovep(lstr_t path, lstr_t new_path);
 
-usz lt_file_size(lt_file_t* file);
+lt_err_t lt_flinkp(lstr_t link, lstr_t target);
+lt_err_t lt_fsymlinkp(lstr_t link, lstr_t target);
+
+lt_err_t lt_freadallp(lstr_t path, lstr_t* out, lt_alloc_t* alloc);
+
+isz lt_fread(lt_file_t* file, void* data, usz size);
+isz lt_fwrite(lt_file_t* file, void* data, usz size);
+
+usz lt_fsize(lt_file_t* file);
 
 isz lt_vfprintf(lt_file_t* file, char* fmt, va_list args);
 isz lt_fprintf(lt_file_t* file, char* fmt, ...);

@@ -424,9 +424,9 @@ lt_err_t lt_font_write_psf(lt_font_t* font, lt_file_t* file, lt_alloc_t* alloc) 
 	head.width = font->width;
 
 	// Write to file
-	if (lt_file_write(file, &head, sizeof(head)) != sizeof(head))
+	if (lt_fwrite(file, &head, sizeof(head)) != sizeof(head))
 		fail_to(err = LT_ERR_UNKNOWN, err1); // !!
-	if (lt_file_write(file, glyphtab, glyphtab_size) != glyphtab_size)
+	if (lt_fwrite(file, glyphtab, glyphtab_size) != glyphtab_size)
 		fail_to(err = LT_ERR_UNKNOWN, err1); // !!
 
 	err = LT_SUCCESS;

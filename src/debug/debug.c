@@ -29,7 +29,7 @@ void handle_sigsegv(int sig, siginfo_t* si, void* usr) {
 void lt_debug_init(void) {
 	// Load debug information from the running executable
 	lstr_t exec_data;
-	if (lt_file_read_entire(CLSTR("/proc/self/exe"), &exec_data, lt_libc_heap) != LT_SUCCESS) {
+	if (lt_freadallp(CLSTR("/proc/self/exe"), &exec_data, lt_libc_heap) != LT_SUCCESS) {
 		lt_werrf("failed to read from /proc/self/exe\n");
 		return;
 	}
