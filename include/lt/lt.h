@@ -102,6 +102,8 @@ void LT_NORETURN lt_ferrf(char* fmt, ...);
 void LT_NORETURN lt_ferrb(lstr_t str);
 void LT_NORETURN lt_ferrbf(char* fmt, ...);
 
+#define LT_NOT_IMPLEMENTED() lt_ferrf("%S() not implemented\n", LT_FUNCTION)
+
 // Warnings
 void lt_werr(lstr_t str);
 void lt_werrf(char* fmt, ...);
