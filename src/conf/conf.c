@@ -281,7 +281,7 @@ lt_conf_t* lt_conf_find(lt_conf_t* parent, lstr_t key_path) {
 		if (!parent || parent->stype != LT_CONF_OBJECT)
 			return NULL;
 
-		lstr_t key = LSTR(it, lt_lstr_split(LSTR(it, end - it), '.'));
+		lstr_t key = lt_lstr_split(LSTR(it, end - it), '.');
 
 		for (usz i = 0; i < parent->child_count; ++i) {
 			if (lt_lstr_eq(parent->children[i].key, key)) {

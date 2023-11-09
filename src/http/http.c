@@ -109,12 +109,11 @@ lt_err_t lt_http_parse_response(lt_http_response_t* response, lt_io_callback_t c
 		if (!line.len)
 			break;
 
-		usz key_len = lt_lstr_split(line, ':');
-		if (key_len == line.len)
+		lstr_t key = lt_lstr_split(line, ':');
+		if (key.len == line.len)
 			fail_to(err = LT_ERR_INVALID_SYNTAX, err2);
 
-		lstr_t key = LSTR(line.str, key_len);
-		lstr_t val = LSTR(line.str + (key_len + 1), line.len  - (key_len + 1));
+		lstr_t val = LSTR(line.str + (key.len + 1), line.len  - (key.len + 1));
 		val = lt_lstr_trim_left(val);
 
 		if (lt_lstr_case_eq(key, CLSTR("transfer-encoding"))) {

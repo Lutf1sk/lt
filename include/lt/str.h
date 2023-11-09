@@ -41,11 +41,11 @@ b8 lt_lstr_endswith(lstr_t str, lstr_t substr) {
 }
 
 static LT_INLINE
-usz lt_lstr_split(lstr_t str, char delim) {
+lstr_t lt_lstr_split(lstr_t str, char delim) {
 	for (usz i = 0; i < str.len; ++i)
 		if (str.str[i] == delim)
-			return i;
-	return str.len;
+			return LSTR(str.str, i);
+	return str;
 }
 
 static LT_INLINE
