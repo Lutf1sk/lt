@@ -1,0 +1,747 @@
+#include <lt/xml.h>
+#include <lt/ctype.h>
+#include <lt/utf8.h>
+#include <lt/str.h>
+#include <lt/mem.h>
+#include <lt/darr.h>
+#include <lt/io.h>
+
+typedef
+struct parse_ctx {
+	char* it, *end;
+	u32 line;
+	lt_xml_entity_t* elem;
+	lt_xml_err_info_t* err_info;
+	lt_alloc_t* alloc;
+} parse_ctx_t;
+
+static LT_INLINE
+b8 is_whitespace(u32 c) {
+	return c == 0x20 || c == 0x09 || c == 0x0D || c == 0x0A;
+}
+
+static LT_INLINE
+b8 is_name_start(u32 c) {
+	return c == ':' || c == '_' ||
+			(c >= 'A' && c <= 'Z') ||
+			(c >= 'a' && c <= 'z') ||
+			(c >= 0xC0 && c <= 0xD6) ||
+			(c >= 0xD8 && c <= 0x2FF) ||
+			(c >= 0x370 && c <= 0x37D) ||
+			(c >= 0x37F && c <= 0x1FFF) ||
+			(c >= 0x200C && c <= 0x200D) ||
+			(c >= 0x2070 && c <= 0x218F) ||
+			(c >= 0x2C00 && c <= 0x2FEF) ||
+			(c >= 0x3001 && c <= 0xD7FF) ||
+			(c >= 0xF900 && c <= 0xFDCF) ||
+			(c >= 0xFDF0 && c <= 0xFFFD) ||
+			(c >= 0x10000 && c <= 0xEFFFF);
+}
+
+static
+b8 is_name(u32 c) {
+	return is_name_start(c) || c == '-' || c == '.' || (c >= '0' && c <= '9') || c == 0xB7 || (c >= 0x300 && c <= 0x36F) || (c >= 0x203F && c <= 0x2040);
+}
+
+static LT_INLINE
+b8 is_hex_digit(u32 c) {
+	return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
+}
+
+static LT_INLINE
+b8 is_eof(parse_ctx_t* cx) {
+	return cx->it >= cx->end;
+}
+
+static
+b8 str_pending(parse_ctx_t* cx, lstr_t str) {
+	if (cx->it + str.len > cx->end)
+		return 0;
+	return memcmp(cx->it, str.str, str.len) == 0;
+}
+
+static
+lt_err_t consume_str(parse_ctx_t* cx, lstr_t str) {
+	if (cx->it + str.len > cx->end)
+		return LT_ERR_INVALID_SYNTAX;
+	if (memcmp(cx->it, str.str, str.len) != 0)
+		return LT_ERR_INVALID_SYNTAX;
+	cx->it += str.len;
+	return LT_SUCCESS;
+}
+
+static
+lt_err_t consume(parse_ctx_t* cx, u32* out) {
+	if (is_eof(cx))
+		return LT_ERR_INVALID_SYNTAX;
+
+	usz utf8_len = lt_utf8_decode_len(*cx->it);
+	if (cx->it + utf8_len > cx->end)
+		return LT_ERR_INVALID_FORMAT;
+
+	u32 utf8_char;
+	lt_utf8_decode(&utf8_char, cx->it);
+	if (out)
+		*out = utf8_char;
+	cx->it += utf8_len;
+
+	if (utf8_char == '\n')
+		cx->line++;
+	return LT_SUCCESS;
+}
+
+static
+lt_err_t consume_char(parse_ctx_t* cx, u32 ch) {
+	lt_err_t err;
+
+	u32 c;
+	if ((err = consume(cx, &c)))
+		return err;
+	if (c != ch)
+		return c;
+
+	return LT_SUCCESS;
+}
+
+static
+lt_err_t read_char(parse_ctx_t* cx, u32* out) {
+	if (is_eof(cx))
+		return LT_ERR_INVALID_SYNTAX;
+
+	usz utf8_len = lt_utf8_decode_len(*cx->it);
+	if (cx->it + utf8_len > cx->end)
+		return LT_ERR_INVALID_FORMAT;
+
+	u32 utf8_char;
+	lt_utf8_decode(&utf8_char, cx->it);
+	if (out)
+		*out = utf8_char;
+
+	return LT_SUCCESS;
+}
+
+static
+lt_err_t consume_whitespace(parse_ctx_t* cx) {
+	lt_err_t err;
+
+	while (!is_eof(cx)) {
+		u32 c;
+		if ((err = read_char(cx, &c)))
+			return err;
+		if (!is_whitespace(c))
+			break;
+		consume(cx, NULL);
+	}
+
+	return LT_SUCCESS;
+}
+
+static
+lt_err_t consume_digits(parse_ctx_t* cx, lstr_t* out) {
+	lt_err_t err;
+
+	char* start = cx->it;
+
+	u32 c;
+	if ((err = consume(cx, &c)))
+			return err;
+	if (!lt_is_digit(c))
+		return LT_ERR_INVALID_SYNTAX;
+
+	while (!is_eof(cx)) {
+		if ((err = read_char(cx, &c)))
+			return err;
+		if (!lt_is_digit(c))
+			break;
+		consume(cx, NULL);
+	}
+
+	if (out)
+		*out = lt_lstr_from_range(start, cx->it);
+	return LT_SUCCESS;
+}
+
+static
+lt_err_t consume_hex_digits(parse_ctx_t* cx, lstr_t* out) {
+	lt_err_t err;
+
+	char* start = cx->it;
+
+	u32 c;
+	if ((err = consume(cx, &c)))
+			return err;
+	if (!is_hex_digit(c))
+		return LT_ERR_INVALID_SYNTAX;
+
+	while (!is_eof(cx)) {
+		if ((err = read_char(cx, &c)))
+			return err;
+		if (!is_hex_digit(c))
+			break;
+		consume(cx, NULL);
+	}
+
+	if (out)
+		*out = lt_lstr_from_range(start, cx->it);
+	return LT_SUCCESS;
+}
+
+static
+lt_err_t consume_name(parse_ctx_t* cx, lstr_t* out) {
+	lt_err_t err;
+
+	char* name_start = cx->it;
+
+	u32 c;
+	if ((err = consume(cx, &c)))
+		return err;
+	if (!is_name_start(c))
+		return LT_ERR_INVALID_SYNTAX;
+
+	while (!is_eof(cx)) {
+		if ((err = read_char(cx, &c)))
+			return err;
+		if (!is_name(c))
+			break;
+		consume(cx, NULL);
+	}
+
+	if (out)
+		*out = lt_lstr_from_range(name_start, cx->it);
+	return LT_SUCCESS;
+}
+
+static
+lt_err_t consume_ref(parse_ctx_t* cx, u32* out) {
+	lt_err_t err;
+	u32 c;
+	if ((err = consume(cx, &c)))
+		return err;
+	if (c != '&')
+		return LT_ERR_INVALID_SYNTAX;
+
+	if ((err = read_char(cx, &c)))
+		return err;
+	if (c == '#') {
+		consume(cx, NULL);
+
+		lstr_t number;
+		if ((err = read_char(cx, &c)))
+			return err;
+		if (c == 'x') {
+			consume(cx, NULL);
+
+			if ((err = consume_hex_digits(cx, &number)))
+				return err;
+
+			u64 n;
+			if ((err = lt_lstr_hex_uint(number, &n)))
+				return err;
+			if (n > LT_U32_MAX)
+				return LT_ERR_OVERFLOW;
+			*out = n;
+		}
+		else {
+			if ((err = consume_digits(cx, &number)))
+				return err;
+			u64 n;
+			if ((err = lt_lstr_uint(number, &n)))
+				return err;
+			if (n > LT_U32_MAX)
+				return LT_ERR_OVERFLOW;
+			*out = n;
+		}
+	}
+	else {
+		lstr_t name;
+		if ((err = consume_name(cx, &name)))
+			return err;
+
+		if (lt_lstr_case_eq(name, CLSTR("lt")))
+			*out = '<';
+		else if (lt_lstr_case_eq(name, CLSTR("gt")))
+			*out = '>';
+		else if (lt_lstr_case_eq(name, CLSTR("amp")))
+			*out = '&';
+		else if (lt_lstr_case_eq(name, CLSTR("apos")))
+			*out = '\'';
+		else if (lt_lstr_case_eq(name, CLSTR("quot")))
+			*out = '"';
+		else
+			return LT_ERR_INVALID_SYNTAX;
+	}
+
+	if ((err = consume(cx, &c)))
+			return err;
+	if (c != ';')
+		return LT_ERR_INVALID_SYNTAX;
+
+	return LT_SUCCESS;
+}
+
+static
+lt_err_t consume_literal(parse_ctx_t* cx, lstr_t* out) {
+	lt_err_t err;
+
+	if (is_eof(cx))
+		return LT_ERR_INVALID_SYNTAX;
+
+	u32 quote;
+	if ((err = consume(cx, &quote)))
+		return err;
+	if (quote != '"' && quote != '\'')
+		return LT_ERR_INVALID_SYNTAX;
+
+	char* literal_start = cx->it;
+	for (;;) {
+		u32 c;
+		if ((err = consume(cx, &c)))
+			return err;
+		if (c == quote)
+			break;
+	}
+
+	if (out)
+		*out = lt_lstr_from_range(literal_start, cx->it - 1);
+	return LT_SUCCESS;
+}
+
+static
+lt_err_t consume_comment(parse_ctx_t* cx) {
+	lt_err_t err;
+	if ((err = consume_str(cx, CLSTR("<!--"))))
+		return err;
+
+	while (!str_pending(cx, CLSTR("-->"))) {
+		if (str_pending(cx, CLSTR("--")))
+			return LT_ERR_INVALID_SYNTAX;
+		if ((err = consume(cx, NULL)))
+			return err;
+	}
+	consume_str(cx, CLSTR("-->"));
+	return LT_SUCCESS;
+}
+
+static
+lt_err_t consume_procinstr(parse_ctx_t* cx) {
+	lt_err_t err;
+	if ((err = consume_str(cx, CLSTR("<?"))))
+		return err;
+
+	lstr_t target;
+	if ((err = consume_name(cx, &target)))
+		return err;
+	if ((err = consume_whitespace(cx)))
+		return err;
+
+	char* data_start = cx->it;
+	while (!str_pending(cx, CLSTR("?>"))) {
+		if ((err = consume(cx, NULL)))
+			return err;
+	}
+	lstr_t content = lt_lstr_from_range(data_start, cx->it);
+
+	lt_xml_entity_t ent = {
+			.type = LT_XML_PI,
+			.pi.target = target,
+			.pi.content = content };
+	lt_xml_add_child(cx->elem, &ent, cx->alloc);
+
+	consume_str(cx, CLSTR("?>"));
+	return LT_SUCCESS;
+}
+
+static
+lt_err_t consume_cdata(parse_ctx_t* cx, lstr_t* out) {
+	lt_err_t err;
+
+	if ((err = consume_str(cx, CLSTR("<![CDATA["))))
+		return err;
+
+	char* cdata_start = cx->it;
+	while (!str_pending(cx, CLSTR("]]>"))) {
+		if ((err = consume(cx, NULL)))
+			return err;
+	}
+
+	if (out)
+		*out = lt_lstr_from_range(cdata_start, cx->it);
+
+	consume_str(cx, CLSTR("]]>"));
+	return LT_SUCCESS;
+}
+
+static
+lt_err_t consume_doctypedef(parse_ctx_t* cx) {
+	lt_err_t err;
+
+	if ((err = consume_str(cx, CLSTR("<!DOCTYPE"))))
+		return err;
+	if ((err = consume_whitespace(cx)))
+		return err;
+
+	lstr_t name;
+	if ((err = consume_name(cx, &name)))
+		return err;
+	if ((err = consume_whitespace(cx)))
+		return err;
+
+	// !! incomplete
+
+	if ((err = consume_whitespace(cx)))
+		return err;
+	if ((err = consume_str(cx, CLSTR(">"))))
+		return err;
+	return LT_SUCCESS;
+}
+
+static
+lt_err_t consume_stag(parse_ctx_t* cx, b8* out_empty, lt_xml_entity_t* elem) {
+	lt_err_t err;
+
+	*elem = (lt_xml_entity_t) { .type = LT_XML_ELEMENT };
+
+	u32 c;
+	if ((err = consume(cx, &c)))
+		return err;
+	if (c != '<')
+		return LT_ERR_INVALID_SYNTAX;
+	if ((err = consume_name(cx, &elem->elem.name)))
+		return err;
+
+	for (;;) {
+		if ((err = consume_whitespace(cx)))
+			return err;
+
+		if ((err = read_char(cx, &c)))
+			return err;
+
+		if (!is_name_start(c))
+			break;
+
+		lstr_t attr_name;
+		if ((err = consume_name(cx, &attr_name)))
+			return err;
+		if ((err = consume(cx, &c)))
+			return err;
+		if (c != '=')
+			return LT_ERR_INVALID_SYNTAX;
+
+		lstr_t attr_val;
+		if ((err = consume_literal(cx, &attr_val)))
+			return err;
+
+		lt_xml_attrib_t attrib = {
+				.key = attr_name,
+				.val = attr_val };
+		lt_xml_add_attrib(elem, attrib, cx->alloc);
+	}
+
+	if ((err = consume(cx, &c)))
+		return err;
+	if (c == '/') {
+		*out_empty = 1;
+		if ((err = consume(cx, &c)))
+			return err;
+	}
+	else
+		*out_empty = 0;
+	if (c != '>')
+		return LT_ERR_INVALID_SYNTAX;
+
+	return LT_SUCCESS;
+}
+
+static
+lt_err_t consume_etag(parse_ctx_t* cx) {
+	lt_err_t err;
+
+	u32 c;
+	if ((err = consume_str(cx, CLSTR("</"))))
+		return err;
+
+	lstr_t elem_name;
+	if ((err = consume_name(cx, &elem_name)))
+		return err;
+	if ((err = consume_whitespace(cx)))
+		return err;
+
+	if ((err = consume(cx, &c)))
+		return err;
+	if (c != '>')
+		return LT_ERR_INVALID_SYNTAX;
+
+	return LT_SUCCESS;
+}
+
+static lt_err_t consume_elem_content(parse_ctx_t* cx);
+
+static
+lt_err_t consume_elem(parse_ctx_t* cx) {
+	lt_err_t err;
+
+	lt_xml_entity_t ent;
+	b8 empty;
+	if ((err = consume_stag(cx, &empty, &ent)))
+		return err;
+	lt_xml_add_child(cx->elem, &ent, cx->alloc);
+	if (empty)
+		return LT_SUCCESS;
+
+	lt_xml_entity_t* parent_elem = cx->elem;
+	cx->elem = &cx->elem->elem.children[lt_darr_count(cx->elem->elem.children) - 1];
+	if ((err = consume_elem_content(cx)))
+		return err;
+	if ((err = consume_etag(cx)))
+		return err;
+	cx->elem = parent_elem;
+
+	return LT_SUCCESS;
+}
+
+static
+lt_err_t consume_elem_content(parse_ctx_t* cx) {
+	lt_err_t err;
+
+	while (!is_eof(cx)) {
+		u32 c;
+		if ((err = read_char(cx, &c)))
+			return err;
+
+		if (c == '&') {
+			u32 cref;
+			if ((err = consume_ref(cx, &cref)))
+				return err;
+			lt_xml_entity_t ent = {
+					.type = LT_XML_CREF,
+					.cref = cref };
+			lt_xml_add_child(cx->elem, &ent, cx->alloc);
+			continue;
+		}
+		if (c != '<') {
+			char* start = cx->it;
+			if ((err = consume(cx, NULL)))
+				return err;
+			while (!is_eof(cx)) {
+				if ((err = read_char(cx, &c)))
+					return err;
+				if (c == '&' || c == '<')
+					break;
+				consume(cx, NULL);
+			}
+			lt_xml_entity_t ent = {
+					.type = LT_XML_CDATA,
+					.cdata = lt_lstr_from_range(start, cx->it) };
+			lt_xml_add_child(cx->elem, &ent, cx->alloc);
+			continue;
+		}
+
+		if (str_pending(cx, CLSTR("<![CDATA["))) {
+			lstr_t cdata;
+			if ((err = consume_cdata(cx, &cdata)))
+				return err;
+			lt_xml_entity_t ent = {
+					.type = LT_XML_CDATA,
+					.cdata = cdata };
+			lt_xml_add_child(cx->elem, &ent, cx->alloc);
+		}
+		else if (str_pending(cx, CLSTR("<!--"))) {
+			if ((err = consume_comment(cx)))
+				return err;
+		}
+		else if (str_pending(cx, CLSTR("<?"))) {
+			if ((err = consume_procinstr(cx)))
+				return err;
+		}
+		else if (str_pending(cx, CLSTR("</"))) {
+			break;
+		}
+		else {
+			if ((err = consume_elem(cx)))
+				return err;
+		}
+	}
+
+	return LT_SUCCESS;
+}
+
+lt_err_t lt_xml_add_attrib(lt_xml_entity_t* elem, lt_xml_attrib_t attrib, lt_alloc_t* alloc) {
+	if (elem->elem.attribs == NULL) {
+		elem->elem.attribs = lt_darr_create(lt_xml_attrib_t, 8, alloc);
+		if (elem->elem.attribs == NULL)
+			return LT_ERR_OUT_OF_MEMORY;
+	}
+	lt_darr_push(elem->elem.attribs, attrib);
+	return LT_SUCCESS;
+}
+
+lt_err_t lt_xml_add_child(lt_xml_entity_t* elem, lt_xml_entity_t* child, lt_alloc_t* alloc) {
+	if (elem->elem.children == NULL) {
+		elem->elem.children = lt_darr_create(lt_xml_entity_t, 8, alloc);
+		if (elem->elem.children == NULL)
+			return LT_ERR_OUT_OF_MEMORY;
+	}
+	lt_darr_push(elem->elem.children, *child);
+	return LT_SUCCESS;
+}
+
+lt_err_t lt_xml_parse(lt_xml_entity_t* xml, void* data, usz size, lt_xml_err_info_t* out_err_info, lt_alloc_t* alloc) {
+	lt_err_t err;
+
+	*xml = (lt_xml_entity_t) { .type = LT_XML_ELEMENT };
+
+	parse_ctx_t ctx = {
+			.it = data,
+			.end = (char*)data + size,
+			.line = 1,
+			.elem = xml,
+			.err_info = out_err_info,
+			.alloc = alloc };
+	parse_ctx_t* cx = &ctx;
+
+	if (str_pending(cx, CLSTR("<!DOCTYPE"))) {
+		if ((err = consume_doctypedef(cx)))
+			return err;
+	}
+
+	if ((err = consume_elem_content(cx)))
+		return err;
+
+	if (!is_eof(cx))
+		return LT_ERR_INVALID_SYNTAX;
+
+	return LT_SUCCESS;
+}
+
+void lt_xml_free(lt_xml_entity_t* xml, lt_alloc_t* alloc) {
+	switch (xml->type) {
+	case LT_XML_CDATA:
+// 		lt_mfree(alloc, xml->cdata.str);
+		break;
+
+	case LT_XML_ELEMENT:
+		if (xml->elem.attribs) {
+			for (usz i = 0; i < lt_darr_count(xml->elem.attribs); ++i) {
+// 				lt_mfree(alloc, xml->elem.attribs[i].key.str);
+// 				lt_mfree(alloc, xml->elem.attribs[i].val.str);
+			}
+			lt_darr_destroy(xml->elem.attribs);
+		}
+		if (xml->elem.children) {
+			for (usz i = 0; i < lt_darr_count(xml->elem.children); ++i)
+				lt_xml_free(&xml->elem.children[i], alloc);
+			lt_darr_destroy(xml->elem.children);
+		}
+		break;
+
+	case LT_XML_PI:
+		break;
+	}
+}
+
+#define PRINTF(...) do { if ((res = lt_io_printf(callb, usr, __VA_ARGS__)) < 0) return res; bytes += res; } while (0)
+
+static
+isz lt_xml_write_indent(lt_xml_entity_t* xml, lt_io_callback_t callb, void* usr, usz indent) {
+	isz res;
+	usz bytes = 0;
+
+	switch (xml->type) {
+	case LT_XML_CDATA:
+		PRINTF("<![CDATA[%S]]>", xml->cdata);
+		break;
+
+	case LT_XML_ELEMENT:
+		if (xml->elem.name.len == 0) {
+			if (xml->elem.children) {
+				for (usz i = 0; i < lt_darr_count(xml->elem.children); ++i) {
+					res = lt_xml_write_indent(&xml->elem.children[i], callb, usr, indent);
+					if (res < 0)
+						return res;
+					bytes += res;
+				}
+			}
+			break;
+		}
+		PRINTF("<%S", xml->elem.name);
+
+		if (xml->elem.attribs) {
+			for (usz i = 0; i < lt_darr_count(xml->elem.attribs); ++i)
+				PRINTF(" %S=\"%S\"", xml->elem.attribs[i].key, xml->elem.attribs[i].val);
+		}
+		PRINTF(">");
+		if (xml->elem.children) {
+			for (usz i = 0; i < lt_darr_count(xml->elem.children); ++i) {
+				res = lt_xml_write_indent(&xml->elem.children[i], callb, usr, indent + 1);
+				if (res < 0)
+					return res;
+				bytes += res;
+			}
+		}
+		PRINTF("</%S>", xml->elem.name);
+		break;
+
+	case LT_XML_CREF:
+		PRINTF("&#x%hd;", xml->cref);
+		break;
+	}
+
+	return bytes;
+}
+
+isz lt_xml_write(lt_xml_entity_t* xml, lt_io_callback_t callb, void* usr) {
+	return lt_xml_write_indent(xml, callb, usr, 0);
+}
+
+static
+isz lt_xml_write_pretty_indent(lt_xml_entity_t* xml, lt_io_callback_t callb, void* usr, usz indent) {
+	isz res;
+	usz bytes = 0;
+
+	switch (xml->type) {
+	case LT_XML_CDATA:
+		if (lt_lstr_trim(xml->cdata).len)
+			PRINTF("%r\t<![CDATA[%S]]>\n", indent, lt_lstr_trim(xml->cdata));
+		break;
+
+	case LT_XML_ELEMENT:
+		if (xml->elem.name.len == 0) {
+			if (xml->elem.children) {
+				for (usz i = 0; i < lt_darr_count(xml->elem.children); ++i) {
+					res = lt_xml_write_pretty_indent(&xml->elem.children[i], callb, usr, indent);
+					if (res < 0)
+						return res;
+					bytes += res;
+				}
+			}
+			break;
+		}
+		PRINTF("%r\t<%S", indent, xml->elem.name);
+
+		if (xml->elem.attribs) {
+			for (usz i = 0; i < lt_darr_count(xml->elem.attribs); ++i)
+				PRINTF(" %S=\"%S\"", xml->elem.attribs[i].key, xml->elem.attribs[i].val);
+		}
+		PRINTF(">\n");
+		if (xml->elem.children) {
+			for (usz i = 0; i < lt_darr_count(xml->elem.children); ++i) {
+				res = lt_xml_write_pretty_indent(&xml->elem.children[i], callb, usr, indent + 1);
+				if (res < 0)
+					return res;
+				bytes += res;
+			}
+		}
+		PRINTF("%r\t</%S>\n", indent, xml->elem.name);
+		break;
+
+	case LT_XML_CREF:
+		PRINTF("%r\t&#x%hd;\n", indent, xml->cref);
+		break;
+	}
+
+	return bytes;
+}
+
+isz lt_xml_write_pretty(lt_xml_entity_t* xml, lt_io_callback_t callb, void* usr) {
+	return lt_xml_write_pretty_indent(xml, callb, usr, 0);
+}

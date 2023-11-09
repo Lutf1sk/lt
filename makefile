@@ -71,7 +71,8 @@ SRC = \
 	src/window/win32.c \
 	src/window/window.c \
 	src/window/x11.c \
-	src/window/xproto.c
+	src/window/xproto.c \
+	src/xml/xml.c
 
 #ifdef WINDOWS
 #	CC = x86_64-w64-mingw32-gcc
