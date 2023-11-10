@@ -5,6 +5,10 @@
 #include <lt/mem.h>
 #include <lt/darr.h>
 #include <lt/io.h>
+#include <lt/strstream.h>
+
+#define ENC_UTF8 0
+#define ENC_UTF16LE 1
 
 typedef
 struct parse_ctx {
@@ -13,6 +17,7 @@ struct parse_ctx {
 	lt_xml_entity_t* elem;
 	lt_xml_err_info_t* err_info;
 	lt_alloc_t* alloc;
+	u8 enc;
 } parse_ctx_t;
 
 static LT_INLINE
@@ -49,25 +54,72 @@ b8 is_hex_digit(u32 c) {
 }
 
 static LT_INLINE
+b8 enc_str_eq(parse_ctx_t* cx, lstr_t enc_str, lstr_t const_str) {
+	if (cx->enc == ENC_UTF8) {
+		return lt_lstr_eq(enc_str, const_str);
+	}
+	else if (cx->enc == ENC_UTF16LE) {
+		u16 str16[64];
+		for (usz i = 0; i < const_str.len; ++i) // this is only possible because the function is never called with non-ascii characters
+			str16[i] = const_str.str[i];
+		return enc_str.len == const_str.len * 2 && memcmp(enc_str.str, str16, enc_str.len) == 0;
+	}
+	else {
+		LT_ASSERT_NOT_REACHED();
+		return 0;
+	}
+}
+
+static LT_INLINE
 b8 is_eof(parse_ctx_t* cx) {
 	return cx->it >= cx->end;
 }
 
 static
 b8 str_pending(parse_ctx_t* cx, lstr_t str) {
-	if (cx->it + str.len > cx->end)
+	if (cx->enc == ENC_UTF8) {
+		if (cx->it + str.len > cx->end)
+			return 0;
+		return memcmp(cx->it, str.str, str.len) == 0;
+	}
+	else if (cx->enc == ENC_UTF16LE) {
+		if (cx->it + str.len * 2 > cx->end)
+			return 0;
+		u16 str16[64];
+		for (usz i = 0; i < str.len; ++i) // this is only possible because function is never called with non-ascii characters
+			str16[i] = str.str[i];
+		return memcmp(cx->it, str16, str.len * 2) == 0;
+	}
+	else {
+		LT_ASSERT_NOT_REACHED();
 		return 0;
-	return memcmp(cx->it, str.str, str.len) == 0;
+	}
 }
 
 static
 lt_err_t consume_str(parse_ctx_t* cx, lstr_t str) {
-	if (cx->it + str.len > cx->end)
-		return LT_ERR_INVALID_SYNTAX;
-	if (memcmp(cx->it, str.str, str.len) != 0)
-		return LT_ERR_INVALID_SYNTAX;
-	cx->it += str.len;
+	if (cx->enc == ENC_UTF8) {
+		if (cx->it + str.len > cx->end)
+			return LT_ERR_INVALID_SYNTAX;
+		if (memcmp(cx->it, str.str, str.len) != 0)
+			return LT_ERR_INVALID_SYNTAX;
+		cx->it += str.len;
+	}
+	else if (cx->enc == ENC_UTF16LE) {
+		if (cx->it + str.len * 2 > cx->end)
+			return LT_ERR_INVALID_SYNTAX;
+		u16 str16[64];
+		for (usz i = 0; i < str.len; ++i) // this is only possible because function is never called with non-ascii characters
+			str16[i] = str.str[i];
+		if (memcmp(cx->it, str16, str.len * 2) != 0)
+			return 0;
+		cx->it += str.len * 2;
+	}
 	return LT_SUCCESS;
+}
+
+usz utf16_decode_len(u16 c) {
+	return 1;
 }
 
 static
@@ -75,17 +127,24 @@ lt_err_t consume(parse_ctx_t* cx, u32* out) {
 	if (is_eof(cx))
 		return LT_ERR_INVALID_SYNTAX;
 
-	usz utf8_len = lt_utf8_decode_len(*cx->it);
-	if (cx->it + utf8_len > cx->end)
-		return LT_ERR_INVALID_FORMAT;
+	u32 dec_char;
 
-	u32 utf8_char;
-	lt_utf8_decode(&utf8_char, cx->it);
+	if (cx->enc == ENC_UTF8) {
+		usz utf8_len = lt_utf8_decode_len(*cx->it);
+		if (cx->it + utf8_len > cx->end)
+			return LT_ERR_INVALID_FORMAT;
+
+		lt_utf8_decode(&dec_char, cx->it);
+		cx->it += utf8_len;
+	}
+	else if (cx->enc == ENC_UTF16LE) {
+		dec_char = *(u16*)cx->it;
+		cx->it += 2;
+	}
+
 	if (out)
-		*out = utf8_char;
-	cx->it += utf8_len;
-
-	if (utf8_char == '\n')
+		*out = dec_char;
+	if (dec_char == '\n')
 		cx->line++;
 	return LT_SUCCESS;
 }
@@ -108,14 +167,23 @@ lt_err_t read_char(parse_ctx_t* cx, u32* out) {
 	if (is_eof(cx))
 		return LT_ERR_INVALID_SYNTAX;
 
-	usz utf8_len = lt_utf8_decode_len(*cx->it);
-	if (cx->it + utf8_len > cx->end)
-		return LT_ERR_INVALID_FORMAT;
+	u32 dec_char;
 
-	u32 utf8_char;
-	lt_utf8_decode(&utf8_char, cx->it);
+	if (cx->enc == ENC_UTF8) {
+		usz utf8_len = lt_utf8_decode_len(*cx->it);
+		if (cx->it + utf8_len > cx->end)
+			return LT_ERR_INVALID_FORMAT;
+
+		lt_utf8_decode(&dec_char, cx->it);
+		if (out)
+			*out = dec_char;
+	}
+	else if (cx->enc == ENC_UTF16LE) {
+		dec_char = *(u16*)cx->it;
+	}
+
 	if (out)
-		*out = utf8_char;
+		*out = dec_char;
 
 	return LT_SUCCESS;
 }
@@ -206,8 +274,16 @@ lt_err_t consume_name(parse_ctx_t* cx, lstr_t* out) {
 		consume(cx, NULL);
 	}
 
-	if (out)
+	if (out) {
 		*out = lt_lstr_from_range(name_start, cx->it);
+		if (cx->enc == ENC_UTF16LE) {
+			out->len /= 2;
+			u16* it16 = (u16*)name_start;
+			u8* it8 = (u8*)name_start;
+			for (usz i = 0; i < out->len; ++i)
+				it8[i] = it16[i]; // !!!!!!!!!! horrible, terrible stuff. fix this.
+		}
+	}
 	return LT_SUCCESS;
 }
 
@@ -566,6 +642,9 @@ lt_err_t consume_elem_content(parse_ctx_t* cx) {
 }
 
 lt_err_t lt_xml_add_attrib(lt_xml_entity_t* elem, lt_xml_attrib_t attrib, lt_alloc_t* alloc) {
+	LT_ASSERT(elem != NULL);
+	LT_ASSERT(elem->type == LT_XML_ELEMENT);
+
 	if (elem->elem.attribs == NULL) {
 		elem->elem.attribs = lt_darr_create(lt_xml_attrib_t, 8, alloc);
 		if (elem->elem.attribs == NULL)
@@ -576,6 +655,9 @@ lt_err_t lt_xml_add_attrib(lt_xml_entity_t* elem, lt_xml_attrib_t attrib, lt_all
 }
 
 lt_err_t lt_xml_add_child(lt_xml_entity_t* elem, lt_xml_entity_t* child, lt_alloc_t* alloc) {
+	LT_ASSERT(elem != NULL);
+	LT_ASSERT(elem->type == LT_XML_ELEMENT);
+
 	if (elem->elem.children == NULL) {
 		elem->elem.children = lt_darr_create(lt_xml_entity_t, 8, alloc);
 		if (elem->elem.children == NULL)
@@ -583,6 +665,64 @@ lt_err_t lt_xml_add_child(lt_xml_entity_t* elem, lt_xml_entity_t* child, lt_allo
 	}
 	lt_darr_push(elem->elem.children, *child);
 	return LT_SUCCESS;
+}
+
+lt_xml_attrib_t* lt_xml_find_attrib(lt_xml_entity_t* elem, lstr_t key) {
+	usz attrib_count = lt_xml_attrib_count(elem);
+	for (usz i = 0; i < attrib_count; ++i) {
+		lt_xml_attrib_t* attrib = &elem->elem.attribs[i];
+		if (lt_lstr_eq(attrib->key, key))
+			return attrib;
+	}
+	return NULL;
+}
+
+lt_err_t lt_xml_generate_str(lt_xml_entity_t* elem, lstr_t* out, lt_alloc_t* alloc) {
+	lt_err_t err;
+
+	lt_strstream_t ss;
+	if ((err = lt_strstream_create(&ss, alloc)))
+		return err;
+
+	usz child_count = lt_xml_child_count(elem);
+	for (usz i = 0; i < child_count; ++i) {
+		lt_xml_entity_t* child = &elem->elem.children[i];
+		switch (child->type) {
+		case LT_XML_CDATA:
+			lt_strstream_writels(&ss, child->cdata);
+			break;
+
+		case LT_XML_CREF:
+			lt_strstream_writec(&ss, child->cref);
+			break;
+
+		case LT_XML_ELEMENT:
+		default:
+			break;
+		}
+	}
+
+	*out = ss.str;
+	return LT_SUCCESS;
+
+err0:	lt_strstream_destroy(&ss);
+		return err;
+}
+
+usz lt_xml_child_count(lt_xml_entity_t* elem) {
+	if (elem->type != LT_XML_ELEMENT)
+		return 0;
+	if (elem->elem.children == NULL)
+		return 0;
+	return lt_darr_count(elem->elem.children);
+}
+
+usz lt_xml_attrib_count(lt_xml_entity_t* elem) {
+	if (elem->type != LT_XML_ELEMENT)
+		return 0;
+	if (elem->elem.attribs == NULL)
+		return 0;
+	return lt_darr_count(elem->elem.attribs);
 }
 
 lt_err_t lt_xml_parse(lt_xml_entity_t* xml, void* data, usz size, lt_xml_err_info_t* out_err_info, lt_alloc_t* alloc) {
@@ -596,19 +736,26 @@ lt_err_t lt_xml_parse(lt_xml_entity_t* xml, void* data, usz size, lt_xml_err_inf
 			.line = 1,
 			.elem = xml,
 			.err_info = out_err_info,
-			.alloc = alloc };
+			.alloc = alloc,
+			.enc = ENC_UTF8 };
 	parse_ctx_t* cx = &ctx;
+
+	if (size >= 2 && *(u16*)data == 0xFEFF) {
+		cx->enc = ENC_UTF16LE;
+		cx->it += 2;
+	}
 
 	if (str_pending(cx, CLSTR("<!DOCTYPE"))) {
 		if ((err = consume_doctypedef(cx)))
 			return err;
 	}
 
-	if ((err = consume_elem_content(cx)))
-		return err;
-
-	if (!is_eof(cx))
-		return LT_ERR_INVALID_SYNTAX;
+	while (!is_eof(cx)) {
+		if ((err = consume_elem_content(cx))) {
+			lt_printf("'%S'\n", LSTR(cx->it, 5));
+			return err;
+		}
+	}
 
 	return LT_SUCCESS;
 }
