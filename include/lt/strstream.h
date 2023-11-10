@@ -3,6 +3,7 @@
 
 #include <lt/fwd.h>
 #include <lt/err.h>
+#include <lt/utf8.h>
 
 typedef
 struct lt_strstream {
@@ -22,8 +23,10 @@ isz lt_strstream_writels(lt_strstream_t* s, lstr_t str) {
 }
 
 static LT_INLINE
-isz lt_strstream_writec(lt_strstream_t* s, char c) {
-	return lt_strstream_write(s, &c, 1);
+isz lt_strstream_writec(lt_strstream_t* s, u32 c) {
+	char utf8_buf[4];
+	usz len = lt_utf8_encode(utf8_buf, c);
+	return lt_strstream_write(s, utf8_buf, len);
 }
 
 static LT_INLINE
