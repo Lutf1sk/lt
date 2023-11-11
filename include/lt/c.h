@@ -481,8 +481,7 @@ struct lt_c_stmt {
 
 		struct {
 			lt_c_expr_t* value;
-			lt_darr(lt_c_expr_t*) cases;
-			lt_c_stmt_t* default_;
+			lt_c_stmt_t* body;
 		} switch_;
 
 		struct {

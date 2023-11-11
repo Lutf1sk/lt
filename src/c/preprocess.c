@@ -8,8 +8,8 @@
 
 #define fail(e, ...) do { lt_aprintf(&cx->err_str, &cx->arena->interf, __VA_ARGS__); cx->err_line = cx->line; return (e); } while(0)
 
-#define define_is_equal(def, name_) (lt_lstr_eq((def).name, name_))
-#define define_is_lesser(def, name_) (lt_lstr_cmp((def).name, name_) < 0)
+#define define_is_equal(def, name_) (lt_lseq((def).name, name_))
+#define define_is_lesser(def, name_) (lt_lscmp((def).name, name_) < 0)
 
 static
 LT_DEFINE_BINARY_SEARCH_FUNC(lt_c_define_t, lstr_t, lookup_define, define_is_lesser, define_is_equal);
@@ -33,15 +33,15 @@ lt_err_t lt_c_preproc_create(lt_c_preproc_ctx_t* cx, lstr_t* include_dirs, usz i
 }
 
 lt_err_t lt_c_define(lt_c_preproc_ctx_t* cx, lstr_t name, lstr_t value, lt_darr(lstr_t) params, u8 flags) {
-	value = lt_lstr_trim(value);
-	name = lt_lstr_trim(name);
+	value = lt_lstrim(value);
+	name = lt_lstrim(name);
 
 	usz def_count = lt_darr_count(cx->defines);
 	lt_c_define_t* at = lookup_nearest_define(cx->defines, def_count, name);
 
 	// !! missing important parameter checks	
-	if (at < cx->defines + def_count && lt_lstr_eq(at->name, name)) {
-		if (!lt_lstr_eq(at->value, value))
+	if (at < cx->defines + def_count && lt_lseq(at->name, name)) {
+		if (!lt_lseq(at->value, value))
 			fail(LT_ERR_REDEFINED, "attempting to redefine '%S'", name);
 		return LT_SUCCESS;
 	}
@@ -58,13 +58,13 @@ lt_err_t lt_c_define(lt_c_preproc_ctx_t* cx, lstr_t name, lstr_t value, lt_darr(
 }
 
 lt_err_t lt_c_redefine(lt_c_preproc_ctx_t* cx, lstr_t name, lstr_t value, lt_darr(lstr_t) params, u8 flags) {
-	value = lt_lstr_trim(value);
-	name = lt_lstr_trim(name);
+	value = lt_lstrim(value);
+	name = lt_lstrim(name);
 
 	usz def_count = lt_darr_count(cx->defines);
 	lt_c_define_t* at = lookup_nearest_define(cx->defines, def_count, name);
 
-	if (at < cx->defines + def_count && lt_lstr_eq(at->name, name)) {
+	if (at < cx->defines + def_count && lt_lseq(at->name, name)) {
 		at->name = name;
 		at->value = value;
 		at->params = params;
@@ -133,15 +133,139 @@ b8 template_consume_identifier(lt_c_preproc_ctx_t* cx, lt_strstream_t* ss) {
 }
 
 static
+lt_err_t template_consume_char(lt_c_preproc_ctx_t* cx, lt_strstream_t* ss) {
+	if (template_read(cx) != '\'')
+		fail(LT_ERR_INVALID_SYNTAX, "unexpected '%c', expected character literal", template_read(cx));
+	char fc = template_consume(cx, ss);
+	do {
+		if (fc == '\\')
+			template_consume(cx, ss);
+		fc = template_consume(cx, ss);
+		if (fc == 0)
+			fail(LT_ERR_INVALID_SYNTAX, "expected ' after character literal");
+	} while (fc != '\'');
+
+	return LT_SUCCESS;
+}
+
+static
+lt_err_t template_consume_str(lt_c_preproc_ctx_t* cx, lt_strstream_t* ss) {
+	if (template_read(cx) != '"')
+		fail(LT_ERR_INVALID_SYNTAX, "unexpected '%c', expected string literal", template_read(cx));
+	char fc = template_consume(cx, ss);
+	do {
+		if (fc == '\\')
+			template_consume(cx, ss);
+		fc = template_consume(cx, ss);
+		if (fc == 0)
+			fail(LT_ERR_INVALID_SYNTAX, "expected '\"' after string literal");
+	} while (fc != '"');
+
+	return LT_SUCCESS;
+}
+
+static
 void template_consume_whitespace(lt_c_preproc_ctx_t* cx) {
 	while (lt_is_space(template_read(cx)))
 		template_consume(cx, NULL);
 }
 
+
+static LT_INLINE
+char consume(char** it, char* end) {
+	if (*it >= end)
+		return 0;
+	return *(*it)++;
+}
+
+static LT_INLINE
+char read(char** it, char* end) {
+	if (*it >= end)
+		return 0;
+	return **it;
+}
+
+static LT_INLINE
+void consume_whitespace(char** it, char* end) {
+	while (*it < end && lt_is_space(**it))
+		++*it;
+}
+
+static
+lstr_t consume_identifier(char** it, char* end) {
+	if (!lt_is_ident_head(**it))
+		return NLSTR();
+
+	char* start = *it;
+	while (*it < end && lt_is_ident_body(**it))
+		++*it;
+	return lt_lsfrom_range(start, *it);
+}
+
+static
+lt_err_t consume_str(lt_c_preproc_ctx_t* cx, char** it, char* end, lt_strstream_t* ss) {
+	if (*it >= end)
+		fail(LT_ERR_INVALID_SYNTAX, "unexpected end-of-file expected string literal");
+	if (**it != '"')
+		fail(LT_ERR_INVALID_SYNTAX, "unexpected '%c', expected string literal", **it);
+	++*it;
+	if (ss)
+		lt_strstream_writec(ss, '"');
+	char c = 0;
+	while (*it < end) {
+		c = **it;
+		if (ss)
+			lt_strstream_writec(ss, c);
+		if (c == '\\') {
+			++*it;
+			if (ss && *it < end)
+				lt_strstream_writec(ss, **it);
+		}
+		else if (c == '"')
+			break;
+		++*it;
+	}
+	if (*it >= end)
+		fail(LT_ERR_INVALID_SYNTAX, "expected '\"' after string literal");
+	++*it;
+	return LT_SUCCESS;
+}
+
+static
+lt_err_t consume_char(lt_c_preproc_ctx_t* cx, char** it, char* end, lt_strstream_t* ss) {
+	if (*it >= end)
+		fail(LT_ERR_INVALID_SYNTAX, "unexpected end-of-file expected character literal");
+	if (**it != '\'')
+		fail(LT_ERR_INVALID_SYNTAX, "unexpected '%c', expected character literal", **it);
+	++*it;
+	if (ss)
+		lt_strstream_writec(ss, '\'');
+	char c = 0;
+	while (*it < end) {
+		c = **it;
+		if (ss)
+			lt_strstream_writec(ss, c);
+		if (c == '\\') {
+			++*it;
+			if (ss && *it < end)
+				lt_strstream_writec(ss, **it);
+		}
+		else if (c == '\'')
+			break;
+		++*it;
+	}
+	if (*it >= end)
+		fail(LT_ERR_INVALID_SYNTAX, "expected '\'' after character literal");
+	++*it;
+
+	return LT_SUCCESS;
+}
+
+
 static
 b8 is_disallowed(lt_c_preproc_ctx_t* cx, lstr_t name) {
 	for (usz i = 0; i < lt_darr_count(cx->disallowed); ++i) {
-		if (lt_lstr_eq(cx->disallowed[i], name))
+		if (lt_lseq(cx->disallowed[i], name))
 			return 1;
 	}
 	return 0;
@@ -159,8 +283,6 @@ void pop_disallowed(lt_c_preproc_ctx_t* cx) {
 
 static
 lt_err_t write_escaped_str(lstr_t str, lt_strstream_t* ss) {
-	lt_strstream_writec(ss, '"');
-
 	for (char* it = str.str, *end = it + str.len; it < end; ++it) {
 		switch (*it) {
 		case '\n': lt_strstream_writels(ss, CLSTR("\\n")); break;
@@ -168,8 +290,6 @@ lt_err_t write_escaped_str(lstr_t str, lt_strstream_t* ss) {
 		default: lt_strstream_writec(ss, *it); break;
 		}
 	}
-
-	lt_strstream_writec(ss, '"');
 	return LT_SUCCESS;
 }
 
@@ -229,11 +349,13 @@ lt_err_t gen_template(lt_c_preproc_ctx_t* cx, lstr_t str, lt_darr(lstr_t) params
 					fail(LT_ERR_INVALID_SYNTAX, "stray '#'", ident);
 
 				for (usz i = 0; i < lt_darr_count(cx->template->params); ++i) {
-					if (!lt_lstr_eq(ident, cx->template->params[i]))
+					if (!lt_lseq(ident, cx->template->params[i]))
 						continue;
 
+					lt_strstream_writec(ss, '"');
 					if ((err = write_escaped_str(cx->template->args[i], ss)))
 						return err;
+					lt_strstream_writec(ss, '"');
 					goto next;
 				}
 
@@ -258,24 +380,14 @@ lt_err_t gen_template(lt_c_preproc_ctx_t* cx, lstr_t str, lt_darr(lstr_t) params
 			}
 		}
 		else if (fc == '"') {
-			template_consume(cx, ss);
-			do {
-				if (fc == '\\')
-					template_consume(cx, ss);
-				fc = template_consume(cx, ss);
-				if (fc == 0)
-					fail(LT_ERR_INVALID_SYNTAX, "expected '\"' after string literal");
-			} while (fc != '"');
+			if ((err = template_consume_str(cx, ss)))
+				return err;
+			continue;
 		}
 		else if (fc == '\'') {
-			template_consume(cx, ss);
-			do {
-				if (fc == '\\')
-					template_consume(cx, ss);
-				fc = template_consume(cx, ss);
-				if (fc == 0)
-					fail(LT_ERR_INVALID_SYNTAX, "expected \' after character literal");
-			} while (fc != '\'');
+			if ((err = template_consume_char(cx, ss)))
+				return err;
+			continue;
 		}
 		else if (!lt_is_ident_head(fc)) {
 			template_consume(cx, ss);
@@ -288,7 +400,7 @@ lt_err_t gen_template(lt_c_preproc_ctx_t* cx, lstr_t str, lt_darr(lstr_t) params
 
 		if (cx->template->params) {
 			for (usz i = 0; i < lt_darr_count(cx->template->params); ++i) {
-				if (!lt_lstr_eq(ident, cx->template->params[i]))
+				if (!lt_lseq(ident, cx->template->params[i]))
 					continue;
 
 				if ((err = gen_template(cx, cx->template->args[i], NULL, NULL, ss)))
@@ -327,6 +439,16 @@ lt_err_t gen_template(lt_c_preproc_ctx_t* cx, lstr_t str, lt_darr(lstr_t) params
 		char c;
 		usz scopes = 0;
 		do {
+			c = template_read(cx);
+			if (c == '"') {
+				if ((err = template_consume_str(cx, &as)))
+					return err;
+			}
+			else if (c == '\'') {
+				if ((err = template_consume_char(cx, &as)))
+					return err;
+			}
+
 			if (!(c = template_consume(cx, &as)))
 				fail(LT_ERR_INVALID_SYNTAX, "expected ')' after macro arguments");
 			scopes += c == '(';
@@ -350,7 +472,15 @@ lt_err_t gen_template(lt_c_preproc_ctx_t* cx, lstr_t str, lt_darr(lstr_t) params
 
 		char* it = as.str.str, *end = it + as.str.len, *arg_start = it;
 		while (it < end) {
-			if (*it == '(') {
+			if (*it == '"') {
+				if ((err = consume_str(cx, &it, end, NULL)))
+					return err;
+			}
+			else if (*it == '\'') {
+				if ((err = consume_char(cx, &it, end, NULL)))
+					return err;
+			}
+			else if (*it == '(') {
 				usz scopes = 0;
 				do {
 					if (it >= end)
@@ -367,15 +497,15 @@ lt_err_t gen_template(lt_c_preproc_ctx_t* cx, lstr_t str, lt_darr(lstr_t) params
 			}
 
 			if (*it == ',') {
-				lt_darr_push(gen_args, lt_lstr_trim(lt_lstr_from_range(arg_start, it)));
+				lt_darr_push(gen_args, lt_lstrim(lt_lsfrom_range(arg_start, it)));
 				arg_start = ++it;
 			}
 			else
 				++it;
 		}
-		lstr_t arg = lt_lstr_from_range(arg_start, it);
+		lstr_t arg = lt_lsfrom_range(arg_start, it);
 		if ((lt_darr_count(gen_params) == 1 && !lt_darr_count(gen_args)) || arg.len || lt_darr_count(gen_args) || ((def->flags & LT_CDEF_VARIADIC) && lt_darr_count(gen_args) + 1 >= lt_darr_count(gen_params))) {
-			lt_darr_push(gen_args, lt_lstr_trim(lt_lstr_from_range(arg_start, it)));
+			lt_darr_push(gen_args, lt_lstrim(lt_lsfrom_range(arg_start, it)));
 		}
 
 		if (lt_darr_count(gen_params) != lt_darr_count(gen_args))
@@ -437,12 +567,12 @@ lt_err_t eval_unary(lt_c_preproc_ctx_t* cx, char** it, char* end, i64* out) {
 		while (*it < end && lt_is_numeric_body(**it))
 			++*it;
 
-		lstr_t num = lt_lstr_from_range(start, *it);
+		lstr_t num = lt_lsfrom_range(start, *it);
 
 		if (num.len > 0 && num.str[num.len - 1] == 'L')
 			num.len--;
 
-		if ((err = lt_lstr_int(num, &v)))
+		if ((err = lt_lstoi(num, &v)))
 			fail(LT_ERR_INVALID_SYNTAX, "invalid integer");
 		*out = v;
 	}
@@ -450,9 +580,9 @@ lt_err_t eval_unary(lt_c_preproc_ctx_t* cx, char** it, char* end, i64* out) {
 		char* start = (*it)++;
 		while (*it < end && lt_is_ident_body(**it))
 			++*it;
-		lstr_t ident0 = lt_lstr_from_range(start, *it);
+		lstr_t ident0 = lt_lsfrom_range(start, *it);
 
-		if (!lt_lstr_eq(ident0, CLSTR("defined"))) {
+		if (!lt_lseq(ident0, CLSTR("defined"))) {
 			lt_c_define_t* def = lookup_define(cx->defines, lt_darr_count(cx->defines), ident0);
 			if (is_disallowed(cx, ident0) || !def) {
 				*out = 0;
@@ -470,6 +600,15 @@ lt_err_t eval_unary(lt_c_preproc_ctx_t* cx, char** it, char* end, i64* out) {
 
 				usz scopes = 0;
 				do {
+					if (*it < end && **it == '"') {
+						if ((err = consume_str(cx, it, end, NULL)))
+							return err;
+					}
+					else if (*it < end && **it == '\'') {
+						if ((err = consume_char(cx, it, end, NULL)))
+							return err;
+					}
+
 					if (*it >= end)
 						fail(LT_ERR_INVALID_SYNTAX, "expected ')' after macro arguments");
 					scopes += **it == '(';
@@ -477,7 +616,7 @@ lt_err_t eval_unary(lt_c_preproc_ctx_t* cx, char** it, char* end, i64* out) {
 					++*it;
 				} while (scopes > 0);
 
-				template = lt_lstr_from_range(start, *it);
+				template = lt_lsfrom_range(start, *it);
 			}
 
 			lt_strstream_t ss;
@@ -509,7 +648,7 @@ lt_err_t eval_unary(lt_c_preproc_ctx_t* cx, char** it, char* end, i64* out) {
 			start = *it;
 			while (*it < end && lt_is_ident_body(**it))
 				++*it;
-			lstr_t ident1 = lt_lstr_from_range(start, *it);
+			lstr_t ident1 = lt_lsfrom_range(start, *it);
 			if (ident1.len <= 0)
 				fail(LT_ERR_INVALID_SYNTAX, "expected a valid identifier after 'defined'");
 
@@ -765,39 +904,10 @@ usz count_scopes(lt_c_preproc_ctx_t* cx) {
 	return lt_darr_count(cx->scopes);
 }
 
-static LT_INLINE
-char consume(char** it, char* end) {
-	if (*it >= end)
-		return 0;
-	return *(*it)++;
-}
-
-static LT_INLINE
-char read(char** it, char* end) {
-	if (*it >= end)
-		return 0;
-	return **it;
-}
-
-static LT_INLINE
-void consume_whitespace(char** it, char* end) {
-	while (*it < end && lt_is_space(**it))
-		++*it;
-}
-
-static
-lstr_t consume_identifier(char** it, char* end) {
-	if (!lt_is_ident_head(**it))
-		return NLSTR();
-
-	char* start = *it;
-	while (*it < end && lt_is_ident_body(**it))
-		++*it;
-	return lt_lstr_from_range(start, *it);
-}
-
 static
 lt_err_t filter_special(lt_c_preproc_ctx_t* cx, lstr_t str, lt_strstream_t* ss) {
+	lt_err_t err;
+
 	char* it = str.str, *end = it + str.len;
 
 	b8 comment = 0;
@@ -827,32 +937,16 @@ lt_err_t filter_special(lt_c_preproc_ctx_t* cx, lstr_t str, lt_strstream_t* ss) 
 			continue;
 
 		if (c == '"') {
-			lt_strstream_writec(ss, '"');
-			while (it < end) {
-				if (c != '\\' && *it == '"')
-					break;
-				c = *it++;
-				lt_strstream_writec(ss, c);
-			}
-			if (it >= end)
-				fail(LT_ERR_INVALID_SYNTAX, "expected '\"' after string literal");
-			lt_strstream_writec(ss, '"');
-			++it;
+			--it;
+			if ((err = consume_str(cx, &it, end, ss)))
+				return err;
 			continue;
 		}
 
 		if (c == '\'') {
-			lt_strstream_writec(ss, '\'');
-			while (it < end) {
-				if (c != '\\' && *it == '\'')
-					break;
-				c = *it++;
-				lt_strstream_writec(ss, c);
-			}
-			if (it >= end)
-				fail(LT_ERR_INVALID_SYNTAX, "expected \' after character literal");
-			lt_strstream_writec(ss, '\'');
-			++it;
+			--it;
+			if ((err = consume_char(cx, &it, end, ss)))
+				return err;
 			continue;
 		}
 
@@ -883,7 +977,7 @@ lt_err_t parse_define(lt_c_preproc_ctx_t* cx, char* start, char* end) {
 		fail(LT_ERR_INVALID_SYNTAX, "expected a valid identifier after '#define'");
 
 	if (it >= end || *it != '(') {
-		lstr_t replace = lt_lstr_from_range(it, end);
+		lstr_t replace = lt_lsfrom_range(it, end);
 		if ((err = lt_c_define(cx, name, replace, NULL, 0)))
 			return err;
 		return LT_SUCCESS;
@@ -935,7 +1029,7 @@ lt_err_t parse_define(lt_c_preproc_ctx_t* cx, char* start, char* end) {
 		fail(LT_ERR_INVALID_SYNTAX, "expected ')' after macro parameters");
 	++it;
 
-	lstr_t replace = lt_lstr_from_range(it, end);
+	lstr_t replace = lt_lsfrom_range(it, end);
 
 	if ((err = lt_c_define(cx, name, replace, params, flags)))
 		return err;
@@ -949,7 +1043,7 @@ lt_err_t parse_include(lt_c_preproc_ctx_t* cx, char* start, char* end, lstr_t cw
 
 	lt_strstream_t ss;
 	lt_strstream_create(&ss, &cx->arena->interf);
-	if ((err = gen_template(cx, lt_lstr_from_range(start, end), NULL, NULL, &ss)))
+	if ((err = gen_template(cx, lt_lsfrom_range(start, end), NULL, NULL, &ss)))
 		return err;
 
 	// determine the root path of the include from the first '"' or '<'
@@ -978,7 +1072,7 @@ lt_err_t parse_include(lt_c_preproc_ctx_t* cx, char* start, char* end, lstr_t cw
 		if (++it >= end)
 			fail(LT_ERR_INVALID_SYNTAX, "missing closing '%c' in included path", end_delim);
 	}
-	lstr_t file_path = lt_lstr_from_range(path_start, it);
+	lstr_t file_path = lt_lsfrom_range(path_start, it);
 
 	// search through corresponding include directories until the file is found
 	for (usz i = 0; i < dir_count; ++i) {
@@ -988,9 +1082,9 @@ lt_err_t parse_include(lt_c_preproc_ctx_t* cx, char* start, char* end, lstr_t cw
 		if (dir.len > 0 && dir.str[dir.len - 1] != '/')
 			fslash = "/";
 
-		lstr_t dir_path = lt_lstr_build(&cx->arena->interf, "%S%s%S", dir, fslash, file_path);
+		lstr_t dir_path = lt_lsbuild(&cx->arena->interf, "%S%s%S", dir, fslash, file_path);
 		lstr_t raw_file;
-		if ((err = lt_file_read_entire(dir_path, &raw_file, &cx->arena->interf)))
+		if ((err = lt_freadallp(dir_path, &raw_file, &cx->arena->interf)))
 			continue;
 
 		lstr_t old_file = cx->file_path;
@@ -1017,26 +1111,26 @@ lt_err_t parse_directive(lt_c_preproc_ctx_t* cx, lstr_t str, lt_strstream_t* ss)
 	lstr_t directive = consume_identifier(&it, end);
 	consume_whitespace(&it, end);
 
-	if (lt_lstr_eq(directive, CLSTR("if"))) {
+	if (lt_lseq(directive, CLSTR("if"))) {
 		b8 val = 0;
 		if (!is_dead(cx) && (err = eval_condition(cx, &it, end, &val)))
 			return err;
 		push_scope(cx, val);
 	}
 
-	else if (lt_lstr_eq(directive, CLSTR("ifdef"))) {
+	else if (lt_lseq(directive, CLSTR("ifdef"))) {
 		lstr_t name = consume_identifier(&it, end);
 		lt_c_define_t* def = lookup_define(cx->defines, lt_darr_count(cx->defines), name);
 		push_scope(cx, def != NULL);
 	}
 
-	else if (lt_lstr_eq(directive, CLSTR("ifndef"))) {
+	else if (lt_lseq(directive, CLSTR("ifndef"))) {
 		lstr_t name = consume_identifier(&it, end);
 		lt_c_define_t* def = lookup_define(cx->defines, lt_darr_count(cx->defines), name);
 		push_scope(cx, def == NULL);
 	}
 
-	else if (lt_lstr_eq(directive, CLSTR("elif"))) {
+	else if (lt_lseq(directive, CLSTR("elif"))) {
 		if (curr_scope(cx) == NULL)
 			fail(LT_ERR_INVALID_SYNTAX, "'elif' directive with no previous condition");
 
@@ -1046,48 +1140,48 @@ lt_err_t parse_directive(lt_c_preproc_ctx_t* cx, lstr_t str, lt_strstream_t* ss)
 		change_condition(cx, val);
 	}
 
-	else if (lt_lstr_eq(directive, CLSTR("else"))) {
+	else if (lt_lseq(directive, CLSTR("else"))) {
 		if (curr_scope(cx) == NULL)
 			fail(LT_ERR_INVALID_SYNTAX, "'else' directive with no previous condition");
 
 		change_condition(cx, !curr_scope(cx)->condition);
 	}
 
-	else if (lt_lstr_eq(directive, CLSTR("endif"))) {
+	else if (lt_lseq(directive, CLSTR("endif"))) {
 		if (curr_scope(cx) == NULL)
 			fail(LT_ERR_INVALID_SYNTAX, "'endif' directive with no previous condition");
 		pop_scope(cx);
 	}
 
-	else if (!is_dead(cx) && lt_lstr_eq(directive, CLSTR("define"))) {
+	else if (!is_dead(cx) && lt_lseq(directive, CLSTR("define"))) {
 		if ((err = parse_define(cx, it, end)))
 			return err;
 	}
 
-	else if (!is_dead(cx) && lt_lstr_eq(directive, CLSTR("undef"))) {
+	else if (!is_dead(cx) && lt_lseq(directive, CLSTR("undef"))) {
 		char* name_start = it;
 		while (it < end && lt_is_ident_body(*it))
 			++it;
-		if ((err = lt_c_undefine(cx, lt_lstr_from_range(name_start, it))))
+		if ((err = lt_c_undefine(cx, lt_lsfrom_range(name_start, it))))
 			return err;
 	}
 
-	else if (!is_dead(cx) && lt_lstr_eq(directive, CLSTR("include"))) {
+	else if (!is_dead(cx) && lt_lseq(directive, CLSTR("include"))) {
 		lstr_t parsed_str;
-		if ((err = parse_include(cx, it, end, lt_lstr_path_dir(cx->file_path), &parsed_str)))
+		if ((err = parse_include(cx, it, end, lt_lsdirname(cx->file_path), &parsed_str)))
 			return err;
 		lt_strstream_writels(ss, parsed_str);
 	}
 
-	else if (!is_dead(cx) && lt_lstr_eq(directive, CLSTR("error"))) {
-		fail(LT_ERR_INVALID_SYNTAX, "%S", lt_lstr_from_range(it, end));
+	else if (!is_dead(cx) && lt_lseq(directive, CLSTR("error"))) {
+		fail(LT_ERR_INVALID_SYNTAX, "%S", lt_lsfrom_range(it, end));
 	}
 
-	else if (!is_dead(cx) && lt_lstr_eq(directive, CLSTR("warning"))) {
+	else if (!is_dead(cx) && lt_lseq(directive, CLSTR("warning"))) {
 		// !!
 	}
 
-	else if (!is_dead(cx) && lt_lstr_eq(directive, CLSTR("pragma"))) {
+	else if (!is_dead(cx) && lt_lseq(directive, CLSTR("pragma"))) {
 		// !!
 	}
 
@@ -1131,7 +1225,7 @@ lt_err_t lt_c_preproc(lt_c_preproc_ctx_t* cx, void* data, usz size, lstr_t file_
 			++it;
 		}
 		char* line_end = it;
-		lstr_t line = lt_lstr_trim(lt_lstr_from_range(line_start, line_end));
+		lstr_t line = lt_lstrim(lt_lsfrom_range(line_start, line_end));
 		if (!line.len)
 			continue;
 

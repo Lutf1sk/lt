@@ -97,6 +97,13 @@ lstr_t str_from_tk(lt_c_parse_ctx_t* cx, lt_c_tk_t tk) {
 }
 
 static LT_INLINE
+lt_c_tk_type_t read_ahead(lt_c_parse_ctx_t* cx, usz idx) {
+	if (cx->it + idx >= cx->end)
+		return LT_CTK_EOF;
+	return cx->it[idx].type;
+}
+
+static LT_INLINE
 lt_c_tk_type_t read_type(lt_c_parse_ctx_t* cx) {
 	if (cx->it >= cx->end)
 		return LT_CTK_EOF;
@@ -181,7 +188,7 @@ b8 type_eq(lt_c_type_t* type1, lt_c_type_t* type2) {
 		if (!lt_lseq(type1->struct_.tag, type2->struct_.tag))
 			return 0;
 
-		if (struct_is_complete(type1) != struct_is_complete(type2))
+		if (!struct_is_complete(type1) || !struct_is_complete(type2))
 			return 1;
 
 		if (lt_darr_count(type1->struct_.member_types) != lt_darr_count(type2->struct_.member_types))
@@ -1346,6 +1353,26 @@ lt_err_t parse_new_nondecl_stmt(lt_c_parse_ctx_t* cx, lt_c_stmt_t** out) {
 		}
 		return LT_SUCCESS;
 
+	case LT_CTK_KWDO:
+		consume(cx, NULL);
+		**out = (lt_c_stmt_t) { .type = LT_CS_DO_WHILE };
+
+		if ((err = parse_new_nondecl_stmt(cx, &(*out)->while_.do_)))
+			return err;
+
+		if ((err = consume_type(cx, LT_CTK_KWWHILE, NULL)))
+			return err;
+		if ((err = consume_type(cx, LT_CTK_LPAREN, NULL)))
+			return err;
+
+		if ((err = parse_new_expr(cx, 1, &(*out)->while_.cond)))
+			return err;
+		if ((err = consume_type(cx, LT_CTK_RPAREN, NULL)))
+			return err;
+		if ((err = consume_type(cx, LT_CTK_SEMICOLON, NULL)))
+			return err;
+		return LT_SUCCESS;
+
 	case LT_CTK_KWWHILE:
 		consume(cx, NULL);
 		if ((err = consume_type(cx, LT_CTK_LPAREN, NULL)))
@@ -1360,6 +1387,41 @@ lt_err_t parse_new_nondecl_stmt(lt_c_parse_ctx_t* cx, lt_c_stmt_t** out) {
 
 		if ((err = parse_new_nondecl_stmt(cx, &(*out)->while_.do_)))
 			return err;
+
+		return LT_SUCCESS;
+
+	case LT_CTK_KWSWITCH:
+		consume(cx, NULL);
+		if ((err = consume_type(cx, LT_CTK_LPAREN, NULL)))
+			return err;
+
+		**out = (lt_c_stmt_t) { .type = LT_CS_SWITCH };
+
+		if ((err = parse_new_expr(cx, 1, &(*out)->switch_.value)))
+			return err;
+		if ((err = consume_type(cx, LT_CTK_RPAREN, NULL)))
+			return err;
+
+		if ((err = parse_new_nondecl_stmt(cx, &(*out)->switch_.body)))
+			return err;
+
+		return LT_SUCCESS;
+
+	case LT_CTK_KWBREAK:
+		consume(cx, NULL);
+		if ((err = consume_type(cx, LT_CTK_SEMICOLON, NULL)))
+			return err;
+
+		**out = (lt_c_stmt_t) { .type = LT_CS_BREAK };
+
+		return LT_SUCCESS;
+
+	case LT_CTK_KWCONTINUE:
+		consume(cx, NULL);
+		if ((err = consume_type(cx, LT_CTK_SEMICOLON, NULL)))
+			return err;
+
+		**out = (lt_c_stmt_t) { .type = LT_CS_CONTINUE };
 
 		return LT_SUCCESS;
 
@@ -1437,7 +1499,9 @@ lt_err_t parse_new_nondecl_stmt(lt_c_parse_ctx_t* cx, lt_c_stmt_t** out) {
 	}	return LT_SUCCESS;
 
 	case LT_CTK_IDENT:
-	case LT_CTK_NUM: case LT_CTK_STR: case LT_CTK_CHAR: case LT_CTK_LPAREN: case LT_CTK_MINUS: case LT_CTK_ASTER: case LT_CTK_AMP:
+	case LT_CTK_NUM: case LT_CTK_STR: case LT_CTK_CHAR: case LT_CTK_LPAREN:
+	case LT_CTK_EXC: case LT_CTK_TILDE:
+	case LT_CTK_DPLUS: case LT_CTK_DMINUS: case LT_CTK_PLUS: case LT_CTK_MINUS: case LT_CTK_ASTER: case LT_CTK_AMP:
 	{
 		**out = (lt_c_stmt_t) { .type = LT_CS_EXPR };
 
@@ -1456,8 +1520,48 @@ lt_err_t parse_new_nondecl_stmt(lt_c_parse_ctx_t* cx, lt_c_stmt_t** out) {
 }
 
 static
+b8 lbl_pending(lt_c_parse_ctx_t* cx) {
+	lt_c_tk_type_t tk = read_type(cx);
+	if (tk == LT_CTK_KWCASE || tk == LT_CTK_KWDEFAULT)
+		return 1;
+	if (tk != LT_CTK_IDENT)
+		return 0;
+	return read_ahead(cx, 1) == LT_CTK_COLON;
+}
+
+static
+lt_err_t parse_lbl(lt_c_parse_ctx_t* cx, lt_c_stmt_t* parent) {
+	lt_err_t err;
+
+	lt_c_tk_t tk;
+	if ((err = consume(cx, &tk)))
+		return err;
+
+	if (tk.type == LT_CTK_KWCASE) {
+		lt_c_expr_t* val;
+		if ((err = parse_new_expr(cx, 0, &val)))
+			return err;
+	}
+	else if (tk.type == LT_CTK_KWDEFAULT) {
+	}
+	else if (tk.type == LT_CTK_IDENT) {
+	}
+	else {
+		fail("unexpected token '%S', expected label definition\n", str_from_tk(cx, tk));
+	}
+
+	if ((err = consume_type(cx, LT_CTK_COLON, NULL)))
+			return err;
+	return LT_SUCCESS;
+}
+
+static
 lt_err_t parse_new_stmt(lt_c_parse_ctx_t* cx, lt_c_stmt_t** out) {
 	lt_err_t err;
+
+	while (lbl_pending(cx)) {
+		parse_lbl(cx, NULL);
+	}
 
 	switch (read_type(cx)) {
 	case LT_CTK_IDENT:
@@ -1489,16 +1593,6 @@ lt_err_t parse_new_stmt(lt_c_parse_ctx_t* cx, lt_c_stmt_t** out) {
 
 static
 lt_err_t parse_new_expr_primary(lt_c_parse_ctx_t* cx, lt_c_expr_t** out) {
-	lt_err_t err;
-
-	if (read_type(cx) == LT_CTK_LPAREN) {
-		consume(cx, NULL);
-
-		if ((err = consume_type(cx, LT_CTK_RPAREN, NULL)))
-			return err;
-		return LT_SUCCESS;
-	}
-
 	*out = lt_amalloc_lean(cx->alloc, sizeof(lt_c_expr_t));
 	if (!*out)
 		return LT_ERR_OUT_OF_MEMORY;
@@ -1546,6 +1640,7 @@ lt_err_t parse_new_expr_unary(lt_c_parse_ctx_t* cx, lt_c_expr_t** out) {
 		{ 2, LT_CE_PFX_INC, LT_CTK_DPLUS, 1 },
 		{ 2, LT_CE_PFX_DEC, LT_CTK_DMINUS, 1 },
 		{ 2, LT_CE_UPLUS, LT_CTK_PLUS, 1 },
+		{ 2, LT_CE_NEG, LT_CTK_MINUS, 1 },
 		{ 2, LT_CE_LOGINV, LT_CTK_EXC, 1 },
 		{ 2, LT_CE_INV, LT_CTK_TILDE, 1 },
 		{ 2, LT_CE_CAST, LT_CTK_LPAREN, 1 },
@@ -1598,16 +1693,17 @@ lt_err_t parse_new_expr_unary(lt_c_parse_ctx_t* cx, lt_c_expr_t** out) {
 					.type = op->expr_type,
 					.cast.to = to };
 
-			b8 is_compound = 0;
-			if (read_type(cx) == LT_CTK_LBRACE) {
-				is_compound = 1;
+			b8 is_compound = read_type(cx) == LT_CTK_LBRACE;
+			if (is_compound) {
 				if ((err = parse_compound_literal(cx, to, &new->unary.child)))
 					return err;
 			}
 
-			if (last && ((*last)->type == LT_CE_SIZEOF || (*last)->type == LT_CE_ALIGNOF)) {
+			b8 stick_to_parent = (last && ((*last)->type == LT_CE_SIZEOF || (*last)->type == LT_CE_ALIGNOF));
+			if (stick_to_parent) {
 				suffix = *last;
 				*last = NULL;
+				prefix_end = last;
 				goto parse_suffix;
 			}
 			else if (is_compound) {
