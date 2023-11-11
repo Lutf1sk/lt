@@ -174,11 +174,11 @@ b8 type_eq(lt_c_type_t* type1, lt_c_type_t* type2) {
 		return type_eq(type1->func.return_type, type2->func.return_type);
 
 	case LT_CT_ENUM:
-		return lt_lstr_eq(type1->enum_.tag, type2->enum_.tag) && type_eq(type1->enum_.type, type2->enum_.type); // !! check for incomplete
+		return lt_lseq(type1->enum_.tag, type2->enum_.tag) && type_eq(type1->enum_.type, type2->enum_.type); // !! check for incomplete
 
 	case LT_CT_STRUCT:
 	case LT_CT_UNION:
-		if (!lt_lstr_eq(type1->struct_.tag, type2->struct_.tag))
+		if (!lt_lseq(type1->struct_.tag, type2->struct_.tag))
 			return 0;
 
 		if (struct_is_complete(type1) != struct_is_complete(type2))
@@ -189,7 +189,7 @@ b8 type_eq(lt_c_type_t* type1, lt_c_type_t* type2) {
 		for (usz i = 0; i < lt_darr_count(type1->struct_.member_types); ++i) {
 			if (!type_eq(type1->struct_.member_types[i], type2->struct_.member_types[i]))
 				return 0;
-			if (!lt_lstr_eq(type1->struct_.member_names[i], type2->struct_.member_names[i]))
+			if (!lt_lseq(type1->struct_.member_names[i], type2->struct_.member_names[i]))
 				return 0;
 		}
 		return 1;
@@ -212,8 +212,8 @@ b8 type_eq(lt_c_type_t* type1, lt_c_type_t* type2) {
 	return 0;
 }
 
-#define sym_is_equal(sym, key) (lt_lstr_eq((sym)->name, key))
-#define sym_is_lesser(sym, key) (lt_lstr_cmp((sym)->name, key) < 0)
+#define sym_is_equal(sym, key) (lt_lseq((sym)->name, key))
+#define sym_is_lesser(sym, key) (lt_lscmp((sym)->name, key) < 0)
 
 static
 LT_DEFINE_BINARY_SEARCH_FUNC(lt_c_sym_t*, lstr_t, lookup_sym, sym_is_lesser, sym_is_equal);

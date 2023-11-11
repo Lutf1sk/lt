@@ -195,7 +195,7 @@ lt_err_t parse_val(parse_ctx_t* cx, lt_conf_t* cf) {
 				++cx->it;
 
 			cf->stype = LT_CONF_INT;
-			err = lt_lstr_int(LSTR(begin, cx->it - begin), &cf->int_val);
+			err = lt_lstoi(LSTR(begin, cx->it - begin), &cf->int_val);
 			if (err == LT_ERR_OVERFLOW)
 				RETURN_ERROR(LT_ERR_OVERFLOW, lt_strdup(cx->alloc, CLSTR("integer overflow")));
 			else if (err != LT_SUCCESS)
@@ -221,7 +221,7 @@ lt_err_t lt_conf_erase_str(lt_conf_t* cf, lstr_t str, lt_alloc_t* alloc) {
 	LT_ASSERT(cf->stype == LT_CONF_OBJECT || cf->stype == LT_CONF_ARRAY);
 
 	for (usz i = 0; i < cf->child_count; ++i) {
-		if (cf->children[i].stype == LT_CONF_STRING && !lt_lstr_eq(cf->children[i].str_val, str))
+		if (cf->children[i].stype == LT_CONF_STRING && !lt_lseq(cf->children[i].str_val, str))
 			continue;
 
 		lt_conf_free(&cf->children[i], alloc);
@@ -248,7 +248,7 @@ lt_err_t lt_conf_erase_key(lt_conf_t* cf, lstr_t key, lt_alloc_t* alloc) {
 	LT_ASSERT(cf->stype == LT_CONF_OBJECT);
 
 	for (usz i = 0; i < cf->child_count; ++i) {
-		if (!lt_lstr_eq(cf->children[i].key, key))
+		if (!lt_lseq(cf->children[i].key, key))
 			continue;
 
 		lt_conf_free(&cf->children[i], alloc);
@@ -281,10 +281,10 @@ lt_conf_t* lt_conf_find(lt_conf_t* parent, lstr_t key_path) {
 		if (!parent || parent->stype != LT_CONF_OBJECT)
 			return NULL;
 
-		lstr_t key = lt_lstr_split(LSTR(it, end - it), '.');
+		lstr_t key = lt_lssplit(LSTR(it, end - it), '.');
 
 		for (usz i = 0; i < parent->child_count; ++i) {
-			if (lt_lstr_eq(parent->children[i].key, key)) {
+			if (lt_lseq(parent->children[i].key, key)) {
 				parent = &parent->children[i];
 				it += key.len + 1;
 				goto found;

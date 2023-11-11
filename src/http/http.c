@@ -41,7 +41,7 @@ lt_err_t lt_http_parse_response(lt_http_response_t* response, lt_io_callback_t c
 	// Parse first line
 	char *it = stream.str.str, *end = it + stream.str.len;
 
-	if (!lt_lstr_startswith(stream.str, CLSTR("HTTP/")))
+	if (!lt_lsprefix(stream.str, CLSTR("HTTP/")))
 		return LT_ERR_INVALID_SYNTAX;
 	it += 5;
 
@@ -71,7 +71,7 @@ lt_err_t lt_http_parse_response(lt_http_response_t* response, lt_io_callback_t c
 	if (status_start == it)
 		fail_to(err = LT_ERR_INVALID_SYNTAX, err1);
 	u64 status_code;
-	if (lt_lstr_uint(LSTR(status_start, it - status_start), &status_code) != LT_SUCCESS || status_code > LT_U32_MAX)
+	if (lt_lstou(LSTR(status_start, it - status_start), &status_code) != LT_SUCCESS || status_code > LT_U32_MAX)
 		return LT_ERR_INVALID_SYNTAX;
 
 	// Parse status message
@@ -109,22 +109,22 @@ lt_err_t lt_http_parse_response(lt_http_response_t* response, lt_io_callback_t c
 		if (!line.len)
 			break;
 
-		lstr_t key = lt_lstr_split(line, ':');
+		lstr_t key = lt_lssplit(line, ':');
 		if (key.len == line.len)
 			fail_to(err = LT_ERR_INVALID_SYNTAX, err2);
 
 		lstr_t val = LSTR(line.str + (key.len + 1), line.len  - (key.len + 1));
-		val = lt_lstr_trim_left(val);
+		val = lt_lstrim_left(val);
 
-		if (lt_lstr_case_eq(key, CLSTR("transfer-encoding"))) {
+		if (lt_lseq_nocase(key, CLSTR("transfer-encoding"))) {
 			transfer_enc = ENC_UNKNOWN;
-			if (lt_lstr_case_eq(val, CLSTR("chunked")))
+			if (lt_lseq_nocase(val, CLSTR("chunked")))
 				transfer_enc = ENC_CHUNKED;
 			else
 				lt_werrf("unsupported transfer encoding '%S'\n", val);
 		}
-		else if (lt_lstr_case_eq(key, CLSTR("content-length"))) {
-			if (lt_lstr_uint(val, &content_length) != LT_SUCCESS)
+		else if (lt_lseq_nocase(key, CLSTR("content-length"))) {
+			if (lt_lstou(val, &content_length) != LT_SUCCESS)
 				return LT_ERR_INVALID_SYNTAX;
 			content_length_present = 1;
 		}
@@ -170,12 +170,12 @@ lt_err_t lt_http_parse_response(lt_http_response_t* response, lt_io_callback_t c
 				history <<= 8;
 			}
 			lstr_t size_str = LSTR(size_stream.str.str + size_start_len, size_stream.str.len - size_start_len - 2);
-			size_str = lt_lstr_trim(size_str);
-			if (lt_lstr_eq(size_str, CLSTR("0")))
+			size_str = lt_lstrim(size_str);
+			if (lt_lseq(size_str, CLSTR("0")))
 				break;
 
 			usz size;
-			if ((err = lt_lstr_hex_uint(size_str, &size)))
+			if ((err = lt_lshextou(size_str, &size)))
 				goto chunked_err1;
 
 			lt_strstream_clear(&size_stream);

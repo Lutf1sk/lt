@@ -56,7 +56,7 @@ lt_err_t lt_sockaddr_resolve(lstr_t addr, u16 port, lt_socktype_t type, lt_socka
 	INIT_IF_NECESSARY();
 	lt_sockaddr_impl_t* out_addr = (lt_sockaddr_impl_t*)out_addr_;
 
-	char* caddr = lt_cstr_from_lstr(addr, alloc);
+	char* caddr = lt_lstos(addr, alloc);
 	if (!caddr)
 		return LT_ERR_OUT_OF_MEMORY;
 

@@ -75,7 +75,7 @@ lt_x64_pfx_t* lpfx_find_by_val(u8 v) {
 static
 lt_x64_pfx_t* lpfx_find_by_name(lstr_t name) {
 	for (usz i = 0; i < LPFX_COUNT; ++i)
-		if (lt_lstr_eq(legacy_pfxs[i].name, name))
+		if (lt_lseq(legacy_pfxs[i].name, name))
 			return &legacy_pfxs[i];
 	return NULL;
 }

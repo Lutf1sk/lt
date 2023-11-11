@@ -1,8 +1,9 @@
 #include <lt/str.h>
 #include <lt/ctype.h>
 #include <lt/mem.h>
+#include <lt/io.h>
 
-b8 lt_lstr_case_eq(lstr_t s1, lstr_t s2) {
+b8 lt_lseq_nocase(lstr_t s1, lstr_t s2) {
 	if (s1.len != s2.len)
 		return 0;
 	for (usz i = 0; i < s1.len; ++i)
@@ -11,14 +12,14 @@ b8 lt_lstr_case_eq(lstr_t s1, lstr_t s2) {
 	return 1;
 }
 
-lstr_t lt_lstr_trim_left(lstr_t str) {
+lstr_t lt_lstrim_left(lstr_t str) {
 	char *it, *end;
 	for (it = str.str, end = it + str.len; it < end && lt_is_space(*it); ++it)
 		;
 	return LSTR(it, end - it);
 }
 
-lstr_t lt_lstr_trim_right(lstr_t str) {
+lstr_t lt_lstrim_right(lstr_t str) {
 	char *it;
 	for (it = str.str + str.len; it > str.str && lt_is_space(*(it - 1)); --it)
 		;
@@ -26,11 +27,11 @@ lstr_t lt_lstr_trim_right(lstr_t str) {
 }
 
 LT_FLATTEN
-lstr_t lt_lstr_trim(lstr_t str) {
-	return lt_lstr_trim_left(lt_lstr_trim_right(str));
+lstr_t lt_lstrim(lstr_t str) {
+	return lt_lstrim_left(lt_lstrim_right(str));
 }
 
-char* lt_cstr_from_lstr(lstr_t lstr, lt_alloc_t* alloc) {
+char* lt_lstos(lstr_t lstr, lt_alloc_t* alloc) {
 	char* cstr = lt_malloc(alloc, lstr.len + 1);
 	if (!cstr)
 		return NULL;
@@ -39,7 +40,7 @@ char* lt_cstr_from_lstr(lstr_t lstr, lt_alloc_t* alloc) {
 	return cstr;
 }
 
-lt_err_t lt_lstr_float(lstr_t str, f64* out) {
+lt_err_t lt_lstof(lstr_t str, f64* out) {
 	if (!str.len)
 		return LT_ERR_UNEXPECTED_EOF;
 
@@ -82,7 +83,7 @@ done:
 	return LT_SUCCESS;
 }
 
-lt_err_t lt_lstr_int(lstr_t str, i64* out) {
+lt_err_t lt_lstoi(lstr_t str, i64* out) {
 	if (!str.len)
 		return 0;
 
@@ -93,7 +94,7 @@ lt_err_t lt_lstr_int(lstr_t str, i64* out) {
 	}
 
 	u64 v;
-	lt_err_t err = lt_lstr_uint(str, &v);
+	lt_err_t err = lt_lstou(str, &v);
 	if (err)
 		return err;
 
@@ -107,7 +108,7 @@ lt_err_t lt_lstr_int(lstr_t str, i64* out) {
 	return LT_SUCCESS;
 }
 
-lt_err_t lt_lstr_uint(lstr_t str, u64* out) {
+lt_err_t lt_lstou(lstr_t str, u64* out) {
 	u64 val = 0;
 
 	char* it = str.str, *end = it + str.len;
@@ -147,7 +148,7 @@ static u8 hex_conv_tab[256] = {
 	['F'] = 0xF, ['f'] = 0xF,
  };
 
-lt_err_t lt_lstr_hex_uint(lstr_t str, u64* out) {
+lt_err_t lt_lshextou(lstr_t str, u64* out) {
 	u64 val = 0;
 
 	char* it = str.str, *end = it + str.len;
@@ -168,10 +169,67 @@ lt_err_t lt_lstr_hex_uint(lstr_t str, u64* out) {
 	return LT_SUCCESS;
 }
 
-lstr_t lt_lstr_path_dir(lstr_t path) {
-	for (isz i = path.len - 1; i >= 0; --i)
-		if (path.str[i] == '/')
-			return LSTR(path.str, i + 1);
+lstr_t lt_lsdirname(lstr_t path) {
+	if (path.len == 0)
+		return CLSTR(".");
 
-	return CLSTR("");
+	isz last_idx = path.len - 1;
+	isz last_nonslash = last_idx;
+
+	if (path.str[last_idx] == '/') {
+		while (last_nonslash >= 0 && path.str[last_nonslash] == '/')
+			--last_nonslash;
+
+		if (last_nonslash == -1)
+			return CLSTR("/");
+	}
+
+	isz sep_slash = last_nonslash;
+	while (sep_slash >= 0 && path.str[sep_slash] != '/')
+		--sep_slash;
+	if (sep_slash == -1)
+		return CLSTR(".");
+
+	isz first_sep_slash = sep_slash;
+	while (first_sep_slash > 0 && path.str[first_sep_slash - 1] == '/')
+		--first_sep_slash;
+	if (first_sep_slash == 0)
+		return CLSTR("/");
+
+	return LSTR(path.str, first_sep_slash);
+}
+
+lstr_t lt_lsbasename(lstr_t path) {
+	if (path.len == 0)
+		return CLSTR(".");
+
+	isz last_idx = path.len - 1;
+	isz last_nonslash = last_idx;
+
+	if (path.str[last_idx] == '/') {
+		while (last_nonslash >= 0 && path.str[last_nonslash] == '/')
+			--last_nonslash;
+
+		if (last_nonslash == -1)
+			return CLSTR("/");
+	}
+
+	isz sep_slash = last_nonslash;
+	while (sep_slash >= 0 && path.str[sep_slash] != '/')
+		--sep_slash;
+
+	return LSTR(path.str + sep_slash + 1, last_nonslash - sep_slash);
+}
+
+lstr_t lt_lsbuild(lt_alloc_t* alloc, char* fmt, ...) {
+	va_list argl;
+	va_start(argl, fmt);
+	lstr_t str;
+	isz res = lt_vaprintf(&str, alloc, fmt, argl);
+	if (res < 0) {
+		lt_werrbf("allocation failed\n");
+		return NLSTR();
+	}
+	va_end(argl);
+	return str;
 }

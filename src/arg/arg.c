@@ -32,13 +32,13 @@ char* find_long_val(lt_arg_iterator_t* it, lstr_t key) {
 		return NULL;
 
 	lstr_t arg = LSTR(*it->it + 2, it->arg_len - 2);
-	if (lt_lstr_eq(arg, key)) {
+	if (lt_lseq(arg, key)) {
 		if (!lt_arg_next(it))
 			lt_ferrf("missing argument to '--%S'\n", key); // !!
 		return *it->it;
 	}
 
-	if (lt_lstr_startswith(arg, key) && arg.str[key.len] == '=')
+	if (lt_lsprefix(arg, key) && arg.str[key.len] == '=')
 		return arg.str + key.len + 1;
 	return NULL;
 }
@@ -59,7 +59,7 @@ char* find_short_val(lt_arg_iterator_t* it, char key) {
 		return *it->it;
 	}
 
-	if (lt_lstr_startswith(arg, LSTR(&key, 1)) && arg.len > 1)
+	if (lt_lsprefix(arg, LSTR(&key, 1)) && arg.len > 1)
 		return arg.str + 1;
 	return NULL;
 }
@@ -73,7 +73,7 @@ b8 lt_arg_flag(lt_arg_iterator_t* it, char short_key, lstr_t long_key) {
 
 	if (arg.len < 3 || memcmp(arg.str, "--", 2) != 0)
 		return 0;
-	return lt_lstr_eq(LSTR(arg.str + 2, arg.len - 2), long_key);
+	return lt_lseq(LSTR(arg.str + 2, arg.len - 2), long_key);
 }
 
 b8 lt_arg_str(lt_arg_iterator_t* it, char short_key, lstr_t long_key, char** out) {

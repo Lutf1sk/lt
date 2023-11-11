@@ -99,7 +99,7 @@ lt_json_t* json_parse_value(parse_ctx_t* cx) {
 
 	case 't': {
 		lstr_t expect = CLSTR("true");
-		if (cx->it + expect.len > cx->len || !lt_lstr_eq(expect, LSTR(&cx->data[cx->it], expect.len)))
+		if (cx->it + expect.len > cx->len || !lt_lseq(expect, LSTR(&cx->data[cx->it], expect.len)))
 			return NULL;
 		cx->it += expect.len;
 		lt_json_t* new = lt_malloc(cx->alloc, sizeof(lt_json_t));
@@ -111,7 +111,7 @@ lt_json_t* json_parse_value(parse_ctx_t* cx) {
 
 	case 'f': {
 		lstr_t expect = CLSTR("false");
-		if (cx->it + expect.len > cx->len || !lt_lstr_eq(expect, LSTR(&cx->data[cx->it], expect.len)))
+		if (cx->it + expect.len > cx->len || !lt_lseq(expect, LSTR(&cx->data[cx->it], expect.len)))
 			return NULL;
 		cx->it += expect.len;
 		lt_json_t* new = lt_malloc(cx->alloc, sizeof(lt_json_t));
@@ -123,7 +123,7 @@ lt_json_t* json_parse_value(parse_ctx_t* cx) {
 
 	case 'n': {
 		lstr_t expect = CLSTR("null");
-		if (cx->it + expect.len > cx->len || !lt_lstr_eq(expect, LSTR(&cx->data[cx->it], expect.len)))
+		if (cx->it + expect.len > cx->len || !lt_lseq(expect, LSTR(&cx->data[cx->it], expect.len)))
 			return NULL;
 		cx->it += expect.len;
 		lt_json_t* new = lt_malloc(cx->alloc, sizeof(lt_json_t));
@@ -268,7 +268,7 @@ lt_json_t* lt_json_find_child(lt_json_t* json, lstr_t key) {
 
 	lt_json_t* it = json->child;
 	while (it) {
-		if (lt_lstr_eq(it->key, key))
+		if (lt_lseq(it->key, key))
 			return it;
 		it = it->next;
 	}
@@ -277,13 +277,13 @@ lt_json_t* lt_json_find_child(lt_json_t* json, lstr_t key) {
 
 u64 lt_json_uint_val(lt_json_t* json) {
 	u64 u;
-	lt_lstr_uint(json->str_val, &u);
+	lt_lstou(json->str_val, &u);
 	return u;
 }
 
 i64 lt_json_int_val(lt_json_t* json) {
 	u64 i;
-	lt_lstr_int(json->str_val, &i);
+	lt_lstoi(json->str_val, &i);
 	return i;
 }
 
@@ -292,7 +292,7 @@ i64 lt_json_int_val(lt_json_t* json) {
 // }
 
 b8 lt_json_bool_val(lt_json_t* json) {
-	return lt_lstr_eq(json->str_val, CLSTR("true"));
+	return lt_lseq(json->str_val, CLSTR("true"));
 }
 
 lstr_t lt_json_escape_str(lstr_t src, lt_alloc_t* alloc) {

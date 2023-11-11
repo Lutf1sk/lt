@@ -36,14 +36,14 @@ void lt_elf64_init(void* data, usz size, lt_elf64_t* e) {
 
 		switch (sh->type) {
 		case LT_ELF_SH_STRTAB:
-			if (lt_lstr_eq(name, CLSTR(".strtab")))
+			if (lt_lseq(name, CLSTR(".strtab")))
 				e->sym_strtab_sh = sh;
 			break;
 
 		case LT_ELF_SH_PROGBITS:
-			if (lt_lstr_eq(name, CLSTR(".debug_line")))
+			if (lt_lseq(name, CLSTR(".debug_line")))
 				e->dbgline_sh = sh;
-			else if (lt_lstr_eq(name, CLSTR(".debug_line_str")))
+			else if (lt_lseq(name, CLSTR(".debug_line_str")))
 				e->dbgline_strtab_sh = sh;
 			break;
 
@@ -70,7 +70,7 @@ lt_elf64_sh_t* lt_elf64_sh_by_name(lt_elf64_t* e, lstr_t name) {
 	for (usz i = 0; i < e->fh->sh_count; ++i) {
 		lt_elf64_sh_t* sh = lt_elf64_sh(e, i);
 		lstr_t shname = lt_elf64_str(e, e->sh_strtab_sh, sh->name_stab_offs);
-		if (lt_lstr_eq(shname, name))
+		if (lt_lseq(shname, name))
 			return sh;
 	}
 	return NULL;
@@ -82,7 +82,7 @@ lt_elf64_sym_t* lt_elf64_sym_by_name(lt_elf64_t* e, lstr_t name) {
 
 	for (isz i = 0; i < e->sym_count ; ++i) {
 		lstr_t symname = lt_elf64_str(e, e->sym_strtab_sh, e->symtab[i].name_stab_offs);
-		if (lt_lstr_eq(symname, name))
+		if (lt_lseq(symname, name))
 			return &e->symtab[i];
 	}
 	return NULL;

@@ -730,8 +730,8 @@ lt_err_t parse_new_stmt(lt_lpc_parse_ctx_t* cx, lt_lpc_stmt_t** out) {
 #include <lt/sort.h>
 #include <lt/str.h>
 
-#define sym_is_equal(sym, key) (lt_lstr_eq((sym)->name, key))
-#define sym_is_lesser(sym, key) (lt_lstr_cmp((sym)->name, key) < 0)
+#define sym_is_equal(sym, key) (lt_lseq((sym)->name, key))
+#define sym_is_lesser(sym, key) (lt_lscmp((sym)->name, key) < 0)
 
 LT_DEFINE_BINARY_SEARCH_FUNC(lt_lpc_sym_t*, lstr_t, lt_lpc_lookup_sym, sym_is_lesser, sym_is_equal);
 

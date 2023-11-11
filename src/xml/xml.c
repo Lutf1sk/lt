@@ -56,7 +56,7 @@ b8 is_hex_digit(u32 c) {
 static LT_INLINE
 b8 enc_str_eq(parse_ctx_t* cx, lstr_t enc_str, lstr_t const_str) {
 	if (cx->enc == ENC_UTF8) {
-		return lt_lstr_eq(enc_str, const_str);
+		return lt_lseq(enc_str, const_str);
 	}
 	else if (cx->enc == ENC_UTF16LE) {
 		u16 str16[64];
@@ -225,7 +225,7 @@ lt_err_t consume_digits(parse_ctx_t* cx, lstr_t* out) {
 	}
 
 	if (out)
-		*out = lt_lstr_from_range(start, cx->it);
+		*out = lt_lsfrom_range(start, cx->it);
 	return LT_SUCCESS;
 }
 
@@ -250,7 +250,7 @@ lt_err_t consume_hex_digits(parse_ctx_t* cx, lstr_t* out) {
 	}
 
 	if (out)
-		*out = lt_lstr_from_range(start, cx->it);
+		*out = lt_lsfrom_range(start, cx->it);
 	return LT_SUCCESS;
 }
 
@@ -275,7 +275,7 @@ lt_err_t consume_name(parse_ctx_t* cx, lstr_t* out) {
 	}
 
 	if (out) {
-		*out = lt_lstr_from_range(name_start, cx->it);
+		*out = lt_lsfrom_range(name_start, cx->it);
 		if (cx->enc == ENC_UTF16LE) {
 			out->len /= 2;
 			u16* it16 = (u16*)name_start;
@@ -311,7 +311,7 @@ lt_err_t consume_ref(parse_ctx_t* cx, u32* out) {
 				return err;
 
 			u64 n;
-			if ((err = lt_lstr_hex_uint(number, &n)))
+			if ((err = lt_lshextou(number, &n)))
 				return err;
 			if (n > LT_U32_MAX)
 				return LT_ERR_OVERFLOW;
@@ -321,7 +321,7 @@ lt_err_t consume_ref(parse_ctx_t* cx, u32* out) {
 			if ((err = consume_digits(cx, &number)))
 				return err;
 			u64 n;
-			if ((err = lt_lstr_uint(number, &n)))
+			if ((err = lt_lstou(number, &n)))
 				return err;
 			if (n > LT_U32_MAX)
 				return LT_ERR_OVERFLOW;
@@ -333,15 +333,15 @@ lt_err_t consume_ref(parse_ctx_t* cx, u32* out) {
 		if ((err = consume_name(cx, &name)))
 			return err;
 
-		if (lt_lstr_case_eq(name, CLSTR("lt")))
+		if (lt_lseq_nocase(name, CLSTR("lt")))
 			*out = '<';
-		else if (lt_lstr_case_eq(name, CLSTR("gt")))
+		else if (lt_lseq_nocase(name, CLSTR("gt")))
 			*out = '>';
-		else if (lt_lstr_case_eq(name, CLSTR("amp")))
+		else if (lt_lseq_nocase(name, CLSTR("amp")))
 			*out = '&';
-		else if (lt_lstr_case_eq(name, CLSTR("apos")))
+		else if (lt_lseq_nocase(name, CLSTR("apos")))
 			*out = '\'';
-		else if (lt_lstr_case_eq(name, CLSTR("quot")))
+		else if (lt_lseq_nocase(name, CLSTR("quot")))
 			*out = '"';
 		else
 			return LT_ERR_INVALID_SYNTAX;
@@ -378,7 +378,7 @@ lt_err_t consume_literal(parse_ctx_t* cx, lstr_t* out) {
 	}
 
 	if (out)
-		*out = lt_lstr_from_range(literal_start, cx->it - 1);
+		*out = lt_lsfrom_range(literal_start, cx->it - 1);
 	return LT_SUCCESS;
 }
 
@@ -415,7 +415,7 @@ lt_err_t consume_procinstr(parse_ctx_t* cx) {
 		if ((err = consume(cx, NULL)))
 			return err;
 	}
-	lstr_t content = lt_lstr_from_range(data_start, cx->it);
+	lstr_t content = lt_lsfrom_range(data_start, cx->it);
 
 	lt_xml_entity_t ent = {
 			.type = LT_XML_PI,
@@ -441,7 +441,7 @@ lt_err_t consume_cdata(parse_ctx_t* cx, lstr_t* out) {
 	}
 
 	if (out)
-		*out = lt_lstr_from_range(cdata_start, cx->it);
+		*out = lt_lsfrom_range(cdata_start, cx->it);
 
 	consume_str(cx, CLSTR("]]>"));
 	return LT_SUCCESS;
@@ -607,7 +607,7 @@ lt_err_t consume_elem_content(parse_ctx_t* cx) {
 			}
 			lt_xml_entity_t ent = {
 					.type = LT_XML_CDATA,
-					.cdata = lt_lstr_from_range(start, cx->it) };
+					.cdata = lt_lsfrom_range(start, cx->it) };
 			lt_xml_add_child(cx->elem, &ent, cx->alloc);
 			continue;
 		}
@@ -671,7 +671,7 @@ lt_xml_attrib_t* lt_xml_find_attrib(lt_xml_entity_t* elem, lstr_t key) {
 	usz attrib_count = lt_xml_attrib_count(elem);
 	for (usz i = 0; i < attrib_count; ++i) {
 		lt_xml_attrib_t* attrib = &elem->elem.attribs[i];
-		if (lt_lstr_eq(attrib->key, key))
+		if (lt_lseq(attrib->key, key))
 			return attrib;
 	}
 	return NULL;
@@ -847,8 +847,8 @@ isz lt_xml_write_pretty_indent(lt_xml_entity_t* xml, lt_io_callback_t callb, voi
 
 	switch (xml->type) {
 	case LT_XML_CDATA:
-		if (lt_lstr_trim(xml->cdata).len)
-			PRINTF("%r\t<![CDATA[%S]]>\n", indent, lt_lstr_trim(xml->cdata));
+		if (lt_lstrim(xml->cdata).len)
+			PRINTF("%r\t<![CDATA[%S]]>\n", indent, lt_lstrim(xml->cdata));
 		break;
 
 	case LT_XML_ELEMENT:
