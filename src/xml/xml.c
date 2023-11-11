@@ -141,6 +141,10 @@ lt_err_t consume(parse_ctx_t* cx, u32* out) {
 		dec_char = *(u16*)cx->it;
 		cx->it += 2;
 	}
+	else {
+		LT_ASSERT_NOT_REACHED();
+		return LT_ERR_UNKNOWN;
+	}
 
 	if (out)
 		*out = dec_char;
@@ -180,6 +184,10 @@ lt_err_t read_char(parse_ctx_t* cx, u32* out) {
 	}
 	else if (cx->enc == ENC_UTF16LE) {
 		dec_char = *(u16*)cx->it;
+	}
+	else {
+		LT_ASSERT_NOT_REACHED();
+		return LT_ERR_UNKNOWN;
 	}
 
 	if (out)
