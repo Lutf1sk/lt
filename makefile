@@ -60,6 +60,7 @@ SRC = \
 	src/strstream/strstream.c \
 	src/term/term.c \
 	src/texted/texted.c \
+	src/texted/cli.c \
 	src/thread/mutex.c \
 	src/thread/spinlock.c \
 	src/thread/thread.c \

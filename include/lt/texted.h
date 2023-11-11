@@ -6,6 +6,8 @@
 #include <lt/darr.h>
 #include <lt/debug.h>
 
+// texted.c
+
 typedef usz (*lt_texted_find_visual_x_fn_t)(void* usr, lstr_t str, usz cursor_x);
 typedef usz (*lt_texted_find_cursor_x_fn_t)(void* usr, lstr_t str, usz visual_x);
 
@@ -98,5 +100,9 @@ lt_texted_iterator_t lt_texted_iterator_create(void) {
 }
 
 b8 lt_texted_iterate_occurences(lt_texted_t* ed, lstr_t str, lt_texted_iterator_t* it);
+
+// cli.c
+
+b8 lt_texted_input_term_key(lt_texted_t* ed, lt_strstream_t* clipboard, u32 key);
 
 #endif

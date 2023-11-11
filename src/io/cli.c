@@ -7,4 +7,3 @@ isz lt_printf(char* fmt, ...) {
 	va_end(list);
 	return bytes;
 }
-
