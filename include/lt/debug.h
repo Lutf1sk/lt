@@ -12,8 +12,6 @@
 void lt_print_instr_ptr(usz addr);
 void lt_stack_trace(usz skip_frames);
 
-#define LT_DEBUG
-
 typedef
 struct lt_debug_caller {
 	lstr_t lt_filename;
@@ -40,11 +38,11 @@ void lt_breakpoint(void);
 #	define LT_ASSERT_NOT_REACHED() lt_assert_unreachable_failed(LT_FILENAME, LT_LINENUM)
 #	define LT_BREAKPOINT() lt_breakpoint()
 #else
-#	define LT_DEBUG_INIT() ((void)0)
+#	define LT_DEBUG_INIT() (void)(0)
 
-#	define LT_ASSERT(x) ((void)0)
-#	define LT_ASSERT_NOT_REACHED() ((void)0)
-#	define LT_BREAKPOINT() ((void)0)
+#	define LT_ASSERT(x) (void)(x)
+#	define LT_ASSERT_NOT_REACHED() (void)(0)
+#	define LT_BREAKPOINT() (void)(0)
 #endif
 
 
