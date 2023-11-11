@@ -109,7 +109,7 @@ lt_err_t lt_spotify_request_auth_code(lt_spotify_t* spt, lt_alloc_t* alloc) {
 	if ((err = lt_socket_server(sock, 7788)))
 		goto err0;
 
-	lstr_t cmd = lt_lstr_build(alloc, "xdg-open 'https://accounts.spotify.com/authorize?response_type=code&client_id=%S&scope=%s&redirect_uri=%s'", spt->client_id, AUTH_SCOPE, AUTH_REDIRECT);
+	lstr_t cmd = lt_lsbuild(alloc, "xdg-open 'https://accounts.spotify.com/authorize?response_type=code&client_id=%S&scope=%s&redirect_uri=%s'", spt->client_id, AUTH_SCOPE, AUTH_REDIRECT);
 	if (!cmd.str)
 		fail_to(err = LT_ERR_OUT_OF_MEMORY, err0);
 	if ((err = lt_shell_exec(cmd, NULL)))
@@ -141,7 +141,7 @@ lt_err_t lt_spotify_request_auth_code(lt_spotify_t* spt, lt_alloc_t* alloc) {
 	if (sent_len < 0)
 		fail_to(err = -sent_len, err2);
 
-	spt->auth_code = lt_strdup(alloc, lt_lstr_from_range(start, it));
+	spt->auth_code = lt_strdup(alloc, lt_lsfrom_range(start, it));
 	if (!spt->auth_code.str)
 		fail_to(err = LT_ERR_OUT_OF_MEMORY, err2);
 	err = LT_SUCCESS;
@@ -175,10 +175,10 @@ lt_err_t lt_spotify_create_token(lt_spotify_t* spt, lt_alloc_t* alloc) {
 	char tmpauth_buf[512];
 	lstr_t tmpauth = LSTR(tmpauth_buf, lt_base64_encode(unenc_auth, tmpauth_buf));
 
-	lstr_t req_body = lt_lstr_build(alloc, "grant_type=authorization_code&code=%S&redirect_uri=%s&client_id=%S", spt->auth_code, AUTH_REDIRECT, spt->client_id);
+	lstr_t req_body = lt_lsbuild(alloc, "grant_type=authorization_code&code=%S&redirect_uri=%s&client_id=%S", spt->auth_code, AUTH_REDIRECT, spt->client_id);
 	if (!req_body.str)
 		fail_to(err = LT_ERR_OUT_OF_MEMORY, err1);
-	lstr_t req = lt_lstr_build(alloc,
+	lstr_t req = lt_lsbuild(alloc,
 			"POST /api/token HTTP/1.1\r\n"
 			"Host: "ACCOUNTS_HOST"\r\n"
 			"Connection: close\r\n"
@@ -211,7 +211,7 @@ lt_err_t lt_spotify_create_token(lt_spotify_t* spt, lt_alloc_t* alloc) {
 
 	if (!access_token_json || access_token_json->stype != LT_JSON_STRING)
 		fail_to(err = LT_ERR_UNKNOWN, err5);
-	if (!token_type_json || token_type_json->stype != LT_JSON_STRING || !lt_lstr_case_eq(token_type_json->str_val, CLSTR("Bearer")))
+	if (!token_type_json || token_type_json->stype != LT_JSON_STRING || !lt_lseq_nocase(token_type_json->str_val, CLSTR("Bearer")))
 		fail_to(err = LT_ERR_UNKNOWN, err5);
 	if (!refresh_token_json || refresh_token_json->stype != LT_JSON_STRING)
 		fail_to(err = LT_ERR_UNKNOWN, err5);
@@ -264,10 +264,10 @@ lt_err_t lt_spotify_refresh_token(lt_spotify_t* spt, lt_alloc_t* alloc) {
 	char tmpauth_buf[512];
 	lstr_t tmpauth = LSTR(tmpauth_buf, lt_base64_encode(unenc_auth, tmpauth_buf));
 
-	lstr_t req_body = lt_lstr_build(alloc, "grant_type=refresh_token&refresh_token=%S&", spt->refresh_token, AUTH_REDIRECT, spt->client_id);
+	lstr_t req_body = lt_lsbuild(alloc, "grant_type=refresh_token&refresh_token=%S&", spt->refresh_token, AUTH_REDIRECT, spt->client_id);
 	if (!req_body.str)
 		fail_to(err = LT_ERR_OUT_OF_MEMORY, err1);
-	lstr_t req = lt_lstr_build(alloc,
+	lstr_t req = lt_lsbuild(alloc,
 			"POST /api/token HTTP/1.1\r\n"
 			"Host: "ACCOUNTS_HOST"\r\n"
 			"Connection: close\r\n"
@@ -299,7 +299,7 @@ lt_err_t lt_spotify_refresh_token(lt_spotify_t* spt, lt_alloc_t* alloc) {
 
 	if (!access_token_json || access_token_json->stype != LT_JSON_STRING)
 		fail_to(err = LT_ERR_UNKNOWN, err5);
-	if (!token_type_json || token_type_json->stype != LT_JSON_STRING || !lt_lstr_case_eq(token_type_json->str_val, CLSTR("Bearer")))
+	if (!token_type_json || token_type_json->stype != LT_JSON_STRING || !lt_lseq_nocase(token_type_json->str_val, CLSTR("Bearer")))
 		fail_to(err = LT_ERR_UNKNOWN, err5);
 
 	lstr_t auth_token = lt_strdup(alloc, access_token_json->str_val);
