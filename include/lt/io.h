@@ -46,6 +46,7 @@ lt_err_t lt_flinkp(lstr_t link, lstr_t target);
 lt_err_t lt_fsymlinkp(lstr_t link, lstr_t target);
 
 lt_err_t lt_freadallp(lstr_t path, lstr_t* out, lt_alloc_t* alloc);
+lt_err_t lt_freadallp_utf8(lstr_t path, lstr_t* out, lt_alloc_t* alloc);
 
 isz lt_fread(lt_file_t* file, void* data, usz size);
 isz lt_fwrite(lt_file_t* file, void* data, usz size);

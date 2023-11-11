@@ -1,6 +1,6 @@
-#include <lt/utf8.h>
+#include <lt/text.h>
 
-usz lt_utf8_encode(char* out, u32 v) {
+usz lt_utf8_encode(u32 v, char* out) {
 	char* it = out;
 	if (v < 0x80) // If it is an ascii char
 		*it++ = v;
@@ -22,18 +22,7 @@ usz lt_utf8_encode(char* out, u32 v) {
 	return it - out;
 }
 
-usz lt_utf8_encode_len(u32 v) {
-	if (v < 0x80)
-		return 1;
-	else if (v < 0x800)
-		return 2;
-	else if (v < 0x10000)
-		return 3;
-	else
-		return 4;
-}
-
-usz lt_utf8_decode(u32* out, char* str) {
+usz lt_utf8_decode(char* str, u32* out) {
 	u32 c = *str;
 	if (!(c & 0x80)) {
 		*out = c;
@@ -51,17 +40,6 @@ usz lt_utf8_decode(u32* out, char* str) {
 		*out = ((c & 0x07) << 18) | ((str[1] & 0x3F) << 12) | ((str[2] & 0x3F) << 6) | (str[3] & 0x3F);
 		return 4;
 	}
-	else
-		return 1;
-}
-
-usz lt_utf8_decode_len(char v) {
-	if ((v & 0xF0) == 0xF0)
-		return 4;
-	else if ((v & 0xE0) == 0xE0)
-		return 3;
-	else if ((v & 0xC0) == 0xC0)
-		return 2;
 	else
 		return 1;
 }

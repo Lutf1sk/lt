@@ -1,14 +1,11 @@
 #include <lt/xml.h>
 #include <lt/ctype.h>
-#include <lt/utf8.h>
+#include <lt/text.h>
 #include <lt/str.h>
 #include <lt/mem.h>
 #include <lt/darr.h>
 #include <lt/io.h>
 #include <lt/strstream.h>
-
-#define ENC_UTF8 0
-#define ENC_UTF16LE 1
 
 typedef
 struct parse_ctx {
@@ -17,7 +14,6 @@ struct parse_ctx {
 	lt_xml_entity_t* elem;
 	lt_xml_err_info_t* err_info;
 	lt_alloc_t* alloc;
-	u8 enc;
 } parse_ctx_t;
 
 static LT_INLINE
@@ -55,19 +51,7 @@ b8 is_hex_digit(u32 c) {
 
 static LT_INLINE
 b8 enc_str_eq(parse_ctx_t* cx, lstr_t enc_str, lstr_t const_str) {
-	if (cx->enc == ENC_UTF8) {
-		return lt_lseq(enc_str, const_str);
-	}
-	else if (cx->enc == ENC_UTF16LE) {
-		u16 str16[64];
-		for (usz i = 0; i < const_str.len; ++i) // this is only possible because the function is never called with non-ascii characters
-			str16[i] = const_str.str[i];
-		return enc_str.len == const_str.len * 2 && memcmp(enc_str.str, str16, enc_str.len) == 0;
-	}
-	else {
-		LT_ASSERT_NOT_REACHED();
-		return 0;
-	}
+	return lt_lseq(enc_str, const_str);
 }
 
 static LT_INLINE
@@ -77,44 +61,18 @@ b8 is_eof(parse_ctx_t* cx) {
 
 static
 b8 str_pending(parse_ctx_t* cx, lstr_t str) {
-	if (cx->enc == ENC_UTF8) {
-		if (cx->it + str.len > cx->end)
-			return 0;
-		return memcmp(cx->it, str.str, str.len) == 0;
-	}
-	else if (cx->enc == ENC_UTF16LE) {
-		if (cx->it + str.len * 2 > cx->end)
-			return 0;
-		u16 str16[64];
-		for (usz i = 0; i < str.len; ++i) // this is only possible because function is never called with non-ascii characters
-			str16[i] = str.str[i];
-		return memcmp(cx->it, str16, str.len * 2) == 0;
-	}
-	else {
-		LT_ASSERT_NOT_REACHED();
+	if (cx->it + str.len > cx->end)
 		return 0;
-	}
+	return memcmp(cx->it, str.str, str.len) == 0;
 }
 
 static
 lt_err_t consume_str(parse_ctx_t* cx, lstr_t str) {
-	if (cx->enc == ENC_UTF8) {
-		if (cx->it + str.len > cx->end)
-			return LT_ERR_INVALID_SYNTAX;
-		if (memcmp(cx->it, str.str, str.len) != 0)
-			return LT_ERR_INVALID_SYNTAX;
-		cx->it += str.len;
-	}
-	else if (cx->enc == ENC_UTF16LE) {
-		if (cx->it + str.len * 2 > cx->end)
-			return LT_ERR_INVALID_SYNTAX;
-		u16 str16[64];
-		for (usz i = 0; i < str.len; ++i) // this is only possible because function is never called with non-ascii characters
-			str16[i] = str.str[i];
-		if (memcmp(cx->it, str16, str.len * 2) != 0)
-			return 0;
-		cx->it += str.len * 2;
-	}
+	if (cx->it + str.len > cx->end)
+		return LT_ERR_INVALID_SYNTAX;
+	if (memcmp(cx->it, str.str, str.len) != 0)
+		return LT_ERR_INVALID_SYNTAX;
+	cx->it += str.len;
 	return LT_SUCCESS;
 }
 
@@ -128,28 +86,16 @@ lt_err_t consume(parse_ctx_t* cx, u32* out) {
 		return LT_ERR_INVALID_SYNTAX;
 
 	u32 dec_char;
+	usz utf8_len = lt_utf8_decode_len(*cx->it);
+	if (cx->it + utf8_len > cx->end)
+		return LT_ERR_INVALID_FORMAT;
 
-	if (cx->enc == ENC_UTF8) {
-		usz utf8_len = lt_utf8_decode_len(*cx->it);
-		if (cx->it + utf8_len > cx->end)
-			return LT_ERR_INVALID_FORMAT;
-
-		lt_utf8_decode(&dec_char, cx->it);
-		cx->it += utf8_len;
-	}
-	else if (cx->enc == ENC_UTF16LE) {
-		dec_char = *(u16*)cx->it;
-		cx->it += 2;
-	}
-	else {
-		LT_ASSERT_NOT_REACHED();
-		return LT_ERR_UNKNOWN;
-	}
-
-	if (out)
-		*out = dec_char;
+	lt_utf8_decode(cx->it, &dec_char);
+	cx->it += utf8_len;
 	if (dec_char == '\n')
 		cx->line++;
+	if (out)
+		*out = dec_char;
 	return LT_SUCCESS;
 }
 
@@ -161,8 +107,7 @@ lt_err_t consume_char(parse_ctx_t* cx, u32 ch) {
 	if ((err = consume(cx, &c)))
 		return err;
 	if (c != ch)
-		return c;
-
+		return LT_ERR_INVALID_SYNTAX;
 	return LT_SUCCESS;
 }
 
@@ -171,28 +116,11 @@ lt_err_t read_char(parse_ctx_t* cx, u32* out) {
 	if (is_eof(cx))
 		return LT_ERR_INVALID_SYNTAX;
 
-	u32 dec_char;
+	usz utf8_len = lt_utf8_decode_len(*cx->it);
+	if (cx->it + utf8_len > cx->end)
+		return LT_ERR_INVALID_FORMAT;
 
-	if (cx->enc == ENC_UTF8) {
-		usz utf8_len = lt_utf8_decode_len(*cx->it);
-		if (cx->it + utf8_len > cx->end)
-			return LT_ERR_INVALID_FORMAT;
-
-		lt_utf8_decode(&dec_char, cx->it);
-		if (out)
-			*out = dec_char;
-	}
-	else if (cx->enc == ENC_UTF16LE) {
-		dec_char = *(u16*)cx->it;
-	}
-	else {
-		LT_ASSERT_NOT_REACHED();
-		return LT_ERR_UNKNOWN;
-	}
-
-	if (out)
-		*out = dec_char;
-
+	lt_utf8_decode(cx->it, out);
 	return LT_SUCCESS;
 }
 
@@ -282,16 +210,8 @@ lt_err_t consume_name(parse_ctx_t* cx, lstr_t* out) {
 		consume(cx, NULL);
 	}
 
-	if (out) {
+	if (out)
 		*out = lt_lsfrom_range(name_start, cx->it);
-		if (cx->enc == ENC_UTF16LE) {
-			out->len /= 2;
-			u16* it16 = (u16*)name_start;
-			u8* it8 = (u8*)name_start;
-			for (usz i = 0; i < out->len; ++i)
-				it8[i] = it16[i]; // !!!!!!!!!! horrible, terrible stuff. fix this.
-		}
-	}
 	return LT_SUCCESS;
 }
 
@@ -744,14 +664,8 @@ lt_err_t lt_xml_parse(lt_xml_entity_t* xml, void* data, usz size, lt_xml_err_inf
 			.line = 1,
 			.elem = xml,
 			.err_info = out_err_info,
-			.alloc = alloc,
-			.enc = ENC_UTF8 };
+			.alloc = alloc };
 	parse_ctx_t* cx = &ctx;
-
-	if (size >= 2 && *(u16*)data == 0xFEFF) {
-		cx->enc = ENC_UTF16LE;
-		cx->it += 2;
-	}
 
 	if (str_pending(cx, CLSTR("<!DOCTYPE"))) {
 		if ((err = consume_doctypedef(cx)))

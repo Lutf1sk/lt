@@ -1,6 +1,8 @@
 #include <lt/io.h>
 #include <lt/lt.h>
 #include <lt/mem.h>
+#include <lt/str.h>
+#include <lt/text.h>
 
 #include "file_def.h"
 
@@ -239,6 +241,72 @@ isz lt_fread(lt_file_t* file, void* data, usz size) {
 #else
 	LT_NOT_IMPLEMENTED();
 #endif
+}
+
+#include <lt/strstream.h>
+
+lt_err_t lt_freadallp_utf8(lstr_t path, lstr_t* out, lt_alloc_t* alloc) {
+	lt_err_t err;
+
+	lstr_t file_data;
+	if ((err = lt_freadallp(path, &file_data, alloc)))
+		return err;
+
+	if (lt_lsprefix(file_data, LT_UTF16LE_BOM)) {
+		lt_strstream_t ss;
+		if ((err = lt_strstream_create(&ss, alloc))) {
+			lt_mfree(alloc, file_data.str);
+			return err;
+		}
+
+		file_data.len &= ~1; // make sure that the length is 16-aligned
+
+		u16* it = (u16*)file_data.str, *end = (u16*)(file_data.str + file_data.len);
+		while (it < end) {
+			u16 wlo = *it++;
+			if ((wlo & 0xFC00) == 0xD800 && it < end) {
+				u16 whi = *it++;
+				u32 c = (wlo & 0x03FF) | ((whi & 0x03FF) << 10);
+				lt_strstream_writec(&ss, c);
+			}
+			else
+				lt_strstream_writec(&ss, wlo);
+		}
+
+		lt_mfree(alloc, file_data.str);
+		file_data = ss.str;
+	}
+
+	else if (lt_lsprefix(file_data, LT_UTF16BE_BOM)) {
+		lt_strstream_t ss;
+		if ((err = lt_strstream_create(&ss, alloc))) {
+			lt_mfree(alloc, file_data.str);
+			return err;
+		}
+
+		file_data.len &= ~1; // make sure that the length is 16-aligned
+
+		// !! I can't be bothered to find a file encoded in big-endian utf-16, no clue if this
+		//    actually does what it's supposed to.
+
+		u16* it = (u16*)file_data.str, *end = (u16*)(file_data.str + file_data.len);
+		while (it < end) {
+			u16 wlo = *it++;
+			if ((wlo & 0x00FC) == 0x00D8 && it < end) {
+				u16 whi = *it++;
+				u32 c = ((wlo & 0xFF03) << 10) | (whi & 0xFF03);
+				lt_strstream_writec(&ss, c);
+			}
+			else
+				lt_strstream_writec(&ss, wlo);
+		}
+
+		lt_mfree(alloc, file_data.str);
+		file_data = ss.str;
+	}
+
+	*out = file_data;
+	return LT_SUCCESS;
 }
 
 isz lt_fwrite(lt_file_t* file, void* data, usz size) {

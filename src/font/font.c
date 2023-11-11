@@ -1,6 +1,6 @@
 #include <lt/font.h>
 #include <lt/mem.h>
-#include <lt/utf8.h>
+#include <lt/text.h>
 
 lt_err_t lt_font_load(lt_font_t* font, void* data, usz len, lt_alloc_t* alloc) {
 	return lt_font_load_psf(font, data, len, alloc);
@@ -20,7 +20,7 @@ void lt_font_render(lt_font_t* font, lstr_t text, u32* buf) {
 	char* txt_it = text.str, *end = text.str + text.len;
 	for (usz i = 0; txt_it < end; ++i) {
 		u32 c = 0;
-		txt_it += lt_utf8_decode(&c, txt_it);
+		txt_it += lt_utf8_decode(txt_it, &c);
 
 		if (c >= font->glyph_count)
 			continue;

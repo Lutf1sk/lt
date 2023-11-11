@@ -1,6 +1,6 @@
 #include <lt/lt.h>
 #include <lt/term.h>
-#include <lt/utf8.h>
+#include <lt/text.h>
 
 #if defined(LT_UNIX)
 #	include <termios.h>
@@ -318,7 +318,7 @@ unescaped:
 		case 3: *++it = lt_getc();
 		case 2: *++it = lt_getc();
 		case 1:
-			lt_utf8_decode(&c, recv_buf);
+			lt_utf8_decode(recv_buf, &c);
 			return c | mod;
 		}
 	}

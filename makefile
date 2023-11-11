@@ -65,8 +65,8 @@ SRC = \
 	src/thread/thread.c \
 	src/time/sleep.c \
 	src/time/time.c \
-	src/utf8/utf8.c \
-	src/utf8/wcwidth.c \
+	src/text/utf8.c \
+	src/text/wcwidth.c \
 	src/vk/vk.c \
 	src/window/win32.c \
 	src/window/window.c \

@@ -1,4 +1,4 @@
-#include <lt/utf8.h>
+#include <lt/text.h>
 
 /*
  * This is an implementation of wcwidth() and wcswidth() (defined in
@@ -206,7 +206,7 @@ isz lt_utf8_str_width(lstr_t str) {
 	char* it = str.str, *end = it + str.len;
 	while (it < end) {
 		u32 c;
-		it += lt_utf8_decode(&c, it);
+		it += lt_utf8_decode(it, &c);
 		w += lt_glyph_width(c);
 	}
 	return w;

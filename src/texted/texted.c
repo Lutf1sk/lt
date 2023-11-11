@@ -2,7 +2,7 @@
 #include <lt/darr.h>
 #include <lt/math.h>
 #include <lt/ctype.h>
-#include <lt/utf8.h>
+#include <lt/text.h>
 #include <lt/str.h>
 #include <lt/mem.h>
 
