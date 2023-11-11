@@ -1103,8 +1103,10 @@ lt_err_t parse_decl(lt_c_parse_ctx_t* cx, u8 decl_type, lt_darr(lt_c_type_t*)* o
 			dtype = LT_CT_INT;
 		else if (length == L_LONG || length == L_LONG_LONG)
 			dtype = LT_CT_LONG;
-		else
+		else {
 			LT_ASSERT_NOT_REACHED();
+			fail("internal error"); // only exists to get rid of a warning
+		}
 
 		if (sign == S_UNSIGNED)
 			dtype += LT_CT_UNSIGNED;
@@ -1163,8 +1165,6 @@ parse_ident:
 		if (decl_type == LT_CDECL_MEMBER && base_type->type != LT_CT_STRUCT && base_type->type != LT_CT_UNION)
 			return LT_SUCCESS;
 	}
-
-	extern int asdf();
 
 	for (;;) {
 		lt_c_type_t* type;
