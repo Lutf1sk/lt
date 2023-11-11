@@ -31,7 +31,7 @@ lt_err_t lt_http_parse_response(lt_http_response_t* response, lt_io_callback_t c
 		isz res;
 		if ((res = callb(usr, &history, 1)) < 0)
 			fail_to(err = -res, err1);
-		if ((res = lt_strstream_writec(&stream, history)) < 0)
+		if ((res = lt_strstream_writec(&stream, history & 0xFF)) < 0)
 			fail_to(err = -res, err1);
 		if (history == X2CRLF)
 			break;
@@ -163,7 +163,7 @@ lt_err_t lt_http_parse_response(lt_http_response_t* response, lt_io_callback_t c
 			for (;;) {
 				if ((res = callb(usr, &history, 1)) < 0)
 					fail_to(err = -res, chunked_err1);
-				if ((res = lt_strstream_writec(&size_stream, history)) < 0)
+				if ((res = lt_strstream_writec(&size_stream, history & 0xFF)) < 0)
 					fail_to(err = -res, chunked_err1);
 				if (history == X1CRLF)
 					break;
