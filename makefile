@@ -86,7 +86,7 @@ CC_WARN := -Wall -Werror -Wno-strict-aliasing -Wno-error=unused-variable -Wno-un
 CC_FLAGS := -I./include/ -std=gnu2x -fmax-errors=3 $(CC_WARN) -mavx2 -masm=intel
 
 ifdef DEBUG
-	CC_FLAGS += -fsanitize=undefined -fsanitize=address -fno-omit-frame-pointer -O0 -g
+	CC_FLAGS += -fsanitize=undefined -fsanitize=address -fno-omit-frame-pointer -O0 -g -DLT_DEBUG=1
 else
 	CC_FLAGS += -O2
 endif
