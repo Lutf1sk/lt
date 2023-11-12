@@ -3,6 +3,7 @@
 #include <lt/mem.h>
 
 #include <dirent.h>
+#include <sys/stat.h>
 
 typedef
 struct lt_dir {
@@ -47,4 +48,41 @@ lt_dirent_t* lt_dread(lt_dir_t* dir) {
 
 	dir->ent.name = lt_lsfroms(dirent->d_name);
 	return &dir->ent;
+}
+
+lt_err_t lt_mkdir(lstr_t path) {
+	if (path.len >= LT_PATH_MAX)
+		return LT_ERR_PATH_TOO_LONG;
+	char cpath[LT_PATH_MAX];
+	memcpy(cpath, path.str, path.len);
+	cpath[path.len] = 0;
+
+	int res = mkdir(cpath, 0755);
+	if (res < 0)
+		return lt_errno();
+	return LT_SUCCESS;
+}
+
+lt_err_t lt_mkpath(lstr_t path) {
+	if (path.len >= LT_PATH_MAX)
+		return LT_ERR_PATH_TOO_LONG;
+
+	lt_err_t err;
+
+	if ((err = lt_mkdir(path)) == LT_SUCCESS)
+		return LT_SUCCESS;
+	if (err == LT_ERR_EXISTS)
+		return LT_SUCCESS;
+
+	if (err != LT_ERR_NOT_FOUND)
+		return err;
+
+	if ((err = lt_mkpath(lt_lsdirname(path))))
+		return err;
+
+	if ((err = lt_mkdir(path)) == LT_SUCCESS)
+		return LT_SUCCESS;
+	if (err == LT_ERR_EXISTS)
+		return LT_SUCCESS;
+	return err;
 }

@@ -77,6 +77,9 @@ void lt_dclose(lt_dir_t* dir, lt_alloc_t* alloc);
 
 lt_dirent_t* lt_dread(lt_dir_t* dir);
 
+lt_err_t lt_mkdir(lstr_t path);
+lt_err_t lt_mkpath(lstr_t path);
+
 // cli.c
 isz lt_printf(char* fmt, ...);
 
