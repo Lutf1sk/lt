@@ -1,5 +1,5 @@
 #include <lt/io.h>
-// #include <lt/mem.h>
+#include <lt/mem.h>
 
 isz lt_io_dummy_callb(void* usr, void* data, usz len) {
 	return len;
@@ -65,6 +65,46 @@ isz lt_io_printbq(lt_io_callback_t callb, void* usr, u64 n) {
 
 	usz len = end - it;
 	return callb(usr, it, len);
+}
+
+static LT_FLATTEN LT_INLINE
+isz lt_io_printmq(lt_io_callback_t callb, void* usr, u64 n) {
+	char buf[32] = "B";
+	usz len = 1;
+
+	isz res, size = 0;
+
+	if (n >= LT_GB(1)) {
+		memcpy(buf, ".0GiB", 5);
+		buf[1] += (n % LT_GB(1)) / (LT_GB(1) / 10);
+		len = 5;
+
+		n /= LT_GB(1);
+	}
+	else if (n >= LT_MB(1)) {
+		memcpy(buf, ".0GiB", 5);
+		buf[1] += (n % LT_MB(1)) / (LT_MB(1) / 10);
+		len = 5;
+
+		n /= LT_MB(1);
+	}
+	else if (n >= LT_KB(1)) {
+		memcpy(buf, ".0GiB", 5);
+		buf[1] += (n % LT_KB(1)) / (LT_KB(1) / 10);
+		len = 5;
+
+		n /= LT_KB(1);
+	}
+
+	if ((res = lt_io_printuq(callb, usr, n)) < 0)
+		return res;
+	size += res;
+
+	if ((res = callb(usr, buf, len)) < 0)
+		return res;
+	size += res;
+
+	return size;
 }
 
 static LT_INLINE
@@ -166,6 +206,20 @@ isz lt_io_vprintf(lt_io_callback_t callb, void* usr, char* fmt, va_list argl) {
 			default: val = 0; break;
 			}
 			written += lt_io_printbq(callb, usr, val);
+		}	break;
+
+		case 'm': {
+			u64 val;
+			c = *++it;
+			switch (c) {
+			case 'b': val = va_arg(argl, unsigned int); break;
+			case 'w': val = va_arg(argl, unsigned int); break;
+			case 'd': val = va_arg(argl, u32); break;
+			case 'q': val = va_arg(argl, u64); break;
+			case 'z': val = va_arg(argl, usz); break;
+			default: val = 0; break;
+			}
+			written += lt_io_printmq(callb, usr, val);
 		}	break;
 
 		case 'p':
