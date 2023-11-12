@@ -20,7 +20,21 @@
 	LT_ERR_OP(INTERRUPTED) \
 	LT_ERR_OP(UNEXPECTED_EOF) \
 	LT_ERR_OP(REDEFINED) \
-	LT_ERR_OP(PATH_TOO_LONG)
+	LT_ERR_OP(PATH_TOO_LONG) \
+	LT_ERR_OP(IS_DIRECTORY) \
+	LT_ERR_OP(IS_NOT_DIRECTORY) \
+	LT_ERR_OP(IS_FILE) \
+	LT_ERR_OP(EXISTS) \
+	LT_ERR_OP(INVALID_HANDLE) \
+	LT_ERR_OP(REFUSED) \
+	LT_ERR_OP(ABORTED) \
+	LT_ERR_OP(RESET) \
+	LT_ERR_OP(INVALID_ADDRESS) \
+	LT_ERR_OP(INVALID_ARGUMENT) \
+	LT_ERR_OP(NOT_CONNECTED) \
+	LT_ERR_OP(NOT_EMPTY) \
+	LT_ERR_OP(BROKEN_PIPE) \
+	LT_ERR_OP(TIMED_OUT)
 
 typedef
 enum lt_errcode {
@@ -34,5 +48,10 @@ enum lt_errcode {
 typedef u32 lt_err_t;
 
 lstr_t lt_err_str(lt_err_t err);
+
+#if defined(LT_UNIX)
+lt_err_t lt_errno_to_err(int e);
+lt_err_t lt_errno(void);
+#endif
 
 #endif
