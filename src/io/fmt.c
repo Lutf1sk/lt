@@ -7,7 +7,7 @@ isz lt_io_dummy_callb(void* usr, void* data, usz len) {
 
 static LT_FLATTEN LT_INLINE
 isz lt_io_printuq(lt_io_callback_t callb, void* usr, u64 n) {
-	char buf[32], *end = buf + sizeof(buf) - 1, *it = end;
+	char buf[32], *end = buf + sizeof(buf), *it = end - 1;
 
 	// Fill buffer backwards with the remainder of n/10
 	while (n >= 10) {
@@ -17,7 +17,7 @@ isz lt_io_printuq(lt_io_callback_t callb, void* usr, u64 n) {
 	*it = n + '0';
 
 	usz len = end - it;
-	return callb(usr, it, len + 1);
+	return callb(usr, it, len);
 }
 
 static LT_FLATTEN LT_INLINE
@@ -40,7 +40,7 @@ static char io_hex_char[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
 
 static LT_FLATTEN LT_INLINE
 isz lt_io_printhq(lt_io_callback_t callb, void* usr, u64 n) {
-	char buf[32], *end = buf + sizeof(buf) - 1, *it = end;
+	char buf[32], *end = buf + sizeof(buf), *it = end - 1;
 
 	// Fill buffer backwards with the lowest nibble of n
 	while (n > 0x0F) {
@@ -50,7 +50,21 @@ isz lt_io_printhq(lt_io_callback_t callb, void* usr, u64 n) {
 	*it = io_hex_char[n];
 
 	usz len = end - it;
-	return callb(usr, it, len + 1);
+	return callb(usr, it, len);
+}
+
+static LT_FLATTEN LT_INLINE
+isz lt_io_printbq(lt_io_callback_t callb, void* usr, u64 n) {
+	char buf[64], *end = buf + sizeof(buf), *it = end - 1;
+
+	while (n > 1) {
+		*it-- = '0' + (n & 1);
+		n >>= 1;
+	}
+	*it =  '0' + (n & 1);
+
+	usz len = end - it;
+	return callb(usr, it, len);
 }
 
 static LT_INLINE
@@ -138,6 +152,20 @@ isz lt_io_vprintf(lt_io_callback_t callb, void* usr, char* fmt, va_list argl) {
 			default: val = 0; break;
 			}
 			written += lt_io_printhq(callb, usr, val);
+		}	break;
+
+		case 'b': {
+			u64 val;
+			c = *++it;
+			switch (c) {
+			case 'b': val = va_arg(argl, unsigned int); break;
+			case 'w': val = va_arg(argl, unsigned int); break;
+			case 'd': val = va_arg(argl, u32); break;
+			case 'q': val = va_arg(argl, u64); break;
+			case 'z': val = va_arg(argl, usz); break;
+			default: val = 0; break;
+			}
+			written += lt_io_printbq(callb, usr, val);
 		}	break;
 
 		case 'p':
