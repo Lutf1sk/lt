@@ -34,6 +34,7 @@ SRC = \
 	src/img/tga.c \
 	src/io/alloc.c \
 	src/io/cli.c \
+	src/io/dir.c \
 	src/io/file.c \
 	src/io/fmt.c \
 	src/io/std.c \

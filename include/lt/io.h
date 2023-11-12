@@ -7,6 +7,21 @@
 #include <stdarg.h>
 
 typedef struct lt_file lt_file_t;
+typedef struct lt_dir lt_dir_t;
+
+typedef
+enum lt_dirent_type {
+	LT_DIRENT_FILE,
+	LT_DIRENT_DIR,
+	LT_DIRENT_SYMLINK,
+	LT_DIRENT_UNKNOWN,
+} lt_dirent_type_t;
+
+typedef
+struct lt_dirent {
+	lt_dirent_type_t type;
+	lstr_t name;
+} lt_dirent_t;
 
 // std.c
 extern lt_file_t* lt_stdout;
@@ -55,6 +70,12 @@ usz lt_fsize(lt_file_t* file);
 
 isz lt_vfprintf(lt_file_t* file, char* fmt, va_list args);
 isz lt_fprintf(lt_file_t* file, char* fmt, ...);
+
+// dir.c
+lt_dir_t* lt_dopenp(lstr_t path, lt_alloc_t* alloc);
+void lt_dclose(lt_dir_t* dir, lt_alloc_t* alloc);
+
+lt_dirent_t* lt_dread(lt_dir_t* dir);
 
 // cli.c
 isz lt_printf(char* fmt, ...);
