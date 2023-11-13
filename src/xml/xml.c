@@ -335,8 +335,7 @@ lt_err_t consume_procinstr(parse_ctx_t* cx) {
 	lstr_t target;
 	if ((err = consume_name(cx, &target)))
 		return err;
-	if ((err = consume_whitespace(cx)))
-		return err;
+	consume_whitespace(cx);
 
 	char* data_start = cx->it;
 	while (!str_pending(cx, CLSTR("?>"))) {
@@ -381,19 +380,16 @@ lt_err_t consume_doctypedef(parse_ctx_t* cx) {
 
 	if ((err = consume_str(cx, CLSTR("<!DOCTYPE"))))
 		return err;
-	if ((err = consume_whitespace(cx)))
-		return err;
+	consume_whitespace(cx);
 
 	lstr_t name;
 	if ((err = consume_name(cx, &name)))
 		return err;
-	if ((err = consume_whitespace(cx)))
-		return err;
+	consume_whitespace(cx);
 
 	// !! incomplete
 
-	if ((err = consume_whitespace(cx)))
-		return err;
+	consume_whitespace(cx);
 	if ((err = consume_str(cx, CLSTR(">"))))
 		return err;
 	return LT_SUCCESS;
@@ -414,8 +410,7 @@ lt_err_t consume_stag(parse_ctx_t* cx, b8* out_empty, lt_xml_entity_t* elem) {
 		return err;
 
 	for (;;) {
-		if ((err = consume_whitespace(cx)))
-			return err;
+		consume_whitespace(cx);
 
 		if ((err = read_char(cx, &c)))
 			return err;
@@ -426,10 +421,13 @@ lt_err_t consume_stag(parse_ctx_t* cx, b8* out_empty, lt_xml_entity_t* elem) {
 		lstr_t attr_name;
 		if ((err = consume_name(cx, &attr_name)))
 			return err;
-		if ((err = consume(cx, &c)))
+
+		consume_whitespace(cx);
+
+		if ((err = consume_char(cx, '=')))
 			return err;
-		if (c != '=')
-			return LT_ERR_INVALID_SYNTAX;
+
+		consume_whitespace(cx);
 
 		lstr_t attr_val;
 		if ((err = consume_literal(cx, &attr_val)))
@@ -467,8 +465,7 @@ lt_err_t consume_etag(parse_ctx_t* cx) {
 	lstr_t elem_name;
 	if ((err = consume_name(cx, &elem_name)))
 		return err;
-	if ((err = consume_whitespace(cx)))
-		return err;
+	consume_whitespace(cx);
 
 	if ((err = consume(cx, &c)))
 		return err;
@@ -674,7 +671,7 @@ lt_err_t lt_xml_parse(lt_xml_entity_t* xml, void* data, usz size, lt_xml_err_inf
 
 	while (!is_eof(cx)) {
 		if ((err = consume_elem_content(cx))) {
-			lt_printf("'%S'\n", LSTR(cx->it, 5));
+			lt_printf("'%S'\n", LSTR(cx->it, 10));
 			return err;
 		}
 	}
