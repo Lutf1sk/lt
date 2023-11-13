@@ -160,6 +160,39 @@ lt_err_t lt_fmovep(lstr_t from, lstr_t to) {
 	return LT_SUCCESS;
 }
 
+lt_err_t lt_fcopyp(lstr_t from, lstr_t to, void* buf, usz bufsz, lt_alloc_t* alloc) {
+	lt_err_t err;
+
+	lt_file_t* inf = lt_fopenp(from, LT_FILE_R, 0, alloc);
+	if (inf == NULL)
+		return LT_ERR_UNKNOWN;
+
+	lt_file_t* outf = lt_fopenp(to, LT_FILE_W, 0, alloc);
+	if (outf == NULL) {
+		err = LT_ERR_UNKNOWN;
+		goto err0;
+	}
+
+	isz res;
+	while ((res = lt_fread(inf, buf, bufsz))) {
+		if (res < 0) {
+			err = -res;
+			goto err1;
+		}
+		res = lt_fwrite(outf, buf, res);
+		if (res < 0) {
+			err = -res;
+			goto err1;
+		}
+	}
+
+	err = LT_SUCCESS;
+
+err1:	lt_fclose(inf, alloc);
+err0:	lt_fclose(outf, alloc);
+		return err;
+}
+
 lt_err_t lt_flinkp(lstr_t from, lstr_t to) {
 	if (from.len > LT_PATH_MAX || to.len > LT_PATH_MAX)
 		return LT_ERR_PATH_TOO_LONG;

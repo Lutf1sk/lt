@@ -57,6 +57,8 @@ b8 lt_fexistp(lstr_t path);
 lt_err_t lt_fremovep(lstr_t path);
 lt_err_t lt_fmovep(lstr_t path, lstr_t new_path);
 
+lt_err_t lt_fcopyp(lstr_t from, lstr_t to, void* buf, usz bufsz, lt_alloc_t* alloc);
+
 lt_err_t lt_flinkp(lstr_t link, lstr_t target);
 lt_err_t lt_fsymlinkp(lstr_t link, lstr_t target);
 
@@ -76,6 +78,8 @@ lt_dir_t* lt_dopenp(lstr_t path, lt_alloc_t* alloc);
 void lt_dclose(lt_dir_t* dir, lt_alloc_t* alloc);
 
 lt_dirent_t* lt_dread(lt_dir_t* dir);
+
+lt_err_t lt_dcopyp(lstr_t from, lstr_t to, void* buf, usz bufsz, lt_alloc_t* alloc);
 
 lt_err_t lt_mkdir(lstr_t path);
 lt_err_t lt_mkpath(lstr_t path);
