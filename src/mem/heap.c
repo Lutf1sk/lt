@@ -5,10 +5,8 @@
 
 static
 void* lt_libc_malloc(void* usr, usz size) {
-	if (!size) {
-		lt_werrf("libc malloc called with size 0\n");
-		size = 1;
-	}
+	if (!size)
+		size = 1; // prevent malloc from returning NULL
 	return malloc(size);
 }
 
@@ -19,10 +17,8 @@ void lt_libc_free(void* usr, void* mem) {
 
 static
 void* lt_libc_realloc(void* usr, void* mem, usz size) {
-	if (!size) {
-		lt_werrf("libc realloc called with size 0\n");
-		size = 1;
-	}
+	if (!size)
+		size = 1; // prevent realloc from returning NULL
 	return realloc(mem, size);
 }
 
