@@ -93,7 +93,7 @@ lstr_t lt_c_stmt_type_strtab[LT_CS_MAX] = {
 
 static LT_INLINE
 lstr_t str_from_tk(lt_c_parse_ctx_t* cx, lt_c_tk_t tk) {
-	return LSTR(cx->str_base + tk.str_offs, tk.len);
+	return lt_c_tk_str(cx->str_base, tk);
 }
 
 static LT_INLINE
@@ -610,6 +610,10 @@ lt_err_t parse_decl_ident(lt_c_parse_ctx_t* cx, u8 decl_type, lt_c_type_t* type_
 		*ptr = (lt_c_type_t) { .type = LT_CT_PTR };
 		*prefix_end = ptr;
 		prefix_end = &ptr->ptr.child;
+
+		while (read_type(cx) == LT_CTK_KWCONST) {
+			consume(cx, NULL); // !!
+		}
 	}
 
 	lt_c_type_t* parenth_root;
@@ -1229,7 +1233,12 @@ parse_ident:
 
 			if (read_type(cx) == LT_CTK_EQ) {
 				consume(cx, NULL);
-				if ((err = parse_new_expr(cx, 0, &initializer)))
+
+				if (read_type(cx) == LT_CTK_LBRACE) {
+					if ((err = parse_compound_literal(cx, type, &initializer)))
+						return err;
+				}
+				else if ((err = parse_new_expr(cx, 0, &initializer)))
 					return err;
 			}
 

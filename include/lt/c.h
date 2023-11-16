@@ -131,6 +131,7 @@ enum lt_c_tk_type {
 
 	LT_CTK_COMMENT,
 	LT_CTK_WHITESPACE,
+	LT_CTK_NEWLINE,
 
 	LT_CTK_MAX,
 } lt_c_tk_type_t;
@@ -138,27 +139,27 @@ enum lt_c_tk_type {
 typedef
 LT_PACKED_STRUCT(lt_c_tk) {
 	u8 type;
-	u32 len : 24;
+	u32 origin : 24;
+	u32 len;
 	u32 str_offs;
 } lt_c_tk_t;
 
-#define LT_CTK_INIT(_type, _file, _str) { .type = (_type), .file = (_file), .str = (_str) }
-#define LT_CTK(_type, _file, _str) ((lt_c_tk_t)LT_CTK_INIT(_type, _file, _str))
-
 typedef
 struct lt_c_lex_ctx {
-	char* it, *end;
 	lt_c_tk_t* tokens;
 	usz token_count;
 
-	u32 line;
+	usz* line_offsets;
+	usz line_count;
 
 	u32 err_line;
+	u32 err_col;
 	lstr_t err_str;
 } lt_c_lex_ctx_t;
 
 #define LT_C_LEX_EMIT_COMMENTS 0x01
 #define LT_C_LEX_EMIT_NEWLINES 0x02
+#define LT_C_LEX_EMIT_KEYWORDS 0x04
 
 extern lstr_t lt_c_tk_type_strtab[LT_CTK_MAX];
 
@@ -167,7 +168,14 @@ lstr_t lt_c_tk_type_str(lt_c_tk_type_t type) {
 	return lt_c_tk_type_strtab[type];
 }
 
-lt_err_t lt_c_lex(lt_c_lex_ctx_t* cx, void* data, usz len, u32 flags, lt_alloc_t* alloc);
+lt_err_t lt_c_char_literal_value(lstr_t literal, i64* out_val, lstr_t* err_str, lt_alloc_t* alloc);
+
+lt_c_tk_type_t lt_c_tk_keyword_type(char* start, char* end);
+
+lstr_t lt_c_tk_str(char* src_start, lt_c_tk_t tk);
+usz lt_c_offs_pos(usz* line_offsets, usz line_count, usz offs, usz* out_col);
+
+lt_err_t lt_c_lex(lt_c_lex_ctx_t* cx, void* data, usz len, u32 origin, u32 flags, lt_alloc_t* alloc);
 
 // preprocess.c
 
@@ -185,10 +193,15 @@ struct lt_c_define {
 
 typedef
 struct lt_c_preproc_template {
-	char* it;
-	char* end;
+	lstr_t in_file;
+	u32 line;
+
+	lstr_t from_ident;
 	lt_darr(lstr_t) params;
 	lt_darr(lstr_t) args;
+
+	char* it;
+	char* end;
 	struct lt_c_preproc_template* prev;
 } lt_c_preproc_template_t;
 
@@ -206,14 +219,20 @@ struct lt_c_preproc_ctx {
 	lstr_t* include_dirs;
 	usz include_dir_count;
 
+	char* it;
+	char* end;
 	lt_c_preproc_template_t* template;
+
 	lt_darr(lt_c_preproc_scope_t) scopes;
 	lt_darr(lstr_t) disallowed;
 
+	b8 is_condition;
+	lt_strstream_t* ss;
+
 	lstr_t file_path;
+	u32 line;
 
-	usz line;
-
+	lstr_t err_file;
 	u32 err_line;
 	lstr_t err_str;
 } lt_c_preproc_ctx_t;
