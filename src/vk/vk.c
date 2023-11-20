@@ -20,6 +20,10 @@ void lt_vk_load_instance(VkInstance inst) {
 	volkLoadInstance(inst);
 }
 
+void lt_vk_load_device(VkDevice device) {
+	volkLoadDevice(device);
+}
+
 lt_err_t lt_vk_create_window_surface(lt_window_t* win, VkInstance inst, VkAllocationCallbacks* alloc, VkSurfaceKHR* out_surface) {
 #if defined(LT_X11)
 
@@ -49,7 +53,12 @@ lt_err_t lt_vk_create_window_surface(lt_window_t* win, VkInstance inst, VkAlloca
 #endif
 }
 
-lt_err_t lt_vk_create_generic_instance(VkAllocationCallbacks* alloc, VkInstance* inst) {
+lt_err_t lt_vk_create_generic_instance(
+		VkAllocationCallbacks* alloc,
+		usz layer_count, const char* layer_names[static layer_count],
+		usz ext_count, const char* ext_names[static ext_count],
+		VkInstance* inst)
+{
 	VkApplicationInfo appinf;
 	appinf.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
 	appinf.pApplicationName = "LT Vulkan";
@@ -59,71 +68,35 @@ lt_err_t lt_vk_create_generic_instance(VkAllocationCallbacks* alloc, VkInstance*
 	appinf.apiVersion = VK_API_VERSION_1_2;
 	appinf.pNext = NULL;
 
-	const char* layer_names[] = {
-#if defined(LT_DEBUG)
-		"VK_LAYER_KHRONOS_validation",
-#endif
+	char* surface_ext_names[] = {
+		VK_KHR_SURFACE_EXTENSION_NAME,
+	#if defined LT_X11
+		VK_KHR_XCB_SURFACE_EXTENSION_NAME,
+	#elif defined(LT_WIN32)
+		VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
+	#endif
 	};
+	usz surface_ext_count = sizeof(surface_ext_names) / sizeof(*surface_ext_names);
 
-	const char* extension_names[] = {
-		"VK_KHR_surface",
-#if defined(LT_X11)
-		"VK_KHR_xcb_surface",
-#elif defined(LT_WIN32)
-		"VK_KHR_win32_surface",
-#endif
-#if defined(LT_DEBUG)
-		"VK_EXT_debug_utils"
-#endif
-	};
+	#define EXT_MAX 32
+	const char* full_ext_names[EXT_MAX];
+	usz full_ext_count = ext_count + surface_ext_count;
+
+	LT_ASSERT(full_ext_count < EXT_MAX);
+	memcpy(full_ext_names, surface_ext_names, surface_ext_count * sizeof(char*));
+	memcpy(full_ext_names + surface_ext_count, ext_names, ext_count * sizeof(char*));
 
 	VkInstanceCreateInfo cinf;
 	cinf.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 	cinf.pApplicationInfo = &appinf;
-	cinf.enabledLayerCount = sizeof(layer_names) / sizeof(*layer_names);
+	cinf.enabledLayerCount = layer_count;
 	cinf.ppEnabledLayerNames = layer_names;
-	cinf.enabledExtensionCount = sizeof(extension_names) / sizeof(*extension_names);
-	cinf.ppEnabledExtensionNames = extension_names;
+	cinf.enabledExtensionCount = full_ext_count;
+	cinf.ppEnabledExtensionNames = full_ext_names;
 	cinf.flags = 0;
 	cinf.pNext = NULL;
 
 	if (vkCreateInstance(&cinf, alloc, inst) != VK_SUCCESS)
-		return LT_ERR_UNKNOWN; // !!
-	return LT_SUCCESS;
-}
-
-static
-VkBool32 lt_vk_debug_messenger_callback(
-	VkDebugUtilsMessageSeverityFlagBitsEXT severity,
-	VkDebugUtilsMessageTypeFlagsEXT type,
-	const VkDebugUtilsMessengerCallbackDataEXT* callback_data,
-	void* user_data)
-{
-	lt_printf("VLD: %s\n\n", callback_data->pMessage);
-	return VK_FALSE;
-}
-
-lt_err_t lt_vk_create_debug_messenger(VkInstance inst, VkAllocationCallbacks* alloc, VkDebugUtilsMessengerEXT* messenger) {
-	VkDebugUtilsMessageSeverityFlagBitsEXT severity = 0;
-	severity |= VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-	severity |= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT;
-	//severity |= VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT;
-
-	VkDebugUtilsMessageTypeFlagsEXT types = 0;
-	types |= VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT;
-	types |= VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT;
-	types |= VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-
-	VkDebugUtilsMessengerCreateInfoEXT cinf;
-	cinf.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-	cinf.messageSeverity = severity;
-	cinf.messageType = types;
-	cinf.pfnUserCallback = lt_vk_debug_messenger_callback;
-	cinf.pUserData = NULL;
-	cinf.flags = 0;
-	cinf.pNext = NULL;
-
-	if (vkCreateDebugUtilsMessengerEXT(inst, &cinf, alloc, messenger) != VK_SUCCESS)
 		return LT_ERR_UNKNOWN; // !!
 	return LT_SUCCESS;
 }
