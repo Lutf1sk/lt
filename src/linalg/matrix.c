@@ -29,26 +29,30 @@ lt_mat3_t lt_m3quat(lt_quat_t q) {
 
 static
 lt_mat4_t lt_m4frustum(f32 bottom, f32 top, f32 left, f32 right, f32 near, f32 far) {
+	f32 ninv_fn = -1.0f / (far - near);
+	f32 inv_rl = 1.0f / (right - left);
+	f32 inv_tb = 1.0f / (top - bottom);
+
 	lt_mat4_t m;
-	m.data[0][0] = 2 * near / (right - left);
+	m.data[0][0] = 2.0f * near * inv_rl;
 	m.data[0][1] = 0;
 	m.data[0][2] = 0;
 	m.data[0][3] = 0;
 
 	m.data[1][0] = 0;
-	m.data[1][1] = 2 * near / (top - bottom);
+	m.data[1][1] = 2.0f * near * inv_tb;
 	m.data[1][2] = 0;
 	m.data[1][3] = 0;
 
-	m.data[2][0] = (right + left) / (right - left);
-	m.data[2][1] = (top + bottom) / (top - bottom);
-	m.data[2][2] = -(far + near) / (far - near);
+	m.data[2][0] = (right + left) * inv_rl;
+	m.data[2][1] = (top + bottom) * inv_tb;
+	m.data[2][2] = far * ninv_fn;
 	m.data[2][3] = -1;
 
 	m.data[3][0] = 0;
 	m.data[3][1] = 0;
-	m.data[3][2] = -2 * far * near / (far - near);
-	m.data[3][3] = 1;
+	m.data[3][2] = far * near * ninv_fn;
+	m.data[3][3] = 0;
 
 	return m;
 }
