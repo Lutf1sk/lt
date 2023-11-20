@@ -2,29 +2,45 @@
 #include <lt/time.h>
 
 #if defined(LT_UNIX)
-#	include <unistd.h>
+#	include <sys/time.h>
+#	include <time.h>
 
-#	define SLEEPS(x) sleep(x)
-#	define SLEEPMS(x) usleep(LT_MSEC_TO_USEC(x))
-#	define SLEEPUS(x) usleep(x)
+#	define SLEEP(x) clock_nanosleep(CLOCK_MONOTONIC, 0, &(x), NULL)
+#	define TIMESPEC struct timespec
 
 #elif defined(LT_WINDOWS)
 #	define WIN32_LEAN_AND_MEAN
 #	include <windows.h>
 
-#	define SLEEPS(x) Sleep(LT_SEC_TO_MSEC(x))
-#	define SLEEPMS(x) Sleep(x)
-#	define SLEEPUS(x) Sleep(LT_USEC_TO_MSEC(x))
+// #	define SLEEP(x) Sleep(LT_SEC_TO_MSEC(x))
+// #	define SLEEP(x) Sleep(x)
+// #	define SLEEP(x) Sleep(LT_USEC_TO_MSEC(x))
 #endif
 
+void lt_sleep_nsec(u64 nsec) {
+	TIMESPEC t;
+	t.tv_sec = 0;
+	t.tv_nsec = nsec;
+	SLEEP(t);
+}
+
 void lt_sleep_usec(u64 usec) {
-	SLEEPUS(usec);
+	TIMESPEC t;
+	t.tv_sec = 0;
+	t.tv_nsec = LT_USEC_TO_NSEC(usec);
+	SLEEP(t);
 }
 
 void lt_sleep_msec(u64 msec) {
-	SLEEPMS(msec);
+	TIMESPEC t;
+	t.tv_sec = 0;
+	t.tv_nsec = LT_MSEC_TO_NSEC(msec);
+	SLEEP(t);
 }
 
 void lt_sleep_sec(u64 sec) {
-	SLEEPS(sec);
+TIMESPEC t;
+	t.tv_sec = sec;
+	t.tv_nsec = 0;
+	SLEEP(t);
 }
