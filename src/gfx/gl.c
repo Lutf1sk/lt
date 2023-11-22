@@ -6,7 +6,7 @@
 #include <lt/mem.h>
 #include <lt/img.h>
 #include <lt/font.h>
-#include <lt/utf8.h>
+#include <lt/text.h>
 
 #define LT_LINALG_SHORTEN_NAMES
 #include <lt/linalg.h>
