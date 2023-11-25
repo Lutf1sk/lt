@@ -82,14 +82,14 @@ isz lt_io_printmq(lt_io_callback_t callb, void* usr, u64 n) {
 		n /= LT_GB(1);
 	}
 	else if (n >= LT_MB(1)) {
-		memcpy(buf, ".0GiB", 5);
+		memcpy(buf, ".0MiB", 5);
 		buf[1] += (n % LT_MB(1)) / (LT_MB(1) / 10);
 		len = 5;
 
 		n /= LT_MB(1);
 	}
 	else if (n >= LT_KB(1)) {
-		memcpy(buf, ".0GiB", 5);
+		memcpy(buf, ".0KiB", 5);
 		buf[1] += (n % LT_KB(1)) / (LT_KB(1) / 10);
 		len = 5;
 

@@ -49,3 +49,8 @@ u64 lt_hfreq_time_usec(void) {
 	return (u64)ts.tv_sec * 1000000 + (u64)ts.tv_nsec / 1000;
 }
 
+u64 lt_hfreq_time_nsec(void) {
+	TIMESTAMP ts;
+	TIME(ts);
+	return (u64)ts.tv_sec * 1000000000 + (u64)ts.tv_nsec;
+}

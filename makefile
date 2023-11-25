@@ -140,8 +140,7 @@ clean:
 
 $(BIN_PATH)/%.o: %.c makefile
 	@-mkdir -p $(BIN_PATH)/$(dir $<)
-	@$(CC) $(CC_FLAGS) -MM -MT $@ -MF $(patsubst %.o,%.deps,$@) $<
-	$(CC) $(CC_FLAGS) -c $< -o $@
+	$(CC) $(CC_FLAGS) -MD -MT $@ -MF $(patsubst %.o,%.deps,$@) -c $< -o $@
 
 -include $(DEPS)
 

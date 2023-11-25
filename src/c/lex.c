@@ -5,6 +5,8 @@
 #include <lt/debug.h>
 #include <lt/mem.h>
 #include <lt/math.h>
+#include <lt/sort.h>
+#include <lt/str.h>
 
 lt_err_t lt_c_unescape_str(lstr_t* out, lstr_t str) {
 	return LT_ERR_NOT_IMPLEMENTED;
@@ -130,6 +132,7 @@ lstr_t lt_c_tk_type_strtab[LT_CTK_MAX] = {
 
 	[LT_CTK_COMMENT]	= CLSTRI("comment"),
 	[LT_CTK_WHITESPACE]	= CLSTRI("whitespace"),
+	[LT_CTK_NEWLINE]	= CLSTRI("\\n"),
 };
 
 #define INVAL	0
@@ -144,6 +147,8 @@ lstr_t lt_c_tk_type_strtab[LT_CTK_MAX] = {
 #define OPER4	9
 #define OPER5	10
 #define DONE	11
+#define NEWL	12
+#define BSLSH	13
 #define JMP0(x) (x << 8)
 
 static u16 tkttab1[256] = {
@@ -153,8 +158,8 @@ static u16 tkttab1[256] = {
 	[','] = LT_CTK_COMMA	| JMP0(DONE),
 	[';'] = LT_CTK_SEMICOLON| JMP0(DONE),
 	['#'] = LT_CTK_HASH		| JMP0(DONE),
-	['\\']	= 0				| JMP0(DONE),
-	['?']	= LT_CTK_COLON	| JMP0(DONE),
+	['\\']= 0				| JMP0(BSLSH),
+	['?'] = LT_CTK_QUESTION	| JMP0(DONE),
 
 	['('] = LT_CTK_LPAREN	| JMP0(DONE),
 	[')'] = LT_CTK_RPAREN	| JMP0(DONE),
@@ -175,6 +180,8 @@ static u16 tkttab1[256] = {
 	['&'] = LT_CTK_AMP		| JMP0(OPER1),
 	['<'] = LT_CTK_LESSER	| JMP0(OPER2),
 	['>'] = LT_CTK_GREATER	| JMP0(OPER2),
+
+	['\n'] = LT_CTK_NEWLINE | JMP0(NEWL),
 };
 
 static u8 intab1[256];
@@ -183,7 +190,7 @@ static b8 initialized = 0;
 #include <immintrin.h>
 
 static LT_INLINE
-void initialize() {
+void initialize(void) {
 	for (usz i = 'A'; i <= 'Z'; ++i) {
 		tkttab1[i] = LT_CTK_IDENT | JMP0(IDENT);
 		intab1[i] = 1;
@@ -208,8 +215,7 @@ void initialize() {
 	initialized = 1;
 }
 
-static LT_INLINE
-lt_c_tk_type_t keyword(char* start, char* end) {
+lt_c_tk_type_t lt_c_tk_keyword_type(char* start, char* end) {
 	usz len = end - start;
 	if (len < 2)
 		return LT_CTK_IDENT;
@@ -332,10 +338,103 @@ lt_c_tk_type_t keyword(char* start, char* end) {
 	return LT_CTK_IDENT;
 }
 
-lt_err_t lt_c_lex(lt_c_lex_ctx_t* cx, void* data, usz len, u32 flags, lt_alloc_t* alloc) {
+lt_err_t lt_c_char_literal_value(lstr_t literal, i64* out_val, lstr_t* err_str, lt_alloc_t* alloc) {
+	if (literal.len <= 0) {
+		lt_aprintf(err_str, alloc, "empty character literal");
+		return LT_ERR_INVALID_SYNTAX;
+	}
+
+	char* it = literal.str, *end = it + literal.len;
+
+	if (*it != '\\') {
+		*out_val = *it++;
+	}
+	else {
+		if (++it >= end) {
+			lt_aprintf(err_str, alloc, "'\\' without trailing escape sequence");
+			return LT_ERR_INVALID_SYNTAX;
+		}
+		switch (*it++) {
+		case 'n': *out_val = '\n'; break;
+		case 't': *out_val = '\t'; break;
+		case 'v': *out_val = '\v'; break;
+		case 'b': *out_val = '\b'; break;
+		case 'r': *out_val = '\r'; break;
+		case '\'': *out_val = '\''; break;
+		case '\"': *out_val = '\"'; break;
+		case '\\': *out_val = '\\'; break;
+
+		case '0': *out_val = '\0'; break; // !! hack
+		case 'x':
+		default:
+			lt_aprintf(err_str, alloc, "unknown escape sequence '%S'", lt_lsfrom_range(literal.str, it));
+			return LT_ERR_INVALID_SYNTAX;
+		}
+	}
+
+	if (it < end) {
+		lt_aprintf(err_str, alloc, "multi character literal");
+		return LT_ERR_INVALID_SYNTAX;
+	}
+	return LT_SUCCESS;
+}
+
+lstr_t lt_c_tk_str(char* str_base, lt_c_tk_t tk) {
+	return LSTR(str_base + tk.str_offs, tk.len);
+}
+
+usz* find_offset(usz* arr, usz count, usz key) {
+	usz* start = arr;
+	usz* end = arr + count;
+
+	while (end - start > 1) {
+		usz* mid = start + ((end - start) >> 1);
+		if (*mid == key)
+			return mid;
+		if (*mid < key)
+			start = mid;
+		else
+			end = mid;
+	}
+
+	return start;
+}
+
+usz lt_c_offs_pos(usz* line_offsets, usz line_count, usz offs, usz* out_col) {
+	usz* poffs = find_offset(line_offsets, line_count, offs);
+	LT_ASSERT(poffs);
+	if (out_col)
+		*out_col = offs - *poffs;
+	return poffs - line_offsets;
+}
+
+#define fail(...) do {															\
+		lt_aprintf(&cx->err_str, alloc, __VA_ARGS__);							\
+		cx->err_line = cx->line_count - 1;										\
+		cx->err_col = (it - (char*)data) - cx->line_offsets[cx->err_line];		\
+		return LT_ERR_INVALID_SYNTAX;											\
+	} while (0)
+
+lt_err_t lt_c_lex(lt_c_lex_ctx_t* cx, void* data, usz len, u32 origin, u32 flags, lt_alloc_t* alloc) {
+	lt_err_t err;
+
+	cx->line_count = 0;
+	cx->token_count = 0;
+
+	cx->line_offsets = malloc(sizeof(usz));
+	if (!cx->line_offsets)
+		return LT_ERR_OUT_OF_MEMORY;
+	cx->line_offsets[cx->line_count++] = 0;
+
 	b8 filter_comment = 1;
+	b8 filter_newline = 1;
+	b8 emit_keywords = 0;
 	if (flags & LT_C_LEX_EMIT_COMMENTS)
 		filter_comment = 0;
+	if (flags & LT_C_LEX_EMIT_NEWLINES)
+		filter_newline = 0;
+	if (flags & LT_C_LEX_EMIT_KEYWORDS)
+		emit_keywords = 1;
 
 	if (!initialized)
 		initialize();
@@ -343,23 +442,23 @@ lt_err_t lt_c_lex(lt_c_lex_ctx_t* cx, void* data, usz len, u32 flags, lt_alloc_t
 	char* it = data;
 	char* end = it + len;
 	cx->err_str = NLSTR();
-	cx->tokens = lt_malloc(alloc, len * sizeof(lt_c_tk_t));
+
+#define TK_COUNT_INITIAL 128
+	cx->tokens = malloc(TK_COUNT_INITIAL * sizeof(lt_c_tk_t));
 	if (!cx->tokens)
 		return LT_ERR_OUT_OF_MEMORY;
 
 	__m256i ymm_newline = _mm256_set1_epi8('\n');
 	__m256i ymm_comment_end = _mm256_set1_epi16((u16)'*' | ((u16)'/' << 8));
 
-	lt_c_tk_t* out = cx->tokens;
-
 	for (;;) {
 		char c;
-		while ((u8)(c = *it) <= 32)
+		while ((u8)(c = *it) && c <= 32 && c != '\n')
 			++it;
 
 		if (it >= end) {
-			cx->token_count = out - cx->tokens;
-			cx->tokens = lt_mrealloc(alloc, cx->tokens, cx->token_count * sizeof(lt_c_tk_t));
+			cx->line_offsets = realloc(cx->line_offsets, cx->line_count * sizeof(usz));
+			cx->tokens = realloc(cx->tokens, cx->token_count * sizeof(lt_c_tk_t));
 			return LT_SUCCESS;
 		}
 
@@ -367,18 +466,20 @@ lt_err_t lt_c_lex(lt_c_lex_ctx_t* cx, void* data, usz len, u32 flags, lt_alloc_t
 		lt_c_tk_type_t type = tktabent & 0xFF;
 
 		char* start = it++;
-		static void* jmptab[] = { &&jinval, &&jident, &&jnum, &&jstr, &&jchar, &&joper0, &&joper1, &&joper2, &&joper3, &&joper4, &&joper5, &&jend };
+		static void* jmptab[] = { &&jinval, &&jident, &&jnum, &&jstr, &&jchar, &&joper0, &&joper1, &&joper2, &&joper3, &&joper4, &&joper5, &&jend, &&jnewl, &&jbslsh };
 		goto *jmptab[tktabent >> 8];
 
 	jinval:
 		--it;
-		lt_aprintf(&cx->err_str, alloc, "unknown symbol 0x%hb '%c'", c, c);
-		return LT_ERR_INVALID_SYNTAX;
+		fail("unknown symbol 0x%hb '%c'", c, c);
 
 	jident:
 		while (intab1[(u8)*it])
 			++it;
-		type = keyword(start, it);
+		if (emit_keywords)
+			type = lt_c_tk_keyword_type(start, it);
+		else
+			type = LT_CTK_IDENT;
 		goto jend;
 
 	jnum:
@@ -388,10 +489,8 @@ lt_err_t lt_c_lex(lt_c_lex_ctx_t* cx, void* data, usz len, u32 flags, lt_alloc_t
 
 	jstr:
 		while ((c = *it++) != '"') {
-			if (it >= end) {
-				lt_aprintf(&cx->err_str, alloc, "unterminated string literal");
-				return LT_ERR_INVALID_SYNTAX;
-			}
+			if (it >= end)
+				fail("unterminated string literal");
 			if (c == '\\')
 				++it;
 		}
@@ -399,10 +498,8 @@ lt_err_t lt_c_lex(lt_c_lex_ctx_t* cx, void* data, usz len, u32 flags, lt_alloc_t
 
 	jchar:
 		while ((c = *it++) != '\'') {
-			if (it >= end) {
-				lt_aprintf(&cx->err_str, alloc, "unterminated character literal");
-				return LT_ERR_INVALID_SYNTAX;
-			}
+			if (it >= end)
+				fail("unterminated character literal");
 			if (c == '\\')
 				++it;
 		}
@@ -467,14 +564,12 @@ lt_err_t lt_c_lex(lt_c_lex_ctx_t* cx, void* data, usz len, u32 flags, lt_alloc_t
 			usz count = lt_min_usz(count0, count1 - 1) - 1;
 
 			it += count;
-			if (it >= end) {
-				lt_aprintf(&cx->err_str, alloc, "unterminated multiline comment");
-				return LT_ERR_INVALID_SYNTAX;
-			}
+			if (it >= end)
+				fail("unterminated multiline comment");
 			if (count == 30)
 				goto mlcomment;
-
 			it += 2;
+
 			if (filter_comment)
 				continue;
 			goto jend;
@@ -495,8 +590,8 @@ lt_err_t lt_c_lex(lt_c_lex_ctx_t* cx, void* data, usz len, u32 flags, lt_alloc_t
 				}
 				goto slcomment;
 			}
-
 			it += __builtin_ctz(maskb);
+
 			if (filter_comment)
 				continue;
 			goto jend;
@@ -534,10 +629,41 @@ lt_err_t lt_c_lex(lt_c_lex_ctx_t* cx, void* data, usz len, u32 flags, lt_alloc_t
 		}
 		goto jend;
 
+	jnewl:
+		if (lt_is_pow2(cx->line_count)) {
+			void* new_ptr = realloc(cx->line_offsets, cx->line_count * 2 * sizeof(usz));
+			if (!new_ptr)
+				return  LT_ERR_OUT_OF_MEMORY;
+			cx->line_offsets = new_ptr;
+		}
+		cx->line_offsets[cx->line_count++] = it - (char*)data;
+
+		if (filter_newline)
+			continue;
+		type = LT_CTK_NEWLINE;
+		goto jend;
+
+	jbslsh:
+		if (*it != '\n')
+			fail("stray '\\'");
+		++it;
+		continue;
+
 	jend:
-		out->type = type;
-		out->len = it - start;
-		out->str_offs = start - (char*)data;
-		++out;
+		if (cx->token_count >= TK_COUNT_INITIAL && lt_is_pow2(cx->token_count)) {
+			void* new_ptr = realloc(cx->tokens, cx->token_count * 2 * sizeof(lt_c_tk_t));
+			if (!new_ptr)
+				return LT_ERR_OUT_OF_MEMORY;
+			cx->tokens = new_ptr;
+		}
+
+		cx->tokens[cx->token_count++] = (lt_c_tk_t) {
+				.type = type,
+				.origin = origin,
+				.len = it - start,
+				.str_offs = start - (char*)data };
 	}
+
+	LT_ASSERT_NOT_REACHED();
+	return err;
 }
