@@ -3,6 +3,9 @@
 
 // io.h
 typedef struct lt_file lt_file_t;
+typedef struct lt_dir lt_dir_t;
+typedef enum lt_dirent_type lt_dirent_type_t;
+typedef struct lt_dirent lt_dirent_t;
 
 // mem.h
 typedef struct lt_alloc lt_alloc_t;
