@@ -100,6 +100,7 @@ lt_texted_iterator_t lt_texted_iterator_create(void) {
 }
 
 b8 lt_texted_iterate_occurences(lt_texted_t* ed, lstr_t str, lt_texted_iterator_t* it);
+b8 lt_texted_iterate_occurences_bwd(lt_texted_t* ed, lstr_t str, lt_texted_iterator_t* it);
 
 // cli.c
 

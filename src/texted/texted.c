@@ -699,3 +699,29 @@ b8 lt_texted_iterate_occurences(lt_texted_t* ed, lstr_t str, lt_texted_iterator_
 	return 0;
 }
 
+b8 lt_texted_iterate_occurences_bwd(lt_texted_t* ed, lstr_t str, lt_texted_iterator_t* it) {
+	if (!str.len)
+		return 0;
+
+	isz i = lt_min_isz(it->line, lt_texted_line_count(ed) - 1), j = it->col - 1;
+	for (;;) {
+		lstr_t line_str = lt_texted_line_str(ed, i);
+
+		// Search every possible offset in the line
+		for (; j >= (isz)str.len; --j) {
+			isz wstart = j - str.len;
+
+			if (memcmp(line_str.str + wstart, str.str, str.len) == 0) {
+				it->line = i;
+				it->col = wstart;
+				return 1;
+			}
+		}
+
+		if (!(i--))
+			break;
+		j = lt_darr_count(ed->lines[i]) - 1;
+	}
+
+	return 0;
+}
