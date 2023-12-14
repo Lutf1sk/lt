@@ -451,6 +451,7 @@ lt_window_t* lt_window_create(lt_window_description_t* desc, lt_alloc_t* alloc) 
 	if (desc->type & LT_WIN_GL) {
 		glc = glXCreateContext(lt_display, vi, NULL, GL_TRUE);
 		glXMakeCurrent(lt_display, window, glc);
+		XFree(vi);
 	}
 
 	// Create lt_window structure
@@ -569,6 +570,9 @@ void handle_event(lt_window_t* win, xcb_generic_event_t* gev) {
 			lt_printf("Unhandled XCB client message\n");
 	}	break;
 
+	case XCB_GE_GENERIC:
+		break;
+
 	default:
 		lt_printf("Unhandled XCB event %ud\n", gev->response_type & ~0x80);
 		break;
@@ -673,6 +677,31 @@ void lt_window_set_fullscreen(lt_window_t* win, lt_winstate_t state) {
 
 	u32 ev_mask = XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY;
 	xcb_send_event(lt_conn, 0, lt_screen->root, ev_mask, (const char*)&ev);
+}
+
+void lt_window_set_cursor_hidden(lt_window_t* win, lt_winstate_t hidden) {
+	// Create cursor
+// 	xcb_pixmap_t cursor_pixmap = xcb_generate_id(lt_conn);
+// 	xcb_void_cookie_t pm_cookie = xcb_create_pixmap(lt_conn, lt_screen->root_depth, cursor_pixmap, window, 1, 1);
+// 	if (xcb_request_check(lt_conn, pm_cookie))
+// 		lt_werr(CLSTR("Failed to create cursor pixmap\n"));
+// 	u16 cursor_x = 0, cursor_y = 0;
+
+// 	gc = xcb_generate_id(lt_conn);
+// 	xcb_create_gc(lt_conn, gc, cursor_pixmap, 0, NULL);
+// 	u32* cursor_data = (u32[]){0};
+// 	xcb_image_create_native(lt_conn, 1, 1, XCB_FORMAT_Z_PIXMAP, lt_screen->root_depth, cursor_data, sizeof(u32), cursor_data);
+
+// 	xcb_cursor_t empty_cursor = xcb_generate_id(lt_conn);
+// 	xcb_void_cookie_t cs_cookie = xcb_create_cursor(lt_conn, empty_cursor, cursor_pixmap, XCB_NONE, 0, 0, 0, 0, 0, 0, cursor_x, cursor_y);
+// 	if (xcb_request_check(lt_conn, cs_cookie))
+// 		lt_werr(CLSTR("Failed to create cursor\n"));
+
+// 	u32 cs_mask = XCB_CW_CURSOR;
+// 	u32 cs_values = empty_cursor;
+// 	xcb_void_cookie_t cwa_cookie = xcb_change_window_attributes(lt_conn, window, cs_mask, &cs_values);
+// 	if (xcb_request_check(lt_conn, cwa_cookie))
+// 		lt_werr(CLSTR("Failed to set cursor\n"));
 }
 
 void lt_window_set_pos(lt_window_t* win, int x, int y) {

@@ -63,6 +63,11 @@ XPFN_DEF(xcb_get_atom_name_reply_t*, xcb_get_atom_name_reply, (xcb_connection_t*
 XPFN_DEF(char*, xcb_get_atom_name_name, (const xcb_get_atom_name_reply_t*));
 XPFN_DEF(int, xcb_get_atom_name_name_length, (const xcb_get_atom_name_reply_t*));
 
+XPFN_DEF(xcb_void_cookie_t, xcb_create_pixmap, (xcb_connection_t*, u8, xcb_pixmap_t, xcb_drawable_t, u16, u16));
+XPFN_DEF(xcb_void_cookie_t, xcb_create_cursor, (xcb_connection_t*, xcb_cursor_t, xcb_pixmap_t, xcb_pixmap_t, u16, u16, u16, u16, u16, u16, u16, u16));
+
+XPFN_DEF(xcb_void_cookie_t, xcb_change_window_attributes, (xcb_connection_t*, xcb_window_t, u32, const void*));
+
 // XCB-EWMH
 
 XPFN_DEF(xcb_intern_atom_cookie_t*, xcb_ewmh_init_atoms, (xcb_connection_t*, xcb_ewmh_connection_t*));
@@ -201,6 +206,9 @@ void lt_xproto_init(void) {
 		XPFN_LOAD(xcb_get_atom_name_reply);
 		XPFN_LOAD(xcb_get_atom_name_name);
 		XPFN_LOAD(xcb_get_atom_name_name_length);
+		lt_xproto_xcb_create_pixmap = lt_dynl_sym(hnd, "xcb_create_pixmap_checked");
+		lt_xproto_xcb_create_cursor = lt_dynl_sym(hnd, "xcb_create_cursor_checked");
+		lt_xproto_xcb_change_window_attributes = lt_dynl_sym(hnd, "xcb_change_window_attributes_checked");
 	}
 
 	{
