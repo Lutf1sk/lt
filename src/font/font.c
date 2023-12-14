@@ -8,7 +8,6 @@ lt_err_t lt_font_load(lt_font_t* font, void* data, usz len, lt_alloc_t* alloc) {
 
 void lt_font_destroy(lt_font_t* font, lt_alloc_t* alloc) {
 	lt_mfree(alloc, font->glyph_data);
-	lt_mfree(alloc, font);
 }
 
 void lt_font_render(lt_font_t* font, lstr_t text, u32* buf) {

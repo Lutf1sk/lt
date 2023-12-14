@@ -69,6 +69,8 @@ usz text_width(lt_gui_ctx_t* cx, lstr_t text) {
 }
 
 lt_err_t lt_gui_ctx_init(lt_gui_ctx_t* cx, lt_alloc_t* alloc) {
+	LT_ASSERT(cx->cont_max != 0);
+
 	cx->conts = lt_malloc(alloc, sizeof(lt_gui_cont_t) * cx->cont_max);
 	if (!cx->conts)
 		return LT_ERR_OUT_OF_MEMORY;
