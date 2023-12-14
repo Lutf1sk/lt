@@ -112,6 +112,15 @@ XPFN_FWD(char*, xcb_get_atom_name_name, (const xcb_get_atom_name_reply_t*));
 XPFN_FWD(int, xcb_get_atom_name_name_length, (const xcb_get_atom_name_reply_t*));
 #define xcb_get_atom_name_name_length(...) lt_xproto_xcb_get_atom_name_name_length(__VA_ARGS__)
 
+XPFN_FWD(xcb_void_cookie_t, xcb_create_pixmap, (xcb_connection_t*, u8, xcb_pixmap_t, xcb_drawable_t, u16, u16));
+#define xcb_create_pixmap(...) lt_xproto_xcb_create_pixmap(__VA_ARGS__)
+
+XPFN_FWD(xcb_void_cookie_t, xcb_create_cursor, (xcb_connection_t*, xcb_cursor_t, xcb_pixmap_t, xcb_pixmap_t, u16, u16, u16, u16, u16, u16, u16, u16));
+#define xcb_create_cursor(...) lt_xproto_xcb_create_cursor(__VA_ARGS__)
+
+XPFN_FWD(xcb_void_cookie_t, xcb_change_window_attributes, (xcb_connection_t*, xcb_window_t, u32, const void*));
+#define xcb_change_window_attributes(...) lt_xproto_xcb_change_window_attributes(__VA_ARGS__)
+
 // XCB-EWMH
 
 XPFN_FWD(xcb_intern_atom_cookie_t*, xcb_ewmh_init_atoms, (xcb_connection_t*, xcb_ewmh_connection_t*));
