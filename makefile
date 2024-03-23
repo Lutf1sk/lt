@@ -76,15 +76,14 @@ SRC = \
 	src/window/xproto.c \
 	src/xml/xml.c
 
-#ifdef WINDOWS
-#	CC = x86_64-w64-mingw32-gcc
-#	LNK = x86_64-w64-mingw32-gcc
-#endif
-
 # -----== COMPILER
 CC := cc
 CC_WARN := -Wall -Werror -Wno-strict-aliasing -Wno-error=unused-variable -Wno-unused-function -Wno-pedantic -Wno-unused-label
 CC_FLAGS := -I./include/ -std=gnu2x -fmax-errors=3 $(CC_WARN) -mavx2 -masm=intel
+
+ifdef WINDOWS
+	CC = x86_64-w64-mingw32-gcc
+endif
 
 ifdef DEBUG
 	CC_FLAGS += -fsanitize=undefined -fsanitize=address -fno-omit-frame-pointer -O0 -g -DLT_DEBUG=1
@@ -107,8 +106,12 @@ endif
 
 # -----== LINKER
 LNK := cc
-LNK_LIBS := -lpthread -ldl -lm
+LNK_LIBS :=
 LNK_FLAGS := -o $(OUT) $(LNK_LIBS)
+
+ifdef WINDOWS
+	LNK = x86_64-w64-mingw32-gcc
+endif
 
 ifdef DEBUG
 	LNK_FLAGS += -g -rdynamic

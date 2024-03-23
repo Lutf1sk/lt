@@ -4,6 +4,8 @@
 #include <lt/elf.h>
 #include <lt/ansi.h>
 
+#ifdef LT_LINUX
+
 #define __USE_GNU
 #include <signal.h>
 #include <ucontext.h>
@@ -67,3 +69,14 @@ lstr_t lt_debug_symname_at(void* ptr) {
 	return name;
 }
 
+#elif defined(LT_WINDOWS)
+
+void lt_debug_init() {
+
+}
+
+lstr_t lt_debug_symname_at(void* ptr) {
+	return CLSTR("");
+}
+
+#endif

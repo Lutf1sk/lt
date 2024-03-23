@@ -19,8 +19,10 @@ struct lt_debug_caller {
 	usz lt_linenum;
 } lt_debug_caller_t;
 
+#ifdef LT_LINUX
 extern lt_elf64_t* lt_debug_executable;
 extern usz lt_debug_load_addr;
+#endif
 
 void lt_debug_init(void);
 

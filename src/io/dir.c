@@ -2,8 +2,9 @@
 #include <lt/str.h>
 #include <lt/mem.h>
 
-#include <dirent.h>
-#include <sys/stat.h>
+#ifdef LT_LINUX
+#	include <dirent.h>
+#	include <sys/stat.h>
 
 typedef
 struct lt_dir {
@@ -11,9 +12,26 @@ struct lt_dir {
 	lt_dirent_t ent;
 } lt_dir_t;
 
+#elif defined(LT_WINDOWS)
+#	define WIN32_LEAN_AND_MEAN
+#	include <windows.h>
+
+typedef
+struct lt_dir {
+	b8 eof;
+	WIN32_FIND_DATA ffd;
+	HANDLE fhnd;
+	lt_dirent_t ent;
+} lt_dir_t;
+
+#endif
+
 lt_dir_t* lt_dopenp(lstr_t path, lt_alloc_t* alloc) {
 	if (path.len >= LT_PATH_MAX)
 		return NULL; // !! LT_ERR_PATH_TOO_LONG
+
+#ifdef LT_LINUX
+
 	char cpath[LT_PATH_MAX];
 	memcpy(cpath, path.str, path.len);
 	cpath[path.len] = 0;
@@ -27,15 +45,42 @@ lt_dir_t* lt_dopenp(lstr_t path, lt_alloc_t* alloc) {
 		lt_mfree(alloc, dir);
 		return NULL;
 	}
+
+#elif defined(LT_WINDOWS)
+
+	char cpath[LT_PATH_MAX + 2];
+	memcpy(cpath, path.str, path.len);
+	cpath[path.len] = '\\';
+	cpath[path.len + 1] = '*';
+	cpath[path.len + 2] = 0;
+
+	lt_dir_t* dir = lt_malloc(alloc, sizeof(lt_dir_t));
+	if (dir == NULL)
+		return NULL;
+
+	dir->fhnd = FindFirstFile(cpath, &dir->ffd);
+	if (dir->fhnd == INVALID_HANDLE_VALUE) {
+		lt_mfree(alloc, dir);
+		return NULL;
+	}
+
+#endif
+
 	return dir;
 }
 
 void lt_dclose(lt_dir_t* dir, lt_alloc_t* alloc) {
+#ifdef LT_LINUX
 	closedir(dir->dp);
+#elif defined(LT_WINDOWS)
+	FindClose(dir->fhnd);
+#endif
 	lt_mfree(alloc, dir);
 }
 
 lt_dirent_t* lt_dread(lt_dir_t* dir) {
+#ifdef LT_LINUX
+
 	struct dirent* dirent = readdir(dir->dp);
 	if (dirent == NULL)
 		return NULL;
@@ -48,6 +93,25 @@ lt_dirent_t* lt_dread(lt_dir_t* dir) {
 	}
 
 	dir->ent.name = lt_lsfroms(dirent->d_name);
+
+#elif defined(LT_WINDOWS)
+
+	if (dir->eof)
+		return NULL;
+
+	// u64 size = dir->ffd.nFileSizeLow | ((u64)dir->ffd.nFileSizeHigh << 32);
+
+	u32 fattrib = dir->ffd.dwFileAttributes;
+	if (fattrib & FILE_ATTRIBUTE_DIRECTORY)
+		dir->ent.type = LT_DIRENT_DIR;
+	else
+		dir->ent.type = LT_DIRENT_FILE;
+	dir->ent.name = lt_lsfroms(dir->ffd.cFileName);
+
+	dir->eof = FindNextFile(dir->fhnd, &dir->ffd) == 0;
+
+#endif
+
 	return &dir->ent;
 }
 
@@ -59,7 +123,7 @@ lt_err_t lt_dcopyp(lstr_t from, lstr_t to, void* buf, usz bufsz, lt_alloc_t* all
 
 	lt_dir_t* dir = lt_dopenp(from, alloc);
 	if (!dir)
-		return LT_ERR_UNKNOWN;
+		return LT_ERR_UNKNOWN; // !!
 
 	lt_dirent_t* dirent;
 	while ((dirent = lt_dread(dir))) {
@@ -99,9 +163,19 @@ lt_err_t lt_mkdir(lstr_t path) {
 	memcpy(cpath, path.str, path.len);
 	cpath[path.len] = 0;
 
+#ifdef LT_LINUX
+
 	int res = mkdir(cpath, 0755);
 	if (res < 0)
 		return lt_errno();
+
+#elif defined(LT_WINDOWS)
+
+	if (!CreateDirectory(cpath, NULL))
+		return LT_ERR_UNKNOWN; // !!
+
+#endif
+
 	return LT_SUCCESS;
 }
 

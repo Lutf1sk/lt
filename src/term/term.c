@@ -52,11 +52,11 @@ lt_err_t lt_term_init(lt_term_flags_t flags) {
 	if (tcflush(STDOUT_FILENO, TCIOFLUSH) < 0)
 		goto err1;
 
-	if ((flags & LT_TERM_MOUSE) && write(STDOUT_FILENO, "\x1B[?1003h", 8) < 0)
+	if ((flags & LT_TERM_MOUSE) && lt_term_write_direct("\x1B[?1003h", 8) < 0)
 		goto err1;
-	if ((flags & LT_TERM_BPASTE) && write(STDOUT_FILENO, "\x1b[?2004h", 8) < 0)
+	if ((flags & LT_TERM_BPASTE) && lt_term_write_direct("\x1b[?2004h", 8) < 0)
 		goto err1;
-	if ((flags & LT_TERM_ALTBUF) && write(STDOUT_FILENO, "\x1b[?1049h", 8) < 0)
+	if ((flags & LT_TERM_ALTBUF) && lt_term_write_direct("\x1b[?1049h", 8) < 0)
 		goto err1;
 
 	struct sigaction sact = {0};
@@ -75,11 +75,11 @@ void lt_term_restore(void) {
 	tcflush(STDOUT_FILENO, TCIOFLUSH);
 
 	if (term_flags & LT_TERM_MOUSE)
-		write(STDOUT_FILENO, "\x1B[?1003l", 8);
+		lt_term_write_direct("\x1B[?1003l", 8);
 	if (term_flags & LT_TERM_BPASTE)
-		write(STDOUT_FILENO, "\x1b[?2004l", 8);
+		lt_term_write_direct("\x1b[?2004l", 8);
 	if (term_flags & LT_TERM_ALTBUF)
-		write(STDOUT_FILENO, "\x1b[?1049l", 8);
+		lt_term_write_direct("\x1b[?1049l", 8);
 }
 
 lt_err_t lt_update_term_dimensions(void) {
@@ -325,9 +325,176 @@ unescaped:
 	return c | mod;
 }
 
-void lt_term_write_direct(char* str, usz len) {
+isz lt_term_write_direct(char* str, usz len) {
 	write(STDOUT_FILENO, str, len);
 	fsync(STDOUT_FILENO);
+	return 0;
+}
+
+#elif defined(LT_WINDOWS)
+#	include <lt/io.h>
+#	include <windows.h>
+#	include "../io/file_def.h"
+
+static lt_term_flags_t term_flags;
+static DWORD old_output_mode = 0;
+static DWORD old_input_mode = 0;
+
+u32 lt_term_width, lt_term_height;
+i32 lt_term_mouse_x, lt_term_mouse_y;
+
+lt_err_t lt_term_init(lt_term_flags_t flags) {
+	lt_err_t err;
+
+	term_flags = flags;
+
+	DWORD mode;
+	if (!GetConsoleMode(lt_stdout->hnd, &mode))
+		return LT_ERR_UNKNOWN;
+	old_output_mode = mode;
+
+	mode |= ENABLE_PROCESSED_OUTPUT;
+	mode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+	mode |= DISABLE_NEWLINE_AUTO_RETURN;
+	if (!SetConsoleMode(lt_stdout->hnd, mode))
+		return LT_ERR_UNKNOWN;
+
+	if (!GetConsoleMode(lt_stdin->hnd, &mode))
+		return LT_ERR_UNKNOWN;
+	old_input_mode = mode;
+
+	mode |= ENABLE_WINDOW_INPUT;
+	mode &= ENABLE_ECHO_INPUT;
+	mode &= ENABLE_PROCESSED_INPUT;
+	if (!SetConsoleMode(lt_stdin->hnd, mode))
+		return LT_ERR_UNKNOWN;
+
+// 	LT_TERM_ECHO	= 0x01,
+// 	LT_TERM_CANON	= 0x02,
+// 	LT_TERM_UTF8	= 0x08,
+
+	if ((flags & LT_TERM_MOUSE) && lt_term_write_direct("\x1B[?1003h", 8) < 0)
+		return LT_ERR_UNKNOWN;
+	if ((flags & LT_TERM_BPASTE) && lt_term_write_direct("\x1b[?2004h", 8) < 0)
+		return LT_ERR_UNKNOWN;
+	if ((flags & LT_TERM_ALTBUF) && lt_term_write_direct("\x1b[?1049h", 8) < 0)
+		return LT_ERR_UNKNOWN;
+
+	if ((err = lt_update_term_dimensions()))
+		return err;
+
+	return LT_SUCCESS;
+}
+
+void lt_term_restore(void) {
+	if (term_flags & LT_TERM_MOUSE)
+		lt_term_write_direct("\x1B[?1003l", 8);
+	if (term_flags & LT_TERM_BPASTE)
+		lt_term_write_direct("\x1b[?2004l", 8);
+	if (term_flags & LT_TERM_ALTBUF)
+		lt_term_write_direct("\x1b[?1049l", 8);
+
+	SetConsoleMode(lt_stdout->hnd, old_output_mode);
+	SetConsoleMode(lt_stdin->hnd, old_input_mode);
+}
+
+lt_err_t lt_update_term_dimensions(void) {
+	CONSOLE_SCREEN_BUFFER_INFO csbi;
+    if (!GetConsoleScreenBufferInfo(lt_stdout->hnd, &csbi))
+    	return LT_ERR_UNKNOWN; // !!
+    lt_term_width = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+    lt_term_height = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
+
+	return LT_SUCCESS;
+}
+
+b8 lt_term_key_available(void) {
+	return 1;
+}
+
+u32 lt_term_getkey(void) {
+	INPUT_RECORD rec;
+	DWORD read = 0;
+	if (!ReadConsoleInput(lt_stdin->hnd, &rec, 1, &read) || !read)
+		return 0;
+
+	switch (rec.EventType) {
+	case KEY_EVENT: {
+		if (!rec.Event.KeyEvent.bKeyDown)
+			return 0;
+
+		u32 mod = 0;
+		u32 event_mod = rec.Event.KeyEvent.dwControlKeyState;
+		if ((event_mod & LEFT_CTRL_PRESSED) || (event_mod & RIGHT_CTRL_PRESSED))
+			mod |= LT_TERM_MOD_CTRL;
+		if ((event_mod & LEFT_ALT_PRESSED) || (event_mod & RIGHT_ALT_PRESSED))
+			mod |= LT_TERM_MOD_ALT;
+		if (event_mod & SHIFT_PRESSED)
+			mod |= LT_TERM_MOD_SHIFT;
+
+		u32 c = rec.Event.KeyEvent.uChar.AsciiChar;
+		switch (rec.Event.KeyEvent.wVirtualKeyCode) {
+		case VK_BACK:	return LT_TERM_KEY_BSPACE | mod;
+		case VK_TAB:	return '\t' | mod;
+		case VK_RETURN:	return '\n' | mod;
+		case VK_ESCAPE:	return LT_TERM_KEY_ESC | mod;
+		case VK_PRIOR:	return LT_TERM_KEY_PAGEUP | mod;
+		case VK_NEXT:	return LT_TERM_KEY_PAGEDN | mod;
+		case VK_END:	return LT_TERM_KEY_END | mod;
+		case VK_HOME:	return LT_TERM_KEY_HOME | mod;
+		case VK_LEFT:	return LT_TERM_KEY_LEFT | mod;
+		case VK_UP:		return LT_TERM_KEY_UP | mod;
+		case VK_RIGHT:	return LT_TERM_KEY_RIGHT | mod;
+		case VK_DOWN:	return LT_TERM_KEY_DOWN | mod;
+		case VK_INSERT:	return LT_TERM_KEY_INSERT | mod;
+		case VK_DELETE:	return LT_TERM_KEY_DELETE | mod;
+		case VK_F1:		return LT_TERM_KEY_F1 | mod;
+		case VK_F2:		return LT_TERM_KEY_F2 | mod;
+		case VK_F3:		return LT_TERM_KEY_F3 | mod;
+		case VK_F4:		return LT_TERM_KEY_F4 | mod;
+		case VK_F5:		return LT_TERM_KEY_F5 | mod;
+		case VK_F6:		return LT_TERM_KEY_F6 | mod;
+		case VK_F7:		return LT_TERM_KEY_F7 | mod;
+		case VK_F8:		return LT_TERM_KEY_F8 | mod;
+		case VK_F9:		return LT_TERM_KEY_F9 | mod;
+		case VK_F10:	return LT_TERM_KEY_F10 | mod;
+		case VK_F11:	return LT_TERM_KEY_F11 | mod;
+		case VK_F12:	return LT_TERM_KEY_F12 | mod;
+		case VK_F13:	return LT_TERM_KEY_F13 | mod;
+		case VK_F14:	return LT_TERM_KEY_F14 | mod;
+		case VK_F15:	return LT_TERM_KEY_F15 | mod;
+		case VK_F16:	return LT_TERM_KEY_F16 | mod;
+		case VK_F17:	return LT_TERM_KEY_F17 | mod;
+		case VK_F18:	return LT_TERM_KEY_F18 | mod;
+		case VK_F19:	return LT_TERM_KEY_F19 | mod;
+		case VK_F20:	return LT_TERM_KEY_F20 | mod;
+		}
+
+		if (c < 32 && c) {
+			switch (c) {
+			case 0x1F:
+				return '/' | mod | LT_TERM_MOD_CTRL;
+			default: c += 64;
+			}
+		}
+		return c | mod;
+	}
+
+	case WINDOW_BUFFER_SIZE_EVENT:
+		lt_update_term_dimensions();
+		return LT_TERM_KEY_RESIZE;
+
+	case MENU_EVENT:
+	case MOUSE_EVENT:
+	case FOCUS_EVENT:
+	default:
+		return 0;
+	}
+}
+
+isz lt_term_write_direct(char* str, usz len) {
+	WriteConsole(lt_stdout->hnd, str, len, NULL, NULL);
+	return 0;
 }
 
 #endif

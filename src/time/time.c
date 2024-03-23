@@ -17,7 +17,7 @@
 #	define TIME(x) win32_gettime(&x);
 
 struct timestamp {
-	long tv_sec, tv_nsec;
+	u64 tv_sec, tv_nsec;
 };
 
 int win32_gettime(TIMESTAMP *spec) {

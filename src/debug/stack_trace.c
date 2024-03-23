@@ -4,6 +4,8 @@
 #include <lt/ansi.h>
 #include <lt/mem.h>
 
+#ifdef LT_LINUX
+
 // Hack to detect the end of the call stack
 #define MIN_FRAME (void*)0x100000
 
@@ -39,3 +41,10 @@ void lt_stack_trace(usz skip_frames) {
 	return;
 }
 
+#elif defined(LT_WINDOWS)
+
+void lt_stack_trace(usz skip_frames) {
+	lt_printf("\tstack trace unavailable for win32 build\n");
+}
+
+#endif
