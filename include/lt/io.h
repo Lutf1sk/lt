@@ -84,6 +84,16 @@ lt_err_t lt_dcopyp(lstr_t from, lstr_t to, void* buf, usz bufsz, lt_alloc_t* all
 lt_err_t lt_mkdir(lstr_t path);
 lt_err_t lt_mkpath(lstr_t path);
 
+// stat.c
+typedef
+struct lt_stat {
+	usz size;
+	lt_dirent_type_t type;
+} lt_stat_t;
+
+lt_err_t lt_statp(lstr_t path, lt_stat_t* out_stat);
+lt_err_t lt_lstatp(lstr_t path, lt_stat_t* out_stat);
+
 // cli.c
 isz lt_printf(char* fmt, ...);
 
