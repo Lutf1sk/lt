@@ -96,6 +96,9 @@ isz lt_io_printmq(lt_io_callback_t callb, void* usr, u64 n) {
 		n /= LT_KB(1);
 	}
 
+	if (buf[1] == ':') // !! this is a really dumb workaround for rounding errors, should be improved
+		buf[1] = '9';
+
 	if ((res = lt_io_printuq(callb, usr, n)) < 0)
 		return res;
 	size += res;
