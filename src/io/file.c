@@ -319,7 +319,7 @@ lt_err_t lt_freadallp_utf8(lstr_t path, lstr_t* out, lt_alloc_t* alloc) {
 
 		file_data.len &= ~1; // make sure that the length is 16-aligned
 
-		// !! I can't be bothered to find a file encoded in big-endian utf-16, no clue if this
+		// !! i can't be bothered to find a file encoded in big-endian utf-16, no clue if this
 		//    actually does what it's supposed to.
 
 		u16* it = (u16*)file_data.str, *end = (u16*)(file_data.str + file_data.len);

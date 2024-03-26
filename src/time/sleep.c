@@ -12,9 +12,8 @@
 #	define WIN32_LEAN_AND_MEAN
 #	include <windows.h>
 
-// #	define SLEEP(x) Sleep(LT_SEC_TO_MSEC(x))
-// #	define SLEEP(x) Sleep(x)
-// #	define SLEEP(x) Sleep(LT_USEC_TO_MSEC(x))
+#	define SLEEP(x) Sleep(LT_SEC_TO_MSEC((x).tv_sec) + LT_NSEC_TO_MSEC((x).tv_nsec))
+#	define TIMESPEC struct { u64 tv_sec, tv_nsec; }
 #endif
 
 void lt_sleep_nsec(u64 nsec) {
@@ -39,7 +38,7 @@ void lt_sleep_msec(u64 msec) {
 }
 
 void lt_sleep_sec(u64 sec) {
-TIMESPEC t;
+	TIMESPEC t;
 	t.tv_sec = sec;
 	t.tv_nsec = 0;
 	SLEEP(t);

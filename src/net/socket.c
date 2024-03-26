@@ -10,7 +10,7 @@
 #	include <unistd.h>
 
 #	define SOCKET int
-#	define INIT_IF_NECESSARY()
+#	define INIT_IF_NECESSARY(x)
 #elif defined(LT_WINDOWS)
 #	define WIN32_LEAN_AND_MEAN 1
 #	include <windows.h>
@@ -22,11 +22,11 @@
 static b8 ws_initialized = 0;
 static WSADATA wsadata;
 
-#	define INIT_IF_NECESSARY() { \
+#	define INIT_IF_NECESSARY(onerr) { \
 	if (!ws_initialized) { \
 		int res = WSAStartup(MAKEWORD(2, 2), &wsadata); \
 		if (res != 0) \
-			return LT_ERR_UNKNOWN; /* // !! */\
+			return onerr; /* // !! */\
 		ws_initialized = 1; \
 	} \
 }
@@ -53,7 +53,7 @@ int lt_socktype_to_native(lt_socktype_t type) {
 }
 
 lt_err_t lt_sockaddr_resolve(lstr_t addr, u16 port, lt_socktype_t type, lt_sockaddr_t* out_addr_, lt_alloc_t* alloc) {
-	INIT_IF_NECESSARY();
+	INIT_IF_NECESSARY(LT_ERR_UNKNOWN);
 	lt_sockaddr_impl_t* out_addr = (lt_sockaddr_impl_t*)out_addr_;
 
 	char* caddr = lt_lstos(addr, alloc);
@@ -82,7 +82,7 @@ lt_err_t lt_sockaddr_resolve(lstr_t addr, u16 port, lt_socktype_t type, lt_socka
 }
 
 lt_socket_t* lt_socket_create(lt_socktype_t type, lt_alloc_t* alloc) {
-	INIT_IF_NECESSARY();
+	INIT_IF_NECESSARY(NULL);
 	SOCKET fd = socket(AF_INET, lt_socktype_to_native(type), 0);
 	if (fd < 0)
 		return NULL;
