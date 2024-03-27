@@ -12,10 +12,29 @@ lt_dirent_type_t convert_filetype(int mode) {
 
 	case S_IFBLK: // block device
 	case S_IFCHR: // character device
-	case S_IFIFO: // FIFO/pipe
-	case S_IFSOCK: // socket
+		return LT_DIRENT_DEVICE;
+
+	case S_IFIFO: return LT_DIRENT_PIPE;
+	case S_IFSOCK: return LT_DIRENT_SOCKET;
 	default: return LT_DIRENT_UNKNOWN;
 	}
+}
+
+static
+lt_file_perms_t convert_permissions(int mode) {
+	lt_file_perms_t perms = 0;
+
+	// !! this is really oversimplified and needs more logic to really provide any useful data
+	if ((mode & S_IRUSR) || (mode & S_IRGRP) || (mode & S_IROTH)) {
+		perms |= LT_FILE_PERMIT_R;
+	}
+	if ((mode & S_IWUSR) || (mode & S_IWGRP) || (mode & S_IWOTH)) {
+		perms |= LT_FILE_PERMIT_W;
+	}
+	if ((mode & S_IXUSR) || (mode & S_IXGRP) || (mode & S_IXOTH)) {
+		perms |= LT_FILE_PERMIT_X;
+	}
+	return perms;
 }
 
 lt_err_t lt_statp(lstr_t path, lt_stat_t* out_stat) {
@@ -32,6 +51,7 @@ lt_err_t lt_statp(lstr_t path, lt_stat_t* out_stat) {
 	}
 
 	out_stat->type = convert_filetype(st.st_mode);
+	out_stat->permit = convert_permissions(st.st_mode);
 	out_stat->size = st.st_size;
 	return LT_SUCCESS;
 }
@@ -50,6 +70,7 @@ lt_err_t lt_lstatp(lstr_t path, lt_stat_t* out_stat) {
 	}
 
 	out_stat->type = convert_filetype(st.st_mode);
+	out_stat->permit = convert_permissions(st.st_mode);
 	out_stat->size = st.st_size;
 	return LT_SUCCESS;
 }

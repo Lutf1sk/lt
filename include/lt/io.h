@@ -14,6 +14,9 @@ enum lt_dirent_type {
 	LT_DIRENT_FILE,
 	LT_DIRENT_DIR,
 	LT_DIRENT_SYMLINK,
+	LT_DIRENT_DEVICE,
+	LT_DIRENT_PIPE,
+	LT_DIRENT_SOCKET,
 	LT_DIRENT_UNKNOWN,
 } lt_dirent_type_t;
 
@@ -46,7 +49,10 @@ enum lt_file_mode {
 
 typedef
 enum lt_file_perms {
-	LT_FILE_PERMIT_X = 1,
+	LT_FILE_PERMIT_X = 0x01,
+	LT_FILE_PERMIT_S = 0x01,
+	LT_FILE_PERMIT_R = 0x02,
+	LT_FILE_PERMIT_W = 0x04,
 } lt_file_perms_t;
 
 lt_file_t* lt_fopenp(lstr_t path, lt_file_mode_t access, lt_file_perms_t perms, lt_alloc_t* alloc);
@@ -89,6 +95,7 @@ typedef
 struct lt_stat {
 	usz size;
 	lt_dirent_type_t type;
+	lt_file_perms_t permit;
 } lt_stat_t;
 
 lt_err_t lt_statp(lstr_t path, lt_stat_t* out_stat);
