@@ -4,7 +4,7 @@
 
 #include <immintrin.h>
 
-void lt_mset16(void* dst, u16 v, usz size) {
+usz lt_mset16(void* dst, u16 v, usz size) {
 	u8* it = dst, *end = dst + size;
 	u8* end16 = (u8*)lt_align_bwd((usz)end, sizeof(u16));
 
@@ -44,9 +44,11 @@ void lt_mset16(void* dst, u16 v, usz size) {
 	// set 16-bit unaligned byte
 	if ((usz)end & 0b1)
 		*end = v;
+
+	return size;
 }
 
-void lt_mset32(void* dst, u32 v, usz size) {
+usz lt_mset32(void* dst, u32 v, usz size) {
 	u8* it = dst, *end = it + size;
 	u8* end32 = (u8*)lt_align_bwd((usz)end, sizeof(u32));
 
@@ -86,4 +88,6 @@ void lt_mset32(void* dst, u32 v, usz size) {
 
 	// set 32-bit unaligned bytes
 	memcpy(it, &v, end - end32);
+
+	return size;
 }
