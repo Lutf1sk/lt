@@ -431,7 +431,7 @@ lt_err_t write_common(const lt_http_msg_t* msg, lt_io_callback_t callb, void* us
 lt_err_t lt_http_write_request(const lt_http_msg_t* request, lt_io_callback_t callb, void* usr) {
 	u8 vmajor = LT_HTTP_VERSION_MAJOR(request->version);
 	u8 vminor = LT_HTTP_VERSION_MINOR(request->version);
-	isz res = lt_io_printf(callb, usr, "%S %S HTTP/%uw.%uw\r\n", vmajor, vminor, lt_http_method_str(request->request_method), request->request_file);
+	isz res = lt_io_printf(callb, usr, "%S %S HTTP/%uw.%uw\r\n", lt_http_method_str(request->request_method), request->request_file, vmajor, vminor);
 	if (res < 0) {
 		return -res;
 	}
