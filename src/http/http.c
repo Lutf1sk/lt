@@ -88,6 +88,7 @@ lt_err_t read_headers(lstr_t* out_headers, lt_io_callback_t callb, void* usr, lt
 		}
 
 		if (stream.str.len >= HEADER_MAX_SIZE) {
+			lt_strstream_destroy(&stream);
 			return LT_ERR_OUT_OF_RANGE;
 		}
 		history <<= 8;
