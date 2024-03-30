@@ -26,6 +26,16 @@ struct lt_dirent {
 	lstr_t name;
 } lt_dirent_t;
 
+static LT_INLINE
+isz lt_writes(lt_io_callback_t callb, void* usr, char* str) {
+	return callb(usr, str, strlen(str));
+}
+
+static LT_INLINE
+isz lt_writels(lt_io_callback_t callb, void* usr, lstr_t str) {
+	return callb(usr, str.str, str.len);
+}
+
 // std.c
 extern lt_file_t* lt_stdout;
 extern lt_file_t* lt_stderr;
