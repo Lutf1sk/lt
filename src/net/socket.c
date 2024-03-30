@@ -95,12 +95,16 @@ lt_socket_t* lt_socket_create(lt_socktype_t type, lt_alloc_t* alloc) {
 	return sock;
 }
 
-void lt_socket_destroy(lt_socket_t* sock, lt_alloc_t* alloc) {
+void lt_socket_close(lt_socket_t* sock) {
 #if defined(LT_UNIX)
 	close(sock->fd);
 #elif defined(LT_WINDOWS)
 	closesocket(sock->fd);
 #endif
+}
+
+void lt_socket_destroy(lt_socket_t* sock, lt_alloc_t* alloc) {
+	lt_socket_close(sock);
 	lt_mfree(alloc, sock);
 }
 
