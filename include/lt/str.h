@@ -83,4 +83,6 @@ char* lt_sbuild(lt_alloc_t* alloc, char* fmt, ...);
 lstr_t lt_lsdirname(lstr_t path);
 lstr_t lt_lsbasename(lstr_t path);
 
+lstr_t lt_lstrim_trailing_slash(lstr_t path);
+
 #endif

@@ -221,6 +221,20 @@ lstr_t lt_lsbasename(lstr_t path) {
 	return LSTR(path.str + sep_slash + 1, last_nonslash - sep_slash);
 }
 
+lstr_t lt_lstrim_trailing_slash(lstr_t path) {
+	if (path.len <= 1) {
+		return path;
+	}
+
+	char* end = path.str, *it = end + path.len - 1;
+	for (; it > end; --it) {
+		if (*it != '/') {
+			return lt_lsfrom_range(end, it + 1);
+		}
+	}
+	return lt_lsfrom_range(end, it + 1);
+}
+
 lstr_t lt_lsbuild(lt_alloc_t* alloc, char* fmt, ...) {
 	va_list argl;
 	va_start(argl, fmt);
