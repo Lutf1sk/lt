@@ -11,11 +11,14 @@
 
 #	define SOCKET int
 #	define INIT_IF_NECESSARY(x)
+#	define LAST_ERROR() lt_errno()
 #elif defined(LT_WINDOWS)
 #	define WIN32_LEAN_AND_MEAN 1
 #	include <windows.h>
 #	include <winsock2.h>
 #	include <ws2tcpip.h>
+
+#	define LAST_ERROR() LT_ERR_UNKNOWN
 
 #	define MSG_NOSIGNAL 0
 
@@ -39,7 +42,7 @@ struct lt_socket {
 
 typedef
 struct lt_sockaddr_impl {
-	ulong addr_len;
+	socklen_t addr_len;
 	struct sockaddr addr;
 } lt_sockaddr_impl_t;
 
@@ -53,7 +56,7 @@ int lt_socktype_to_native(lt_socktype_t type) {
 }
 
 lt_err_t lt_sockaddr_resolve(lstr_t addr, u16 port, lt_socktype_t type, lt_sockaddr_t* out_addr_, lt_alloc_t* alloc) {
-	INIT_IF_NECESSARY(LT_ERR_UNKNOWN);
+	INIT_IF_NECESSARY(LAST_ERROR());
 	lt_sockaddr_impl_t* out_addr = (lt_sockaddr_impl_t*)out_addr_;
 
 	char* caddr = lt_lstos(addr, alloc);
@@ -103,15 +106,16 @@ void lt_socket_destroy(lt_socket_t* sock, lt_alloc_t* alloc) {
 
 lt_err_t lt_socket_connect(lt_socket_t* sock, lt_sockaddr_t* addr_) {
 	lt_sockaddr_impl_t* addr = (lt_sockaddr_impl_t*)addr_;
-	if (connect(sock->fd, &addr->addr, addr->addr_len) < 0)
-		return LT_ERR_UNKNOWN; // !!
+	if (connect(sock->fd, &addr->addr, addr->addr_len) < 0) {
+		return LAST_ERROR();
+	}
 	return LT_SUCCESS;
 }
 
 lt_err_t lt_socket_server(lt_socket_t* sock, u16 port) {
 	int reuse_addr = 1;
 	if (setsockopt(sock->fd, SOL_SOCKET, SO_REUSEADDR, (void*)&reuse_addr, sizeof(int)) < 0)
-		return LT_ERR_UNKNOWN; // !!
+		return LAST_ERROR();
 
 	struct sockaddr_in server_addr;
 	server_addr.sin_family = AF_INET;
@@ -119,16 +123,24 @@ lt_err_t lt_socket_server(lt_socket_t* sock, u16 port) {
 	server_addr.sin_port = htons(port);
 
 	if (bind(sock->fd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0)
-		return LT_ERR_UNKNOWN; // !!
+		return LAST_ERROR();
 	if (listen(sock->fd, 10) < 0)
-		return LT_ERR_UNKNOWN; // !!
+		return LAST_ERROR();
 	return LT_SUCCESS;
 }
 
-lt_socket_t* lt_socket_accept(lt_socket_t* sock, lt_alloc_t* alloc) {
-	struct sockaddr_in new_addr;
-	usz new_size = sizeof(new_addr);
-	SOCKET new_fd = accept(sock->fd, (struct sockaddr*)&new_addr, (socklen_t*)&new_size);
+lt_socket_t* lt_socket_accept(lt_socket_t* sock, lt_sockaddr_t* out_addr_, lt_alloc_t* alloc) {
+	struct sockaddr new_addr, *new_addr_p = &new_addr;
+	socklen_t new_size = sizeof(new_addr), *new_size_p = &new_size;
+
+	lt_sockaddr_impl_t* out_addr = (lt_sockaddr_impl_t*)out_addr_;
+	if (out_addr) {
+		out_addr->addr_len = sizeof(out_addr->addr);
+		new_addr_p = &out_addr->addr;
+		new_size_p = &out_addr->addr_len;
+	}
+
+	SOCKET new_fd = accept(sock->fd, (struct sockaddr*)new_addr_p, (socklen_t*)new_size_p);
 	if (new_fd < 0)
 		return NULL;
 
@@ -140,12 +152,24 @@ lt_socket_t* lt_socket_accept(lt_socket_t* sock, lt_alloc_t* alloc) {
 	return new_sock;
 }
 
+u32 lt_sockaddr_ipv4_addr(lt_sockaddr_t* addr_) {
+	lt_sockaddr_impl_t* addr = (lt_sockaddr_impl_t*) addr_;
+	struct sockaddr_in* addr_in = (struct sockaddr_in*)&addr->addr;
+	return htonl(addr_in->sin_addr.s_addr);
+}
+
+u16 lt_sockaddr_ipv4_port(lt_sockaddr_t* addr_) {
+	lt_sockaddr_impl_t* addr = (lt_sockaddr_impl_t*) addr_;
+	struct sockaddr_in* addr_in = (struct sockaddr_in*)&addr->addr;
+	return ntohs(addr_in->sin_port);
+}
+
 isz lt_socket_send(lt_socket_t* sock, void* data, usz size) {
 	isz res = send(sock->fd, data, size, MSG_NOSIGNAL);
 	if (res == 0)
 		return -LT_ERR_CLOSED;
 	if (res < 0)
-		return -LT_ERR_UNKNOWN; // !!
+		return -LAST_ERROR();
 	return res;
 }
 
@@ -154,7 +178,7 @@ isz lt_socket_recv(lt_socket_t* sock, void* data, usz size) {
 	if (res == 0)
 		return -LT_ERR_CLOSED;
 	if (res < 0)
-		return -LT_ERR_UNKNOWN; // !!
+		return -LAST_ERROR();
 	return res;
 }
 
