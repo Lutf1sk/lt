@@ -416,7 +416,11 @@ lt_err_t write_common(const lt_http_msg_t* msg, lt_io_callback_t callb, void* us
 		}
 	}
 
-	isz res = lt_io_printf(callb, usr, "\r\n%S", msg->body);
+	if (!msg->body.len) {
+		return LT_SUCCESS;
+	}
+
+	isz res = lt_io_printf(callb, usr, "Content-Length: %uz\r\n\r\n%S", msg->body.len, msg->body);
 	if (res < 0) {
 		return -res;
 	}
