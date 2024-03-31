@@ -348,3 +348,13 @@ lstr_t lt_json_unescape_str(lstr_t src, lt_alloc_t* alloc) {
 	return ss.str;
 }
 
+void lt_json_free(lt_json_t* json, lt_alloc_t* alloc) {
+	for (lt_json_t* it = json, *next; it; it = next) {
+		if (it->stype == LT_JSON_OBJECT || it->stype == LT_JSON_ARRAY) {
+			lt_json_free(json, alloc);
+		}
+
+		next = it->next;
+		lt_mfree(alloc, json);
+	}
+}
