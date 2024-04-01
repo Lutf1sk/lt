@@ -18,9 +18,20 @@ lt_elf64_t* lt_debug_executable = NULL;
 usz lt_debug_load_addr;
 
 static
+void* get_ip(ucontext_t* uc) {
+#if defined(LT_X86)
+	return (void*)uc->uc_mcontext.gregs[14];
+#elif defined(LT_AMD64)
+	return (void*)uc->uc_mcontext.gregs[16];
+#elif defined(LT_IA64)
+	return (void*)uc->uc_mcontext.sc_ip;
+#endif
+}
+
+static
 void handle_sigsegv(int sig, siginfo_t* si, void* usr) {
 	ucontext_t* c = usr;
-	void* instr_addr = (void*)c->uc_mcontext.gregs[REG_RIP];
+	void* instr_addr = get_ip(c);
 
 	lt_printf(LT_FG_BRED"error"LT_RESET": segmentation fault accessing "LT_FG_BCYAN"0x%hz"LT_RESET"\n\t", (usz)si->si_addr);
 	lt_print_instr_ptr((usz)instr_addr);

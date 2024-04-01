@@ -3,28 +3,37 @@
 
 // Platform
 #if defined(__unix__)
-#	define LT_UNIX
+#	define LT_UNIX 1
 #endif
 
 #if defined(__linux__)
-#	define LT_LINUX
+#	define LT_LINUX 1
 #elif defined(_WIN32) || defined(WIN32)
-#	define LT_WINDOWS
+#	define LT_WINDOWS 1
 #else
 #	error Unsupported platform
 #endif
 
 // Compiler
 #if defined(__clang__)
-#	define LT_CLANG
+#	define LT_CLANG 1
 #elif defined(__GNUC__) || defined(__GNUG__)
-#	define LT_GCC
+#	define LT_GCC 1
 #elif defined(_MSC_VER)
-#	define LT_MSVC
+#	define LT_MSVC 1
 #elif defined(__LTCC__)
-#	define LT_LTCC
+#	define LT_LTCC 1
 #else
 #	error Unsupported compiler
+#endif
+
+// Architecture
+#if defined(__i386__)
+#	define LT_X86 1
+#elif defined(__X86_64__) || defined(__x86_64__)
+#	define LT_AMD64 1
+#elif defined(__ia64__)
+#	define LT_IA64 1
 #endif
 
 // AVX
