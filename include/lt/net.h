@@ -23,11 +23,15 @@ struct lt_sockaddr {
 lt_err_t lt_sockaddr_resolve(lstr_t addr, u16 port, lt_socktype_t type, lt_sockaddr_t* out_addr_, lt_alloc_t* alloc);
 
 lt_socket_t* lt_socket_create(lt_socktype_t type, lt_alloc_t* alloc);
+void lt_socket_close(lt_socket_t* sock);
 void lt_socket_destroy(lt_socket_t* sock, lt_alloc_t* alloc);
 
-lt_err_t lt_socket_connect(lt_socket_t* sock, lt_sockaddr_t* addr);
+lt_err_t lt_socket_connect(lt_socket_t* sock, const lt_sockaddr_t* addr);
 lt_err_t lt_socket_server(lt_socket_t* sock, u16 port);
-lt_socket_t* lt_socket_accept(lt_socket_t* sock, lt_alloc_t* alloc);
+lt_socket_t* lt_socket_accept(lt_socket_t* sock, lt_sockaddr_t* out_addr_, lt_alloc_t* alloc);
+
+u32 lt_sockaddr_ipv4_addr(lt_sockaddr_t* addr_);
+u16 lt_sockaddr_ipv4_port(lt_sockaddr_t* addr_);
 
 isz lt_socket_send(lt_socket_t* sock, void* data, usz size);
 isz lt_socket_recv(lt_socket_t* sock, void* data, usz size);

@@ -47,7 +47,7 @@ struct lt_conf_err_info {
 #define LT_CONF_ERR_INFO_INIT(e, s) { (e), (s) }
 #define LT_CONF_ERR_INFO(e, s) ((lt_conf_err_info_t)LT_CONF_ERR_INFO_INIT((e), (s)))
 
-#define LT_CONF_INIT(stype, key, ...) { (stype), (key), 0, __VA_ARGS__ }
+#define LT_CONF_INIT(stype, key, ...) { (stype), (key), __VA_ARGS__ }
 #define LT_CONF(stype, key, ...) ((lt_conf_t)LT_CONF_INIT(stype, key, __VA_ARGS__))
 
 lt_err_t lt_conf_add_child(lt_conf_t* cf, lt_conf_t* child);

@@ -18,36 +18,72 @@ void lt_hashtab_free(lt_hashtab_t* htab, lt_alloc_t* alloc);
 
 void lt_hashtab_insert(lt_hashtab_t* htab, u32 hash, void* val, lt_alloc_t* alloc);
 
-#define LT_HASHTAB_FIND_IMPL(htab, hash, it, cond) { \
-	u32 _idx = hash & LT_HASHTAB_MASK; \
-	usz _count = (htab)->counts[_idx]; \
-	void** _vals = (htab)->values[_idx]; \
-	if (_count == 1) { \
-		it = (void*)_vals; \
-		if (cond) \
-			return (void*)_vals; \
-		return NULL; \
-	} \
-	\
-	for (usz _i = 0; _i < _count; ++_i) { \
-		void* _val = _vals[_i]; \
-		it = _val; \
-		if (cond) \
-			return (void*)_val; \
-	} \
-	\
-	return NULL; \
-}
+typedef
+struct lt_hashtab_iterator {
+	u32 i, j;
+	void* elem;
+} lt_hashtab_iterator_t;
 
 static LT_INLINE
-u32 lt_hash(void* _mem, usz size) {
-	u8* mem = _mem;
+void* lt_hashtab_next(lt_hashtab_t* tab, lt_hashtab_iterator_t* it) {
+	while (it->i < LT_HASHTAB_SIZE) {
+		usz count = tab->counts[it->i];
+		if (count == 1) {
+			return tab->values[it->i++];
+		}
+
+		if (it->j < count) {
+			return tab->values[it->i][it->j++];
+		}
+
+		++it->i;
+		it->j = 0;
+	}
+
+	return NULL;
+}
+
+#define lt_foreach_hashtab_entry(T, ent, tab) \
+	for (lt_hashtab_iterator_t it = {0}; (it.elem = lt_hashtab_next((tab), &it)); ) \
+		for (T* ent = it.elem; ent; ent = 0)
+
+#define LT_HASHTAB_FIND_BODY(T, is_equal)	\
+	u32 idx = hash & LT_HASHTAB_MASK;		\
+	usz count = (htab)->counts[idx];		\
+	void** vals = (htab)->values[idx];		\
+	if (count == 1) {						\
+		if (is_equal(key, (T*)vals))		\
+			return (T*)vals;				\
+		return NULL;						\
+	}										\
+											\
+	for (usz i = 0; i < count; ++i) {		\
+		if (is_equal(key, (T*)vals[i]))		\
+			return vals[i];					\
+	}										\
+											\
+	return NULL;
+
+#define LT_DEFINE_HASHTAB_FIND_FUNC(T, Tkey, name, is_equal)	\
+	T* name(lt_hashtab_t* htab, u32 hash, Tkey key) {			\
+		LT_HASHTAB_FIND_BODY(T, is_equal)						\
+	}
+
+
+static LT_INLINE
+u32 lt_hash(void* mem_, usz size) {
+	u8* mem = mem_;
 	u32 hash = size;
 
 	for (usz i = 0; i < size; ++i)
 		hash ^= lt_rotl32(hash, 7) ^ mem[i];
 
 	return hash;
+}
+
+static LT_INLINE
+u32 lt_hashls(lstr_t str) {
+	return lt_hash(str.str, str.len);
 }
 
 #endif

@@ -64,6 +64,12 @@ lt_err_t lt_thread_continue(lt_thread_t* thread) {
 	return LT_SUCCESS;
 }
 
+lt_err_t lt_thread_cancel(lt_thread_t* thread) {
+	if (pthread_cancel(thread->pthread))
+		return LT_ERR_UNKNOWN;
+	return LT_SUCCESS;
+}
+
 #elif defined(LT_WINDOWS)
 #	define WIN32_LEAN_AND_MEAN 1
 #	include <windows.h>

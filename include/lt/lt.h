@@ -53,6 +53,9 @@
 #define LT_LINENUM ((usz)__LINE__)
 #define LT_FUNCTION CLSTR((char*)__func__)
 
+#define LT_CONTAINER_OF(type, member, ptr) ((type*)((u8*)(ptr) - offsetof((type), (member))))
+#define LT_ARRAY_COUNT(array) (sizeof(array) / sizeof(*array))
+
 // Attributes
 #if defined(LT_CLANG) || defined(LT_GCC)
 #	define ATTRIB(a) __attribute__((a))
@@ -85,8 +88,9 @@
 #	define LT_NONNULL
 #endif
 
-// Better strings that double as string views
 #include <lt/primitives.h>
+
+// Better strings that double as string views
 
 typedef
 struct lstr {

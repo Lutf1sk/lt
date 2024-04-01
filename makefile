@@ -37,6 +37,7 @@ SRC = \
 	src/io/dir.c \
 	src/io/file.c \
 	src/io/fmt.c \
+	src/io/stat.c \
 	src/io/std.c \
 	src/io/str.c \
 	src/json/json.c \

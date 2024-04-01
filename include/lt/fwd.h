@@ -14,6 +14,7 @@ typedef struct lt_pool lt_pool_t;
 
 // net.h
 typedef struct lt_socket lt_socket_t;
+typedef struct lt_sockaddr lt_sockaddr_t;
 typedef struct lt_sockstream lt_sockstream_t;
 
 // window.h
@@ -24,7 +25,7 @@ typedef struct lt_thread lt_thread_t;
 typedef struct lt_mutex lt_mutex_t;
 
 // arg.h
-typedef struct lt_arg lt_arg_t;
+typedef struct lt_arg_iterator lt_arg_iterator_t;
 
 // conf.h
 typedef struct lt_conf lt_conf_t;
@@ -91,7 +92,7 @@ typedef struct lt_audio lt_audio_t;
 typedef struct lt_ssl_connection lt_ssl_connection_t;
 
 // http.h
-typedef struct lt_http_response lt_http_response_t;
+typedef struct lt_http_msg lt_http_msg_t;
 
 // lpc.h
 typedef struct lt_lpc_expr lt_lpc_expr_t;

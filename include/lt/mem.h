@@ -16,18 +16,28 @@ extern void* malloc(usz size);
 extern void* realloc(void* addr, usz size);
 extern void free(void* addr);
 
+// custom
+
 static LT_INLINE
-void lt_mzero(void* dst, usz size) {
+usz lt_mcopy(void* dst, const void* src, usz size) {
+	memcpy(dst, src, size);
+	return size;
+}
+
+static LT_INLINE
+usz lt_mzero(void* dst, usz size) {
 	memset(dst, 0, size);
+	return size;
 }
 
 static LT_INLINE
-void lt_mset8(void* dst, u8 v, usz size) {
+usz lt_mset8(void* dst, u8 v, usz size) {
 	memset(dst, v, size);
+	return size;
 }
 
-void lt_mset16(void* dst, u16 v, usz size);
-void lt_mset32(void* dst, u32 v, usz size);
+usz lt_mset16(void* dst, u16 v, usz size);
+usz lt_mset32(void* dst, u32 v, usz size);
 
 // page_size.c
 extern usz (*lt_get_pagesize)(void);

@@ -17,6 +17,8 @@ lt_err_t lt_thread_kill(lt_thread_t* thread);
 lt_err_t lt_thread_stop(lt_thread_t* thread);
 lt_err_t lt_thread_continue(lt_thread_t* thread);
 
+lt_err_t lt_thread_cancel(lt_thread_t* thread);
+
 // spinlock.c
 typedef
 struct lt_spinlock {

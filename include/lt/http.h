@@ -32,24 +32,42 @@ enum lt_http_method {
 #undef LT_HTTP_METHOD_OP
 } lt_http_method_t;
 
+#define LT_HTTP_ENC_NONE 0
+#define LT_HTTP_ENC_UNKNOWN 1
+#define LT_HTTP_ENC_CHUNKED 2
+
 typedef
-struct lt_http_response {
+struct lt_http_msg {
 	lstr_t str;
 
 	u16 version;
-	u16 status_code;
-	lstr_t status_msg;
+	u16 transfer_enc;
 
-	lt_darr(lstr_t) keys;
-	lstr_t* vals;
-	usz entry_count;
+	u64 response_status_code;
+	lstr_t response_status_msg;
+
+	u64 request_method;
+	lstr_t request_file;
+
+	lstr_t* headers;
+	lstr_t* header_vals;
+	usz header_count;
 
 	lstr_t body;
-} lt_http_response_t;
+} lt_http_msg_t;
 
 lstr_t lt_http_method_str(lt_http_method_t method);
 
-lt_err_t lt_http_parse_response(lt_http_response_t* response, lt_io_callback_t callb, void* usr, lt_alloc_t* alloc);
-void lt_http_response_destroy(lt_http_response_t* response, lt_alloc_t* alloc);
+lt_err_t lt_http_msg_create(lt_http_msg_t* out_msg, lt_alloc_t* alloc);
+void lt_http_msg_destroy(const lt_http_msg_t* msg, lt_alloc_t* alloc);
+
+lt_err_t lt_http_add_header(lt_http_msg_t* msg, lstr_t key, lstr_t val);
+lstr_t* lt_http_find_header(const lt_http_msg_t* msg, lstr_t key);
+
+lt_err_t lt_http_parse_request(lt_http_msg_t* out_request, lt_io_callback_t callb, void* usr, lt_alloc_t* alloc);
+lt_err_t lt_http_parse_response(lt_http_msg_t* out_response, lt_io_callback_t callb, void* usr, lt_alloc_t* alloc);
+
+lt_err_t lt_http_write_request(const lt_http_msg_t* request, lt_io_callback_t callb, void* usr);
+lt_err_t lt_http_write_response(const lt_http_msg_t* response, lt_io_callback_t callb, void* usr);
 
 #endif
