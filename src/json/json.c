@@ -275,24 +275,63 @@ lt_json_t* lt_json_find_child(lt_json_t* json, lstr_t key) {
 	return NULL;
 }
 
-u64 lt_json_uint_val(lt_json_t* json) {
+static LT_INLINE
+lt_json_t* find_child_of_object(lt_json_t* parent, lstr_t key) {
+	if (!parent || parent->stype != LT_JSON_OBJECT) {
+		return NULL;
+	}
+	return lt_json_find_child(parent, key);
+}
+
+u64 lt_json_uint_or_default(lt_json_t* parent, lstr_t key, u64 otherwise) {
+	lt_json_t* child = find_child_of_object(parent, key);
 	u64 u;
-	lt_lstou(json->str_val, &u);
+	if (!child || child->stype != LT_JSON_NUMBER || lt_lstou(child->str_val, &u) != LT_SUCCESS) {
+		return otherwise;
+	}
 	return u;
 }
 
-i64 lt_json_int_val(lt_json_t* json) {
-	u64 i;
-	lt_lstoi(json->str_val, &i);
+i64 lt_json_int_or_default(lt_json_t* parent, lstr_t key, i64 otherwise) {
+	lt_json_t* child = find_child_of_object(parent, key);
+	i64 i;
+	if (!child || child->stype != LT_JSON_NUMBER || lt_lstoi(child->str_val, &i) != LT_SUCCESS) {
+		return otherwise;
+	}
 	return i;
 }
 
-// f64 lt_json_float_val(lt_json_t* json) {
-// 	return lt_lstr_float(json->str_val);
-// }
+f64 lt_json_float_or_default(lt_json_t* parent, lstr_t key, f64 otherwise) {
+	lt_json_t* child = find_child_of_object(parent, key);
+	f64 f;
+	if (!child || child->stype != LT_JSON_NUMBER || lt_lstof(child->str_val, &f) != LT_SUCCESS) {
+		return otherwise;
+	}
+	return f;
+}
 
-b8 lt_json_bool_val(lt_json_t* json) {
-	return lt_lseq(json->str_val, CLSTR("true"));
+b8 lt_json_bool_or_default(lt_json_t* parent, lstr_t key, b8 otherwise) {
+	lt_json_t* child = find_child_of_object(parent, key);
+	if (!child || child->stype != LT_JSON_BOOL) {
+		return otherwise;
+	}
+	return lt_lseq(child->str_val, CLSTR("true"));
+}
+
+lstr_t lt_json_str_or_default(lt_json_t* parent, lstr_t key, lstr_t otherwise) {
+	lt_json_t* child = find_child_of_object(parent, key);
+	if (!child || child->stype != LT_JSON_STRING) {
+		return otherwise;
+	}
+	return child->str_val;
+}
+
+lstr_t lt_json_str_val_or_default(lt_json_t* parent, lstr_t key, lstr_t otherwise) {
+	lt_json_t* child = find_child_of_object(parent, key);
+	if (!child) {
+		return otherwise;
+	}
+	return child->str_val;
 }
 
 lstr_t lt_json_escape_str(lstr_t src, lt_alloc_t* alloc) {
@@ -351,10 +390,10 @@ lstr_t lt_json_unescape_str(lstr_t src, lt_alloc_t* alloc) {
 void lt_json_free(lt_json_t* json, lt_alloc_t* alloc) {
 	for (lt_json_t* it = json, *next; it; it = next) {
 		if (it->stype == LT_JSON_OBJECT || it->stype == LT_JSON_ARRAY) {
-			lt_json_free(json, alloc);
+			lt_json_free(it->child, alloc);
 		}
 
 		next = it->next;
-		lt_mfree(alloc, json);
+		lt_mfree(alloc, it);
 	}
 }

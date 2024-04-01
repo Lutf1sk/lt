@@ -32,16 +32,21 @@ struct lt_json {
 	lstr_t key;
 } lt_json_t;
 
+#define lt_foreach_json_child(it, parent) \
+		for (lt_json_t* it = (parent)->child; it; it = it->next)
+
 lt_json_t* lt_json_parse(lt_alloc_t* alloc, char* data, usz len);
 
 void lt_json_print(lt_file_t* file, lt_json_t* json);
 
 lt_json_t* lt_json_find_child(lt_json_t* json, lstr_t key);
 
-u64 lt_json_uint_val(lt_json_t* json);
-i64 lt_json_int_val(lt_json_t* json);
-f64 lt_json_float_val(lt_json_t* json);
-b8 lt_json_bool_val(lt_json_t* json);
+u64 lt_json_uint_or_default(lt_json_t* parent, lstr_t key, u64 otherwise);
+i64 lt_json_int_or_default(lt_json_t* parent, lstr_t key, i64 otherwise);
+f64 lt_json_float_or_default(lt_json_t* parent, lstr_t key, f64 otherwise);
+b8 lt_json_bool_or_default(lt_json_t* parent, lstr_t key, b8 otherwise);
+lstr_t lt_json_str_or_default(lt_json_t* parent, lstr_t key, lstr_t otherwise);
+lstr_t lt_json_str_val_or_default(lt_json_t* parent, lstr_t key, lstr_t otherwise);
 
 lstr_t lt_json_escape_str(lstr_t src, lt_alloc_t* alloc);
 lstr_t lt_json_unescape_str(lstr_t src, lt_alloc_t* alloc);
