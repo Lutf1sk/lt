@@ -42,7 +42,7 @@ char* lt_lstos(lstr_t lstr, lt_alloc_t* alloc) {
 
 lt_err_t lt_lstof(lstr_t str, f64* out) {
 	if (!str.len)
-		return LT_ERR_UNEXPECTED_EOF;
+		return LT_ERR_IS_EMPTY;
 
 	usz it = 0;
 
@@ -84,8 +84,9 @@ done:
 }
 
 lt_err_t lt_lstoi(lstr_t str, i64* out) {
-	if (!str.len)
-		return 0;
+	if (!str.len) {
+		return LT_ERR_IS_EMPTY;
+	}
 
 	b8 sign = str.str[0] == '-';
 	if (sign) {
@@ -98,6 +99,7 @@ lt_err_t lt_lstoi(lstr_t str, i64* out) {
 	if (err)
 		return err;
 
+	// !! off by one for underflows
 	if (v > LT_I64_MAX)
 		return LT_ERR_OVERFLOW;
 
@@ -109,6 +111,10 @@ lt_err_t lt_lstoi(lstr_t str, i64* out) {
 }
 
 lt_err_t lt_lstou(lstr_t str, u64* out) {
+	if (!str.len) {
+		return LT_ERR_IS_EMPTY;
+	}
+
 	u64 val = 0;
 
 	char* it = str.str, *end = it + str.len;
@@ -117,7 +123,7 @@ lt_err_t lt_lstou(lstr_t str, u64* out) {
 
 		if (!lt_is_digit(c))
 			return LT_ERR_INVALID_FORMAT;
-		if (val > LT_U64_MAX/10) // !! does not catch all cases
+		if (val > LT_U64_MAX/10)
 			return LT_ERR_OVERFLOW;
 
 		val *= 10;
@@ -149,6 +155,10 @@ static u8 hex_conv_tab[256] = {
  };
 
 lt_err_t lt_lshextou(lstr_t str, u64* out) {
+	if (!str.len) {
+		return LT_ERR_IS_EMPTY;
+	}
+
 	u64 val = 0;
 
 	char* it = str.str, *end = it + str.len;
