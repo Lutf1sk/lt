@@ -26,7 +26,7 @@ lt_socket_t* lt_socket_create(lt_socktype_t type, lt_alloc_t* alloc);
 void lt_socket_close(lt_socket_t* sock);
 void lt_socket_destroy(lt_socket_t* sock, lt_alloc_t* alloc);
 
-lt_err_t lt_socket_connect(lt_socket_t* sock, lt_sockaddr_t* addr);
+lt_err_t lt_socket_connect(lt_socket_t* sock, const lt_sockaddr_t* addr);
 lt_err_t lt_socket_server(lt_socket_t* sock, u16 port);
 lt_socket_t* lt_socket_accept(lt_socket_t* sock, lt_sockaddr_t* out_addr_, lt_alloc_t* alloc);
 

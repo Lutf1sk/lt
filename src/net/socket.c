@@ -108,7 +108,7 @@ void lt_socket_destroy(lt_socket_t* sock, lt_alloc_t* alloc) {
 	lt_mfree(alloc, sock);
 }
 
-lt_err_t lt_socket_connect(lt_socket_t* sock, lt_sockaddr_t* addr_) {
+lt_err_t lt_socket_connect(lt_socket_t* sock, const lt_sockaddr_t* addr_) {
 	lt_sockaddr_impl_t* addr = (lt_sockaddr_impl_t*)addr_;
 	if (connect(sock->fd, &addr->addr, addr->addr_len) < 0) {
 		return LAST_ERROR();
