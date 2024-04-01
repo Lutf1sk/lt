@@ -4,8 +4,6 @@
 #include <lt/err.h>
 #include <lt/fwd.h>
 
-typedef struct lt_ssl_connection lt_ssl_connection_t;
-
 #define LT_SSL_CLIENT 0x1
 #define LT_SSL_SERVER 0x2
 
