@@ -89,7 +89,7 @@ lt_err_t read_headers(lstr_t* out_headers, lt_io_callback_t callb, void* usr, lt
 
 		if (stream.str.len >= HEADER_MAX_SIZE) {
 			lt_strstream_destroy(&stream);
-			return LT_ERR_OUT_OF_RANGE;
+			return LT_ERR_LIMIT_EXCEEDED;
 		}
 		history <<= 8;
 	}
@@ -156,7 +156,7 @@ lt_err_t read_content(lt_http_msg_t* msg, lt_io_callback_t callb, void* usr, lt_
 		}
 
 		if (content_length > MAX_BODY_SIZE) {
-			return LT_ERR_OUT_OF_RANGE;
+			return LT_ERR_LIMIT_EXCEEDED;
 		}
 
 		char* content = lt_malloc(alloc, content_length);
@@ -178,66 +178,77 @@ lt_err_t read_content(lt_http_msg_t* msg, lt_io_callback_t callb, void* usr, lt_
 		return LT_SUCCESS;
 	}
 
-	lt_werrf("'transfer-encoding: chunked' is disabled for the moment\n");
-	return LT_ERR_UNSUPPORTED;
-
 	lt_strstream_t body_stream;
 	if ((err = lt_strstream_create(&body_stream, alloc))) {
 		return err;
 	}
-	lt_strstream_t size_stream;
-	if ((err = lt_strstream_create(&size_stream, alloc))) {
-		goto chunked_err0;
-	}
 
-	for (;;) { // !! UNSAFE
+#define MAX_SIZE_LEN 32
+
+	for (;;) {
 		isz res;
 
 		// Read until "\r\n" is encountered
-		usz size_start_len = size_stream.str.len;
-		u16 history = 0;
+		char size_buf[MAX_SIZE_LEN], *size_it = size_buf, *size_end = size_buf + MAX_SIZE_LEN;
 		for (;;) {
-			if ((res = callb(usr, &history, 1)) < 0)
-				fail_to(err = -res, chunked_err1);
-			if ((res = lt_strstream_writec(&size_stream, history & 0xFF)) < 0)
-				fail_to(err = -res, chunked_err1);
-			if (history == X1CRLF)
+			char c;
+			if ((res = callb(usr, &c, 1)) < 0) {
+				fail_to(err = -res, chunked_err0);
+			}
+			*size_it++ = c;
+			if (c == '\n' && size_it > size_buf && size_it[-2] == '\r') {
 				break;
-			history <<= 8;
+			}
+
+			if (size_it >= size_end) {
+				fail_to(err = LT_ERR_LIMIT_EXCEEDED, chunked_err0);
+			}
 		}
-		lstr_t size_str = LSTR(size_stream.str.str + size_start_len, size_stream.str.len - size_start_len - 2);
-		size_str = lt_lstrim(size_str);
-		if (lt_lseq(size_str, CLSTR("0")))
-			break;
-
 		usz size;
-		if ((err = lt_lshextou(size_str, &size)))
-			goto chunked_err1;
-
-		lt_strstream_clear(&size_stream);
-
-		void* tmp_chunk = lt_malloc(alloc, size);
-		if (!tmp_chunk)
-			fail_to(err = LT_ERR_OUT_OF_MEMORY, chunked_err1);
-		if ((res = callb(usr, tmp_chunk, size)) < 0)
-			fail_to(err = -res, chunked_err1);
-		if ((res = lt_strstream_write(&body_stream, tmp_chunk, size)) < 0)
-			fail_to(err = -res, chunked_err1);
-		lt_mfree(alloc, tmp_chunk);
+		if ((err = lt_lshextou(lt_lsfrom_range(size_buf, size_it - 2), &size))) {
+			goto chunked_err0;
+		}
 
 		char crlf_buf[2];
-		if ((res = callb(usr, crlf_buf, 2)) < 0)
+		if (size == 0) {
+			if ((res = callb(usr, crlf_buf, 2)) < 0) {
+				fail_to(err = -res, chunked_err0);
+			}
+			if (memcmp(crlf_buf, "\r\n", 2) != 0) {
+				fail_to(err = LT_ERR_INVALID_FORMAT, chunked_err0);
+			}
+			break;
+		}
+
+		if (body_stream.str.len + size > MAX_BODY_SIZE) {
+			fail_to(err = LT_ERR_LIMIT_EXCEEDED, chunked_err0);
+		}
+
+		void* chunk = lt_malloc(alloc, size);
+		if (!chunk) {
+			fail_to(err = LT_ERR_OUT_OF_MEMORY, chunked_err0);
+		}
+		if ((res = callb(usr, chunk, size)) < 0) {
 			fail_to(err = -res, chunked_err1);
-		if (memcmp(crlf_buf, "\r\n", 2) != 0)
-			fail_to(err = LT_ERR_INVALID_FORMAT, chunked_err1);
+		}
+		if ((res = lt_strstream_write(&body_stream, chunk, size)) < 0) {
+			fail_to(err = -res, chunked_err1);
+		}
+		lt_mfree(alloc, chunk);
+
+		if ((res = callb(usr, crlf_buf, 2)) < 0) {
+			fail_to(err = -res, chunked_err0);
+		}
+		if (memcmp(crlf_buf, "\r\n", 2) != 0) {
+			fail_to(err = LT_ERR_INVALID_FORMAT, chunked_err0);
+		}
 
 		continue;
-	chunked_err1:	lt_strstream_destroy(&size_stream);
+	chunked_err1:	lt_mfree(alloc, chunk);
 	chunked_err0:	lt_strstream_destroy(&body_stream);
 					return err;
 	}
 
-	lt_strstream_destroy(&size_stream);
 	msg->body = body_stream.str;
 	return LT_SUCCESS;
 }
@@ -372,7 +383,7 @@ lt_err_t lt_http_parse_response(lt_http_msg_t* out_response, lt_io_callback_t ca
 	char* status_msg_start = it;
 	for (;;) {
 		if (it + 1 >= end) {
-			fail_to(err = LT_ERR_INVALID_SYNTAX, err0);
+			fail_to(err = LT_ERR_INVALID_FORMAT, err0);
 		}
 		if (it[0] == '\r' && it[1] == '\n') {
 			break;
@@ -404,7 +415,7 @@ lt_err_t lt_http_parse_response(lt_http_msg_t* out_response, lt_io_callback_t ca
 
 err1:	lt_http_msg_destroy(&msg, alloc);
 		return err;
-err0:	lt_mfree(header_data.str, alloc);
+err0:	lt_mfree(alloc, header_data.str);
 		return err;
 }
 
@@ -418,6 +429,7 @@ lt_err_t write_common(const lt_http_msg_t* msg, lt_io_callback_t callb, void* us
 	}
 
 	if (!msg->body.len) {
+		callb(usr, "\r\n", 2);
 		return LT_SUCCESS;
 	}
 
