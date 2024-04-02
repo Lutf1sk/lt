@@ -143,4 +143,14 @@ extern usz strlen(const char* str);
 // io.h in other lt/ headers.
 typedef isz(*lt_io_callback_t)(void* usr, void* data, usz size);
 
+static LT_INLINE
+isz lt_writes(lt_io_callback_t callb, void* usr, char* str) {
+	return callb(usr, str, strlen(str));
+}
+
+static LT_INLINE
+isz lt_writels(lt_io_callback_t callb, void* usr, lstr_t str) {
+	return callb(usr, str.str, str.len);
+}
+
 #endif
