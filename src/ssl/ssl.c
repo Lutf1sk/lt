@@ -87,7 +87,7 @@ void lt_ssl_connection_destroy(lt_ssl_connection_t* ssl) {
 	SSL_free((void*)ssl);
 }
 
-lt_err_t lt_ssl_configure_server(lstr_t cert_path, lstr_t key_path) {
+lt_err_t lt_ssl_configure_server(lstr_t cert_path, lstr_t key_path, lstr_t cert_chain_path) {
 	if (cert_path.len > LT_PATH_MAX || key_path.len > LT_PATH_MAX) {
 		return LT_ERR_PATH_TOO_LONG;
 	}
@@ -102,6 +102,12 @@ lt_err_t lt_ssl_configure_server(lstr_t cert_path, lstr_t key_path) {
 	memcpy(cpath, key_path.str, key_path.len);
 	cpath[key_path.len] = 0;
 	if (SSL_CTX_use_PrivateKey_file(ssl_server_ctx, cpath, SSL_FILETYPE_PEM) <= 0) {
+		return LT_ERR_UNKNOWN;
+	}
+
+	memcpy(cpath, cert_chain_path.str, cert_chain_path.len);
+	cpath[cert_chain_path.len] = 0;
+	if (SSL_CTX_use_certificate_chain_file(ssl_server_ctx, cpath) <= 0) {
 		return LT_ERR_UNKNOWN;
 	}
 
