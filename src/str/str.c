@@ -232,17 +232,16 @@ lstr_t lt_lsbasename(lstr_t path) {
 }
 
 lstr_t lt_lstrim_trailing_slash(lstr_t path) {
-	if (path.len <= 1) {
-		return path;
-	}
-
 	char* end = path.str, *it = end + path.len - 1;
-	for (; it > end; --it) {
+	for (;;) {
+		if (it < end) {
+			return lt_lsfrom_range(end, it + 1);
+		}
 		if (*it != '/') {
 			return lt_lsfrom_range(end, it + 1);
 		}
+		--it;
 	}
-	return lt_lsfrom_range(end, it + 1);
 }
 
 lstr_t lt_lsbuild(lt_alloc_t* alloc, char* fmt, ...) {
