@@ -28,6 +28,7 @@ SRC = \
 	src/gl/glad.c \
 	src/gui/gui.c \
 	src/hashtab/hashtab.c \
+	src/html/html.c \
 	src/http/http.c \
 	src/img/bmp.c \
 	src/img/img.c \
