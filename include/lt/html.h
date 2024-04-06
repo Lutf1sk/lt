@@ -1,6 +1,7 @@
 #ifndef LT_HTML_H
 #define LT_HTML_H 1
 
+#include <lt/fwd.h>
 #include <lt/lt.h>
 
 extern b8 lt_html_reserved_char_tab[LT_U8_MAX];
