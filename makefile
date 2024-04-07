@@ -57,7 +57,6 @@ SRC = \
 	src/net/socket.c \
 	src/net/sockstream.c \
 	src/shell/shell.c \
-	src/spotify/spotify.c \
 	src/ssl/ssl.c \
 	src/str/str.c \
 	src/strstream/strstream.c \
