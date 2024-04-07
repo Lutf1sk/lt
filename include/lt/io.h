@@ -101,6 +101,10 @@ struct lt_stat {
 	lt_file_perms_t permit;
 } lt_stat_t;
 
+#ifdef LT_UNIX
+lt_dirent_type_t lt_enttype_from_unix(int mode);
+#endif
+
 lt_err_t lt_statp(lstr_t path, lt_stat_t* out_stat);
 lt_err_t lt_lstatp(lstr_t path, lt_stat_t* out_stat);
 

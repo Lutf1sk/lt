@@ -3,8 +3,7 @@
 
 #include <sys/stat.h>
 
-static
-lt_dirent_type_t convert_filetype(int mode) {
+lt_dirent_type_t lt_enttype_from_unix(int mode) {
 	switch (mode & S_IFMT) {
 	case S_IFDIR: return LT_DIRENT_DIR;
 	case S_IFLNK: return LT_DIRENT_SYMLINK;
@@ -50,7 +49,7 @@ lt_err_t lt_statp(lstr_t path, lt_stat_t* out_stat) {
 		return lt_errno();
 	}
 
-	out_stat->type = convert_filetype(st.st_mode);
+	out_stat->type = lt_enttype_from_unix(st.st_mode);
 	out_stat->permit = convert_permissions(st.st_mode);
 	out_stat->size = st.st_size;
 	return LT_SUCCESS;
@@ -69,7 +68,7 @@ lt_err_t lt_lstatp(lstr_t path, lt_stat_t* out_stat) {
 		return lt_errno();
 	}
 
-	out_stat->type = convert_filetype(st.st_mode);
+	out_stat->type = lt_enttype_from_unix(st.st_mode);
 	out_stat->permit = convert_permissions(st.st_mode);
 	out_stat->size = st.st_size;
 	return LT_SUCCESS;
