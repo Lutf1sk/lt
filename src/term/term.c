@@ -1,6 +1,7 @@
 #include <lt/lt.h>
 #include <lt/term.h>
 #include <lt/text.h>
+#include <lt/internal.h>
 
 #if defined(LT_UNIX)
 #	include <termios.h>
@@ -9,6 +10,7 @@
 #	include <signal.h>
 #	include <sys/ioctl.h>
 #	include <ctype.h>
+#	include <fcntl.h>
 
 static lt_term_flags_t term_flags;
 static struct termios old_term;
@@ -24,11 +26,13 @@ void lt_handle_winch(int sig) {
 }
 
 lt_err_t lt_term_init(lt_term_flags_t flags) {
+	lt_err_t err;
+
 	term_flags = flags;
 
 	struct termios term;
 	if (tcgetattr(STDOUT_FILENO, &term) < 0)
-		goto err0;
+		return lt_errno();
 	old_term = term;
 
 	if (!(flags & LT_TERM_CANON)) {
@@ -48,26 +52,26 @@ lt_err_t lt_term_init(lt_term_flags_t flags) {
 		term.c_lflag |= ECHO;
 
 	if (tcsetattr(STDOUT_FILENO, TCSANOW, &term) < 0)
-		goto err1;
+		return lt_errno();
 	if (tcflush(STDOUT_FILENO, TCIOFLUSH) < 0)
-		goto err1;
+		fail_to(err = lt_errno(), err0);
 
 	if ((flags & LT_TERM_MOUSE) && lt_term_write_direct("\x1B[?1003h", 8) < 0)
-		goto err1;
+		fail_to(err = lt_errno(), err0);
 	if ((flags & LT_TERM_BPASTE) && lt_term_write_direct("\x1b[?2004h", 8) < 0)
-		goto err1;
+		fail_to(err = lt_errno(), err0);
 	if ((flags & LT_TERM_ALTBUF) && lt_term_write_direct("\x1b[?1049h", 8) < 0)
-		goto err1;
+		fail_to(err = lt_errno(), err0);
 
 	struct sigaction sact = {0};
 	sact.sa_handler = lt_handle_winch;
 	if (sigaction(SIGWINCH, &sact, NULL) < 0)
-		goto err1;
+		fail_to(err = lt_errno(), err0);
 
 	return lt_update_term_dimensions();
 
-err1:	lt_term_restore();
-err0:	return LT_ERR_UNKNOWN; // !!
+err0:	lt_term_restore();
+		return err;
 }
 
 void lt_term_restore(void) {
@@ -83,9 +87,17 @@ void lt_term_restore(void) {
 }
 
 lt_err_t lt_update_term_dimensions(void) {
+	int fd = open("/dev/tty", O_RDWR);
+	if (fd < 0) {
+		return lt_errno();
+	}
+
 	struct winsize wsz;
-	if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &wsz) < 0)
-		return LT_ERR_UNKNOWN; // !!
+	int res = ioctl(fd, TIOCGWINSZ, &wsz);
+	close(fd);
+	if (res < 0) {
+		return lt_errno();
+	}
 
 	lt_term_width = wsz.ws_col;
 	lt_term_height = wsz.ws_row;
