@@ -61,7 +61,7 @@ lt_mutex_t* lt_mutex_create(lt_alloc_t alloc[static 1]) {
 	return m;
 }
 
-void lt_mutex_destroy(lt_mutex_t* m, lt_alloc_t* alloc) {
+void lt_mutex_destroy(lt_mutex_t* m, lt_alloc_t alloc[static 1]) {
 	CloseHandle(m->wmut);
 	lt_mfree(alloc, m);
 }

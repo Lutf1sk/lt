@@ -77,7 +77,7 @@ lt_err_t lt_thread_cancel(const lt_thread_t* thread) {
 typedef
 struct lt_thread {
 	HANDLE hnd;
-	lt_thread_proc_t proc;
+	lt_thread_fn_t proc;
 	void* args;
 } lt_thread_t;
 
@@ -88,10 +88,11 @@ DWORD WINAPI lt_thread_start_wrapper(void* args) {
 	return 0;
 }
 
-lt_thread_t* lt_thread_create(lt_thread_proc_t proc, void* args, lt_alloc_t alloc[static 1]) {
+lt_thread_t* lt_thread_create(lt_thread_fn_t proc, void* args, lt_alloc_t alloc[static 1]) {
 	lt_thread_t* thread = lt_malloc(alloc, sizeof(lt_thread_t));
-	if (!thread)
+	if (!thread) {
 		return NULL;
+	}
 	thread->proc = proc;
 	thread->args = args;
 	thread->hnd = CreateThread(NULL, 0, lt_thread_start_wrapper, thread, 0, NULL);

@@ -1,6 +1,8 @@
 #include <lt/io.h>
 #include <lt/mem.h>
 
+#ifdef LT_LINUX
+
 #include <sys/stat.h>
 
 lt_dirent_type_t lt_enttype_from_unix(int mode) {
@@ -73,3 +75,8 @@ lt_err_t lt_lstatp(lstr_t path, lt_stat_t* out_stat) {
 	out_stat->size = st.st_size;
 	return LT_SUCCESS;
 }
+
+#elifdef LT_WINDOWS
+
+
+#endif

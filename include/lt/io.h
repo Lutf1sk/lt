@@ -103,6 +103,8 @@ struct lt_dir {
 } lt_dir_t;
 
 #elifdef LT_WINDOWS
+#	define WIN32_LEAN_AND_MEAN 1
+#	include <windows.h>
 typedef
 struct lt_dir {
 	b8 eof;

@@ -83,7 +83,7 @@ lt_file_t* lt_fopenp(lstr_t path_, lt_file_mode_t mode, lt_file_perms_t perms, l
 		size = li.QuadPart;
 	}
 	else if (mode == LT_FILE_RW)
-		lt_werr(CLSTR("LT_FILE_RW has not been implemented for windows\n")); // !!
+		lt_werrf("LT_FILE_RW has not been implemented for windows\n"); // !!
 
 	if (h == INVALID_HANDLE_VALUE)
 		return NULL;

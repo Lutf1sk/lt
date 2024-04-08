@@ -346,7 +346,6 @@ isz lt_term_write_direct(const char* str, usz len) {
 #elif defined(LT_WINDOWS)
 #	include <lt/io.h>
 #	include <windows.h>
-#	include "../io/file_def.h"
 
 static lt_term_flags_t term_flags;
 static DWORD old_output_mode = 0;
