@@ -42,21 +42,21 @@ struct lt_xml_err_info {
 	lstr_t err_str;
 } lt_xml_err_info_t;
 
-lt_err_t lt_xml_add_attrib(lt_xml_entity_t* elem, lt_xml_attrib_t attrib, lt_alloc_t* alloc);
-lt_err_t lt_xml_add_child(lt_xml_entity_t* elem, lt_xml_entity_t* child, lt_alloc_t* alloc);
+lt_err_t lt_xml_add_attrib(lt_xml_entity_t elem[static 1], lt_xml_attrib_t attrib, lt_alloc_t alloc[static 1]);
+lt_err_t lt_xml_add_child(lt_xml_entity_t elem[static 1], lt_xml_entity_t child[static 1], lt_alloc_t alloc[static 1]);
 
-lt_xml_attrib_t* lt_xml_find_attrib(lt_xml_entity_t* elem, lstr_t key);
+lt_xml_attrib_t* lt_xml_find_attrib(const lt_xml_entity_t elem[static 1], lstr_t key);
 
-lt_err_t lt_xml_generate_str(lt_xml_entity_t* elem, lstr_t* out, lt_alloc_t* alloc);
+lt_err_t lt_xml_generate_str(const lt_xml_entity_t elem[static 1], lstr_t out[static 1], lt_alloc_t alloc[static 1]);
 
-usz lt_xml_child_count(lt_xml_entity_t* elem);
-usz lt_xml_attrib_count(lt_xml_entity_t* elem);
+usz lt_xml_child_count(const lt_xml_entity_t elem[static 1]);
+usz lt_xml_attrib_count(const lt_xml_entity_t elem[static 1]);
 
-lt_err_t lt_xml_parse(lt_xml_entity_t* xml, void* data, usz size, lt_xml_err_info_t* out_err_info, lt_alloc_t* alloc);
+lt_err_t lt_xml_parse(lt_xml_entity_t out_xml[static 1], const void* data, usz size, lt_xml_err_info_t* out_err_info, lt_alloc_t alloc[static 1]);
 
-void lt_xml_free(lt_xml_entity_t* xml, lt_alloc_t* alloc);
+void lt_xml_free(const lt_xml_entity_t xml[static 1], lt_alloc_t alloc[static 1]);
 
-isz lt_xml_write(lt_xml_entity_t* xml, lt_io_callback_t callb, void* usr);
-isz lt_xml_write_pretty(lt_xml_entity_t* xml, lt_io_callback_t callb, void* usr);
+isz lt_xml_write(const lt_xml_entity_t xml[static 1], lt_write_fn_t callb, void* usr);
+isz lt_xml_write_pretty(const lt_xml_entity_t xml[static 1], lt_write_fn_t callb, void* usr);
 
 #endif

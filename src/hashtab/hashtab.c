@@ -6,11 +6,11 @@
 
 #include <lt/io.h>
 
-void lt_hashtab_init(lt_hashtab_t* htab) {
+void lt_hashtab_init(lt_hashtab_t htab[static 1]) {
 	memset(htab, 0, sizeof(lt_hashtab_t));
 }
 
-void lt_hashtab_free(lt_hashtab_t* htab, lt_alloc_t* alloc) {
+void lt_hashtab_free(const lt_hashtab_t htab[static 1], lt_alloc_t alloc[static 1]) {
 	for (usz i = 0; i < LT_HASHTAB_SIZE; ++i) {
 		if (htab->counts[i] <= 1)
 			continue;
@@ -18,7 +18,7 @@ void lt_hashtab_free(lt_hashtab_t* htab, lt_alloc_t* alloc) {
 	}
 }
 
-void lt_hashtab_insert(lt_hashtab_t* htab, u32 hash, void* val, lt_alloc_t* alloc) {
+void lt_hashtab_insert(lt_hashtab_t htab[static 1], u32 hash, void* val, lt_alloc_t alloc[static 1]) {
 	u32 idx = hash & LT_HASHTAB_MASK;
 	usz count = htab->counts[idx];
 	void** vals = htab->values[idx];

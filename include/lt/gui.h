@@ -33,10 +33,10 @@ struct lt_gui_cont {
 
 #define LT_GUI_RECT(x, y, w, h) ((lt_gui_rect_t){ (x), (y), (w), (h) })
 
-typedef void (*lt_gui_rect_callback_t)(void* usr, lt_gui_rect_t* r, u32 clr, u32 depth);
+typedef void (*lt_gui_rect_callback_t)(void* usr, const lt_gui_rect_t r[static 1], u32 clr, u32 depth);
 typedef void (*lt_gui_text_callback_t)(void* usr, i32 x, i32 y, lstr_t str, u32 clr, u32 depth);
-typedef void (*lt_gui_icon_callback_t)(void* usr, lt_gui_rect_t* r, u32 clr, usz icon, u32 depth);
-typedef void (*lt_gui_scissor_callback_t)(void* usr, lt_gui_rect_t* r);
+typedef void (*lt_gui_icon_callback_t)(void* usr, const lt_gui_rect_t r[static 1], u32 clr, usz icon, u32 depth);
+typedef void (*lt_gui_scissor_callback_t)(void* usr, const lt_gui_rect_t r[static 1]);
 typedef usz (*lt_gui_text_width_callback_t)(void* usr, lstr_t text);
 
 typedef
@@ -102,39 +102,39 @@ struct lt_gui_textbox_state {
 
 extern lt_gui_style_t* lt_gui_default_style;
 
-lt_err_t lt_gui_ctx_init(lt_gui_ctx_t* cx, lt_alloc_t* alloc);
-void lt_gui_ctx_free(lt_gui_ctx_t* cx, lt_alloc_t* alloc);
+lt_err_t lt_gui_ctx_init(lt_gui_ctx_t out_cx[static 1], lt_alloc_t alloc[static 1]);
+void lt_gui_ctx_free(const lt_gui_ctx_t cx[static 1], lt_alloc_t alloc[static 1]);
 
-void lt_gui_begin(lt_gui_ctx_t* cx, isz x, isz y, isz w, isz h);
-void lt_gui_end(lt_gui_ctx_t* cx);
+void lt_gui_begin(lt_gui_ctx_t cx[static 1], isz x, isz y, isz w, isz h);
+void lt_gui_end(lt_gui_ctx_t cx[static 1]);
 
-lt_gui_cont_t* lt_gui_get_container(lt_gui_ctx_t* cx);
+lt_gui_cont_t* lt_gui_get_container(const lt_gui_ctx_t cx[static 1]);
 
-void lt_gui_draw_border(lt_gui_ctx_t* cx, lt_gui_rect_t* r, u32 clr, u32 flags);
-void lt_gui_draw_rect(lt_gui_ctx_t* cx, lt_gui_rect_t* r, u32 clr);
-void lt_gui_draw_icon(lt_gui_ctx_t* cx, lt_gui_rect_t* r, u32 clr, u32 icon);
-void lt_gui_draw_text(lt_gui_ctx_t* cx, i32 x, i32 y, lstr_t str, u32 clr);
+void lt_gui_draw_border(const lt_gui_ctx_t cx[static 1], const lt_gui_rect_t r[static 1], u32 clr, u32 flags);
+void lt_gui_draw_rect(const lt_gui_ctx_t cx[static 1], const lt_gui_rect_t r[static 1], u32 clr);
+void lt_gui_draw_icon(const lt_gui_ctx_t cx[static 1], const lt_gui_rect_t r[static 1], u32 clr, u32 icon);
+void lt_gui_draw_text(const lt_gui_ctx_t cx[static 1], i32 x, i32 y, lstr_t str, u32 clr);
 
-void lt_gui_panel_begin(lt_gui_ctx_t* cx, isz w, isz h, u32 flags);
-void lt_gui_panel_end(lt_gui_ctx_t* cx);
+void lt_gui_panel_begin(lt_gui_ctx_t cx[static 1], isz w, isz h, u32 flags);
+void lt_gui_panel_end(lt_gui_ctx_t cx[static 1]);
 
-void lt_gui_row(lt_gui_ctx_t* cx, usz cols);
+void lt_gui_row(lt_gui_ctx_t cx[static 1], usz cols);
 
-void lt_gui_label(lt_gui_ctx_t* cx, lstr_t text, u32 flags);
-void lt_gui_text(lt_gui_ctx_t* cx, lstr_t text, u32 flags);
+void lt_gui_label(lt_gui_ctx_t cx[static 1], lstr_t text, u32 flags);
+void lt_gui_text(lt_gui_ctx_t cx[static 1], lstr_t text, u32 flags);
 
-b8 lt_gui_textbox(lt_gui_ctx_t* cx, isz ew, isz eh, lt_gui_textbox_state_t* state, u32 flags);
+b8 lt_gui_textbox(lt_gui_ctx_t cx[static 1], isz ew, isz eh, lt_gui_textbox_state_t state[static 1], u32 flags);
 
-b8 lt_gui_button(lt_gui_ctx_t* cx, lstr_t text, u32 flags);
+b8 lt_gui_button(lt_gui_ctx_t cx[static 1], lstr_t text, u32 flags);
 
-b8 lt_gui_expandable(lt_gui_ctx_t* cx, lstr_t text, b8* expanded, u32 flags);
+b8 lt_gui_expandable(lt_gui_ctx_t cx[static 1], lstr_t text, b8 expanded[static 1], u32 flags);
 
-void lt_gui_vspace(lt_gui_ctx_t* cx, usz space, u32 flags);
-void lt_gui_hspace(lt_gui_ctx_t* cx, usz space, u32 flags);
+void lt_gui_vspace(lt_gui_ctx_t cx[static 1], usz space, u32 flags);
+void lt_gui_hspace(lt_gui_ctx_t cx[static 1], usz space, u32 flags);
 
-b8 lt_gui_dropdown_begin(lt_gui_ctx_t* cx, lstr_t text, isz w, isz h, u32* state, u32 flags);
-void lt_gui_dropdown_end(lt_gui_ctx_t* cx);
+b8 lt_gui_dropdown_begin(lt_gui_ctx_t cx[static 1], lstr_t text, isz w, isz h, u32 state[static 1], u32 flags);
+void lt_gui_dropdown_end(lt_gui_ctx_t cx[static 1]);
 
-b8 lt_gui_checkbox(lt_gui_ctx_t* cx, lstr_t text, b8* state, u32 flags);
+b8 lt_gui_checkbox(lt_gui_ctx_t cx[static 1], lstr_t text, b8 state[static 1], u32 flags);
 
 #endif

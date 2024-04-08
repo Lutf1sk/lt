@@ -368,7 +368,7 @@ lt_err_t lt_lpc_lex(lt_lpc_lex_ctx_t* cx, void* data, usz len, lt_alloc_t* alloc
 
 			usz count0 = mask0b ? __builtin_ffs(mask0b) : 32;
 			usz count1 = mask1b ? __builtin_ffs(mask1b) : 32;
-			usz count = lt_min_usz(count0, count1 - 1) - 1;
+			usz count = lt_min(count0, count1 - 1) - 1;
 
 			it += count;
 			if (it >= end) {

@@ -6,9 +6,6 @@
 
 #include <stdarg.h>
 
-typedef struct lt_file lt_file_t;
-typedef struct lt_dir lt_dir_t;
-
 typedef
 enum lt_dirent_type {
 	LT_DIRENT_FILE,
@@ -32,12 +29,29 @@ extern lt_file_t* lt_stderr;
 extern lt_file_t* lt_stdin;
 
 // fmt.c
-isz lt_io_dummy_callb(void* usr, void* data, usz len);
+isz lt_io_dummy_write(void* usr, const void* data, usz len);
+isz lt_io_dummy_read(void* usr, void* data, usz len);
 
-isz lt_io_vprintf(lt_io_callback_t callb, void* usr, char* fmt, va_list argl);
-isz lt_io_printf(lt_io_callback_t callb, void* usr, char* fmt, ...);
+isz lt_io_vprintf(lt_write_fn_t callb, void* usr, const char* fmt, va_list argl);
+isz lt_io_printf(lt_write_fn_t callb, void* usr, const char* fmt, ...);
 
 // file.c
+#if defined(LT_UNIX)
+typedef
+struct lt_file {
+	int fd;
+	u64 size;
+	usz block_size;
+} lt_file_t;
+
+#elifdef LT_WINDOWS
+typedef
+struct lt_file {
+	void* hnd;
+	u64 size;
+} lt_file_t;
+#endif
+
 #define LT_PATH_MAX 512
 
 typedef
@@ -55,37 +69,55 @@ enum lt_file_perms {
 	LT_FILE_PERMIT_W = 0x04,
 } lt_file_perms_t;
 
-lt_file_t* lt_fopenp(lstr_t path, lt_file_mode_t access, lt_file_perms_t perms, lt_alloc_t* alloc);
-void lt_fclose(lt_file_t* file, lt_alloc_t* alloc);
+lt_file_t* lt_fopenp(lstr_t path, lt_file_mode_t access, lt_file_perms_t perms, lt_alloc_t alloc[static 1]);
+void lt_fclose(const lt_file_t file[static 1], lt_alloc_t alloc[static 1]);
 
 b8 lt_fexistp(lstr_t path);
 
 lt_err_t lt_fremovep(lstr_t path);
 lt_err_t lt_fmovep(lstr_t path, lstr_t new_path);
 
-lt_err_t lt_fcopyp(lstr_t from, lstr_t to, void* buf, usz bufsz, lt_alloc_t* alloc);
+lt_err_t lt_fcopyp(lstr_t from, lstr_t to, void* buf, usz bufsz, lt_alloc_t alloc[static 1]);
 
 lt_err_t lt_flinkp(lstr_t link, lstr_t target);
 lt_err_t lt_fsymlinkp(lstr_t link, lstr_t target);
 
-lt_err_t lt_freadallp(lstr_t path, lstr_t* out, lt_alloc_t* alloc);
-lt_err_t lt_freadallp_utf8(lstr_t path, lstr_t* out, lt_alloc_t* alloc);
+lt_err_t lt_freadallp(lstr_t path, lstr_t out[static 1], lt_alloc_t alloc[static 1]);
+lt_err_t lt_freadallp_utf8(lstr_t path, lstr_t out[static 1], lt_alloc_t alloc[static 1]);
 
-isz lt_fread(lt_file_t* file, void* data, usz size);
-isz lt_fwrite(lt_file_t* file, void* data, usz size);
+isz lt_fread(lt_file_t file[static 1], void* data, usz size);
+isz lt_fwrite(lt_file_t file[static 1], const void* data, usz size);
 
-usz lt_fsize(lt_file_t* file);
+usz lt_fsize(lt_file_t file[static 1]);
 
-isz lt_vfprintf(lt_file_t* file, char* fmt, va_list args);
-isz lt_fprintf(lt_file_t* file, char* fmt, ...);
+isz lt_vfprintf(lt_file_t file[static 1], const char* fmt, va_list args);
+isz lt_fprintf(lt_file_t file[static 1], const char* fmt, ...);
 
 // dir.c
-lt_dir_t* lt_dopenp(lstr_t path, lt_alloc_t* alloc);
-void lt_dclose(lt_dir_t* dir, lt_alloc_t* alloc);
 
-lt_dirent_t* lt_dread(lt_dir_t* dir);
+#ifdef LT_LINUX
+typedef
+struct lt_dir {
+	void* dp;
+	lt_dirent_t ent;
+} lt_dir_t;
 
-lt_err_t lt_dcopyp(lstr_t from, lstr_t to, void* buf, usz bufsz, lt_alloc_t* alloc);
+#elifdef LT_WINDOWS
+typedef
+struct lt_dir {
+	b8 eof;
+	WIN32_FIND_DATA ffd;
+	void* fhnd;
+	lt_dirent_t ent;
+} lt_dir_t;
+#endif
+
+lt_dir_t* lt_dopenp(lstr_t path, lt_alloc_t alloc[static 1]);
+void lt_dclose(const lt_dir_t dir[static 1], lt_alloc_t alloc[static 1]);
+
+lt_dirent_t* lt_dread(lt_dir_t dir[static 1]);
+
+lt_err_t lt_dcopyp(lstr_t from, lstr_t to, void* buf, usz bufsz, lt_alloc_t alloc[static 1]);
 
 lt_err_t lt_mkdir(lstr_t path);
 lt_err_t lt_mkpath(lstr_t path);
@@ -109,19 +141,19 @@ lt_err_t lt_statp(lstr_t path, lt_stat_t* out_stat);
 lt_err_t lt_lstatp(lstr_t path, lt_stat_t* out_stat);
 
 // cli.c
-isz lt_printf(char* fmt, ...);
+isz lt_printf(const char* fmt, ...);
 
 // str.c
-isz lt_str_io_callb(char** str, void* data, usz len);
+isz lt_write_str(char* str[static 1], const void* data, usz len);
 
-isz lt_vsprintf(char* str, char* fmt, va_list args);
-isz lt_sprintf(char* str, char* fmt, ...);
+isz lt_vsprintf(char* str, const char* fmt, va_list args);
+isz lt_sprintf(char* str, const char* fmt, ...);
 
 // alloc.c
 typedef struct lt_io_alloc_ctx lt_io_alloc_ctx_t;
-isz lt_alloc_io_callb(lt_io_alloc_ctx_t* cx, void* data, usz len);
+isz lt_write_alloc(lt_io_alloc_ctx_t* cx, const void* data, usz len);
 
-isz lt_vaprintf(lstr_t* out, lt_alloc_t* alloc, char* fmt, va_list args);
-isz lt_aprintf(lstr_t* out, lt_alloc_t* alloc, char* fmt, ...);
+isz lt_vaprintf(lstr_t out[static 1], lt_alloc_t alloc[static 1], const char* fmt, va_list args);
+isz lt_aprintf(lstr_t out[static 1], lt_alloc_t alloc[static 1], const char* fmt, ...);
 
 #endif

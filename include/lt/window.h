@@ -128,36 +128,36 @@ struct lt_window_event {
 } lt_window_event_t;
 
 // x11.c / win32.c
-lt_err_t lt_window_init(lt_alloc_t* alloc);
-void lt_window_terminate(lt_alloc_t* alloc);
+lt_err_t lt_window_init(lt_alloc_t alloc[static 1]);
+void lt_window_terminate(lt_alloc_t alloc[static 1]);
 
 /*void lt_window_set_clipboard(lstr_t str);*/
-lstr_t lt_window_get_clipboard(lt_alloc_t* alloc);
+lstr_t lt_window_get_clipboard(lt_alloc_t alloc[static 1]);
 
 int lt_window_output_count(void);
-lt_output_t* lt_window_outputs(void);
+const lt_output_t* lt_window_outputs(void);
 
-lt_window_t* lt_window_create(lt_window_description_t* desc, lt_alloc_t* alloc);
-void lt_window_destroy(lt_window_t* win, lt_alloc_t* alloc);
+lt_window_t* lt_window_create(const lt_window_description_t desc[static 1], lt_alloc_t alloc[static 1]);
+void lt_window_destroy(const lt_window_t* win, lt_alloc_t alloc[static 1]);
 
-usz lt_window_poll_events(lt_window_t* win, lt_window_event_t* events, usz max_events);
-usz lt_window_wait_events(lt_window_t* win, lt_window_event_t* events, usz max_events);
+usz lt_window_poll_events(lt_window_t* win, usz max_events, lt_window_event_t events[static max_events]);
+usz lt_window_wait_events(lt_window_t* win, usz max_events, lt_window_event_t events[static max_events]);
 
 void lt_window_set_fullscreen(lt_window_t* win, lt_winstate_t fullscreen);
 void lt_window_set_pos(lt_window_t* win, int x, int y);
 void lt_window_set_size(lt_window_t* win, int w, int h);
 
-void lt_window_get_pos(lt_window_t* win, int* x, int* y);
-void lt_window_get_size(lt_window_t* win, int* w, int* h);
+void lt_window_get_pos(const lt_window_t* win, int x[static 1], int y[static 1]);
+void lt_window_get_size(const lt_window_t* win, int w[static 1], int h[static 1]);
 
-void lt_window_gl_swap_buffers(lt_window_t* win);
+void lt_window_gl_swap_buffers(const lt_window_t* win);
 
 // window.c
-b8 lt_window_closed(lt_window_t* win);
+b8 lt_window_closed(const lt_window_t* win);
 
-void lt_window_mouse_pos(lt_window_t* win, int* x, int* y);
-b8 lt_window_key_pressed(lt_window_t* win, lt_keycode_t keycode);
-b8 lt_window_key_released(lt_window_t* win, lt_keycode_t keycode);
-b8 lt_window_key_held(lt_window_t* win, lt_keycode_t keycode);
+void lt_window_mouse_pos(const lt_window_t* win, int x[static 1], int y[static 1]);
+b8 lt_window_key_pressed(const lt_window_t* win, lt_keycode_t keycode);
+b8 lt_window_key_released(const lt_window_t* win, lt_keycode_t keycode);
+b8 lt_window_key_held(const lt_window_t* win, lt_keycode_t keycode);
 
 #endif

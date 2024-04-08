@@ -107,50 +107,55 @@ struct lstr {
 #define NLSTR() ((lstr_t){ NULL, 0 })
 
 // strerror wrapper
-char* lt_os_err_str(void);
-
+const char* lt_os_err_str(void);
 // Fatal errors
-void LT_NORETURN lt_ferr(lstr_t str);
-void LT_NORETURN lt_ferrf(char* fmt, ...);
-void LT_NORETURN lt_ferrb(lstr_t str);
-void LT_NORETURN lt_ferrbf(char* fmt, ...);
-
+void LT_NORETURN lt_ferrf(const char* fmt, ...);
+void LT_NORETURN lt_ferrbf(const char* fmt, ...);
 #define LT_NOT_IMPLEMENTED() lt_ferrf("%S() not implemented\n", LT_FUNCTION)
-
 // Warnings
-void lt_werr(lstr_t str);
-void lt_werrf(char* fmt, ...);
-void lt_werrb(lstr_t str);
-void lt_werrbf(char* fmt, ...);
-
+void lt_werrf(const char* fmt, ...);
+void lt_werrbf(const char* fmt, ...);
 // Debug info
-void lt_ierr(lstr_t str);
-void lt_ierrf(char* fmt, ...);
-void lt_ierrb(lstr_t str);
-void lt_ierrbf(char* fmt, ...);
+void lt_ierrf(const char* fmt, ...);
+void lt_ierrbf(const char* fmt, ...);
 
 // Dynamic loading
-void* lt_dynl_open(char* path);
+void* lt_dynl_open(const char* path);
 void lt_dynl_close(void* handle);
-void* lt_dynl_sym(void* handle, char* sym);
-
-char* lt_dynl_err_str(void);
+void* lt_dynl_sym(void* handle, const char* sym);
+const char* lt_dynl_err_str(void);
 
 // LibC
 extern usz strlen(const char* str);
 
-// The IO callback is defined here to avoid having to include
-// io.h in other lt/ headers.
-typedef isz(*lt_io_callback_t)(void* usr, void* data, usz size);
+// stream callbacks
+typedef isz(*lt_write_fn_t)(void* usr, const void* data, usz size);
+typedef isz(*lt_read_fn_t)(void* usr, void* data, usz size);
 
 static LT_INLINE
-isz lt_writes(lt_io_callback_t callb, void* usr, char* str) {
+isz lt_writes(lt_write_fn_t callb, void* usr, const char* str) {
 	return callb(usr, str, strlen(str));
 }
 
 static LT_INLINE
-isz lt_writels(lt_io_callback_t callb, void* usr, lstr_t str) {
+isz lt_writels(lt_write_fn_t callb, void* usr, lstr_t str) {
 	return callb(usr, str.str, str.len);
 }
+
+// allocator interface is defined here to avoid having to include the full mem.h in other headers
+typedef void*(*lt_alloc_for_caller_fn_t)(void* alloc, usz size, const void* caller);
+typedef void*(*lt_alloc_fn_t)(void* alloc, usz size);
+typedef void(*lt_free_fn_t)(void* alloc, const void* mem);
+typedef void*(*lt_realloc_for_caller_fn_t)(void* alloc, void* mem, usz size, const void* caller);
+typedef void*(*lt_realloc_fn_t)(void* alloc, void* mem, usz size);
+
+typedef
+struct lt_alloc {
+	lt_alloc_fn_t alloc;
+	lt_alloc_for_caller_fn_t alloc_for_caller;
+	lt_free_fn_t free;
+	lt_realloc_fn_t realloc;
+	lt_realloc_for_caller_fn_t realloc_for_caller;
+} lt_alloc_t;
 
 #endif

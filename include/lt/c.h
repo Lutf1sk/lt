@@ -603,8 +603,8 @@ lt_c_sym_t** lt_c_lookup_sym(lt_c_sym_t** arr, usz count, lstr_t name);
 lt_err_t lt_c_parse(lt_c_parse_ctx_t* cx, lt_c_tk_t* tokens, usz token_count, lt_arena_t* alloc);
 lt_err_t lt_c_resolve_tree(lt_c_parse_ctx_t* cx);
 
-void lt_c_write_type(lt_c_type_t* type, lt_io_callback_t callb, void* usr, usz indent);
-void lt_c_write_expr(lt_c_expr_t* expr, lt_io_callback_t callb, void* usr, usz indent);
-void lt_c_write_stmt(lt_c_stmt_t* stmt, lt_io_callback_t callb, void* usr, usz indent);
+void lt_c_write_type(lt_c_type_t* type, lt_write_fn_t callb, void* usr, usz indent);
+void lt_c_write_expr(lt_c_expr_t* expr, lt_write_fn_t callb, void* usr, usz indent);
+void lt_c_write_stmt(lt_c_stmt_t* stmt, lt_write_fn_t callb, void* usr, usz indent);
 
 #endif

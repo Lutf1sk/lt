@@ -2,7 +2,7 @@
 #include <lt/mem.h>
 #include <lt/math.h>
 
-lt_err_t lt_sockstream_create(lt_sockstream_t* stream, lt_socket_t* sock, usz buffer_size, lt_alloc_t* alloc) {
+lt_err_t lt_sockstream_create(lt_sockstream_t stream[static 1], lt_socket_t sock[static 1], usz buffer_size, lt_alloc_t alloc[static 1]) {
 	LT_ASSERT(buffer_size);
 
 	stream->socket = sock;
@@ -15,11 +15,11 @@ lt_err_t lt_sockstream_create(lt_sockstream_t* stream, lt_socket_t* sock, usz bu
 	return LT_SUCCESS;
 }
 
-void lt_sockstream_destroy(lt_sockstream_t* stream, lt_alloc_t* alloc) {
+void lt_sockstream_destroy(const lt_sockstream_t stream[static 1], lt_alloc_t alloc[static 1]) {
 	lt_mfree(alloc, stream->buffer);
 }
 
-isz lt_sockstream_read(lt_sockstream_t* stream, void* data, usz size) {
+isz lt_sockstream_read(lt_sockstream_t stream[static 1], void* data, usz size) {
 	if (!stream->bytes_avail) {
 		stream->it = stream->buffer;
 		isz res = lt_socket_recv(stream->socket, stream->buffer, stream->buffer_size);
@@ -28,14 +28,14 @@ isz lt_sockstream_read(lt_sockstream_t* stream, void* data, usz size) {
 		stream->bytes_avail = res;
 	}
 
-	size = lt_min_usz(stream->bytes_avail, size);
+	size = lt_min(stream->bytes_avail, size);
 	memcpy(data, stream->it, size);
 	stream->it += size;
 	stream->bytes_avail -= size;
 	return size;
 }
 
-isz lt_sockstream_read_fixed(lt_sockstream_t* stream, void* data, usz size) {
+isz lt_sockstream_read_fixed(lt_sockstream_t stream[static 1], void* data, usz size) {
 	u8 *it = data, *end = it + size;
 	while (it < end) {
 		isz res = lt_sockstream_read(stream, it, end - it);

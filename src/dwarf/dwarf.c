@@ -2,7 +2,7 @@
 #include <lt/debug.h>
 #include <lt/mem.h>
 
-void lt_dwarf_lns_init(lt_dwarf_lns_t* m, lt_dwarf_stmt_prologue_t* p) {
+void lt_dwarf_lns_init(lt_dwarf_lns_t m[static 1], const lt_dwarf_stmt_prologue_t p[static 1]) {
 	m->addr = 0;
 	m->op_index = 0;
 	m->file = 1;
@@ -17,7 +17,7 @@ void lt_dwarf_lns_init(lt_dwarf_lns_t* m, lt_dwarf_stmt_prologue_t* p) {
 	m->discriminator = 0;
 }
 
-u32 lt_dwarf_uleb128(u8** sp) {
+u32 lt_dwarf_uleb128(u8* sp[static 1]) {
 	u8 shl = 0;
 	u32 i = 0;
 	u8 b;
@@ -29,7 +29,7 @@ u32 lt_dwarf_uleb128(u8** sp) {
 	return i;
 }
 
-i32 lt_dwarf_sleb128(u8** sp) {
+i32 lt_dwarf_sleb128(u8* sp[static 1]) {
 	u8 shl = 0;
 	i32 i = 0;
 	u8 b;
@@ -45,7 +45,7 @@ i32 lt_dwarf_sleb128(u8** sp) {
 }
 
 static LT_INLINE
-usz exec_ext_instr(lt_dwarf_lns_t* m, u8* instr) {
+usz exec_ext_instr(lt_dwarf_lns_t m[static 1], u8* instr) {
 	u8* it = instr;
 	u32 op_len = lt_dwarf_uleb128(&it);
 	u8* op_ptr = it++;
@@ -69,7 +69,7 @@ usz exec_ext_instr(lt_dwarf_lns_t* m, u8* instr) {
 	return it - instr;
 }
 
-usz lt_dwarf_execute(lt_dwarf_lns_t* m, lt_dwarf_stmt_prologue_t* p, u8* instr) {
+usz lt_dwarf_execute(lt_dwarf_lns_t m[static 1], const lt_dwarf_stmt_prologue_t p[static 1], u8* instr) {
 	u8* it = instr;
 	u8 opcode = *it++;
 	switch (opcode) {

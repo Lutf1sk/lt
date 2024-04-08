@@ -8,16 +8,16 @@
 
 typedef
 struct lt_instr_stream {
-	u8* it;
-	u8* end;
-	lt_io_callback_t callb;
+	const u8* it;
+	const u8* end;
+	lt_write_fn_t callb;
 	void* usr;
 } lt_instr_stream_t;
 
-lt_instr_stream_t lt_instr_stream_create(lt_io_callback_t callb, void* usr, void* data, usz size);
-usz lt_x64_disasm_instr(lt_instr_stream_t* stream);
+lt_instr_stream_t lt_instr_stream_create(lt_write_fn_t callb, void* usr, const void* data, usz size);
+usz lt_x64_disasm_instr(lt_instr_stream_t stream[static 1]);
 
-b8 lt_instr_stream_read(lt_instr_stream_t* stream, void* out, usz size);
-b8 lt_instr_stream_consume(lt_instr_stream_t* stream, void* out, usz size);
+b8 lt_instr_stream_read(lt_instr_stream_t stream[static 1], void* out, usz size);
+b8 lt_instr_stream_consume(lt_instr_stream_t stream[static 1], void* out, usz size);
 
 #endif

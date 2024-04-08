@@ -18,8 +18,6 @@ enum lt_audio_format {
 	LT_AUDIO_I32,
 } lt_audio_format_t;
 
-typedef void(*lt_audio_stream_fn_t)(lt_audio_stream_t* s, void* frames, usz frame_count);
-
 typedef
 struct lt_audio_stream {
 	u32 rate;
@@ -35,19 +33,21 @@ struct lt_audio_stream {
 #endif
 } lt_audio_stream_t;
 
-lt_err_t lt_audio_stream_create(lt_audio_stream_t* s, u32 rate, u32 channels, lt_audio_stream_flags_t flags, lt_alloc_t* alloc);
-void lt_audio_stream_destroy(lt_audio_stream_t* s, lt_alloc_t* alloc);
+typedef void(*lt_audio_stream_fn_t)(lt_audio_stream_t s[static 1], void* frames, usz frame_count);
 
-lt_err_t lt_audio_stream_start(lt_audio_stream_t* s);
-lt_err_t lt_audio_stream_stop(lt_audio_stream_t* s);
-lt_err_t lt_audio_stream_drain(lt_audio_stream_t* s);
-lt_err_t lt_audio_stream_pause(lt_audio_stream_t* s);
-lt_err_t lt_audio_stream_resume(lt_audio_stream_t* s);
+lt_err_t lt_audio_stream_create(lt_audio_stream_t s[static 1], u32 rate, u32 channels, lt_audio_stream_flags_t flags, lt_alloc_t alloc[static 1]);
+void lt_audio_stream_destroy(lt_audio_stream_t s[static 1], lt_alloc_t alloc[static 1]);
 
-lt_err_t lt_audio_stream_wait(lt_audio_stream_t* s);
+lt_err_t lt_audio_stream_start(lt_audio_stream_t s[static 1]);
+lt_err_t lt_audio_stream_stop(lt_audio_stream_t s[static 1]);
+lt_err_t lt_audio_stream_drain(lt_audio_stream_t s[static 1]);
+lt_err_t lt_audio_stream_pause(lt_audio_stream_t s[static 1]);
+lt_err_t lt_audio_stream_resume(lt_audio_stream_t s[static 1]);
 
-isz lt_audio_stream_write(lt_audio_stream_t* s, void* data, usz frame_count);
-isz lt_audio_stream_read(lt_audio_stream_t* s, void* data, usz frame_count);
+lt_err_t lt_audio_stream_wait(lt_audio_stream_t s[static 1]);
+
+isz lt_audio_stream_write(lt_audio_stream_t s[static 1], void* data, usz frame_count);
+isz lt_audio_stream_read(lt_audio_stream_t s[static 1], void* data, usz frame_count);
 
 typedef
 struct lt_audio {
@@ -58,7 +58,7 @@ struct lt_audio {
 	void* data;
 } lt_audio_t;
 
-lt_err_t lt_audio_load_wav(lt_audio_t* audio, void* data, usz len, lt_alloc_t* alloc);
-lt_err_t lt_audio_load(lt_audio_t* audio, void* data, usz len, lt_alloc_t* alloc);
+lt_err_t lt_audio_load_wav(lt_audio_t audio[static 1], void* data, usz len, lt_alloc_t alloc[static 1]);
+lt_err_t lt_audio_load(lt_audio_t audio[static 1], void* data, usz len, lt_alloc_t alloc[static 1]);
 
 #endif

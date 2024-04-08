@@ -15,7 +15,7 @@
 #	define DYNL_ERR_STR() strerror(GetLastError())
 #endif
 
-void* lt_dynl_open(char* path) {
+void* lt_dynl_open(const char* path) {
 	return DYNL_OPEN(path);
 }
 
@@ -23,12 +23,12 @@ void lt_dynl_close(void* handle) {
 	DYNL_CLOSE(handle);
 }
 
-void* lt_dynl_sym(void* handle, char* sym) {
+void* lt_dynl_sym(void* handle, const char* sym) {
 	return DYNL_SYM(handle, sym);
 }
 
-char* lt_dynl_err_str(void) {
-	char* err = DYNL_ERR_STR();
+const char* lt_dynl_err_str(void) {
+	const char* err = DYNL_ERR_STR();
 	return err ? err : "No error";
 }
 

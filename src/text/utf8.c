@@ -1,6 +1,6 @@
 #include <lt/text.h>
 
-usz lt_utf8_encode(u32 v, char* out) {
+usz lt_utf8_encode(u32 v, char out[static 4]) {
 	char* it = out;
 	if (v < 0x80) // If it is an ascii char
 		*it++ = v;
@@ -22,7 +22,7 @@ usz lt_utf8_encode(u32 v, char* out) {
 	return it - out;
 }
 
-usz lt_utf8_decode(char* str, u32* out) {
+usz lt_utf8_decode(const char str[static 4], u32 out[static 1]) {
 	u32 c = *str;
 	if (!(c & 0x80)) {
 		*out = c;

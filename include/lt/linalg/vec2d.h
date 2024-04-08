@@ -158,38 +158,38 @@ lt_vec2d_t lt_v2dlerp(lt_vec2d_t a, lt_vec2d_t b, f64 t) {
 
 static LT_INLINE
 lt_vec2d_t lt_v2dlerpc(lt_vec2d_t a, lt_vec2d_t b, f64 t) {
-	return lt_v2dlerp(a, b, lt_clamp_f64(t, 0.0f, 1.0f));
+	return lt_v2dlerp(a, b, lt_clamp(t, 0.0f, 1.0f));
 }
 
 
 static LT_INLINE
 lt_vec2d_t lt_v2dmin(lt_vec2d_t a, lt_vec2d_t b) {
-	return LT_VEC2D(lt_min_f64(a.x, b.x), lt_min_f64(a.y, b.y));
+	return LT_VEC2D(lt_min(a.x, b.x), lt_min(a.y, b.y));
 }
 
 static LT_INLINE
 lt_vec2d_t lt_v2dmax(lt_vec2d_t a, lt_vec2d_t b) {
-	return LT_VEC2D(lt_max_f64(a.x, b.x), lt_max_f64(a.y, b.y));
+	return LT_VEC2D(lt_max(a.x, b.x), lt_max(a.y, b.y));
 }
 
 static LT_INLINE
 lt_vec2d_t lt_v2dclamp(lt_vec2d_t v, lt_vec2d_t min, lt_vec2d_t max) {
-	return LT_VEC2D(lt_clamp_f64(v.x, min.x, max.x), lt_clamp_f64(v.y, min.y, max.y));
+	return LT_VEC2D(lt_clamp(v.x, min.x, max.x), lt_clamp(v.y, min.y, max.y));
 }
 
 static LT_INLINE
 lt_vec2d_t lt_v2dclampf(lt_vec2d_t v, f64 min, f64 max) {
-	return LT_VEC2D(lt_clamp_f64(v.x, min, max), lt_clamp_f64(v.y, min, max));
+	return LT_VEC2D(lt_clamp(v.x, min, max), lt_clamp(v.y, min, max));
 }
 
 static LT_INLINE
 f64 lt_v2dmincomp(lt_vec2d_t v) {
-	return lt_min_f64(v.x, v.y);
+	return lt_min(v.x, v.y);
 }
 
 static LT_INLINE
 f64 lt_v2dmaxcomp(lt_vec2d_t v) {
-	return lt_max_f64(v.x, v.y);
+	return lt_max(v.x, v.y);
 }
 
 

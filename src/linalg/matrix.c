@@ -148,7 +148,7 @@ lt_mat4_t lt_m4quat(lt_quat_t q) {
 	return m;
 }
 
-lt_mat4_t lt_m4inverse(const lt_mat4_t* m_) {
+lt_mat4_t lt_m4inverse(const lt_mat4_t m_[static 1]) {
 	lt_mat4_t d_;
 	float (*dest)[4] = d_.data;
 

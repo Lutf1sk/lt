@@ -7,38 +7,38 @@
 
 typedef
 struct parse_ctx {
-	char* data;
+	const char* data;
 	usz len;
 	usz it;
 	lt_alloc_t* alloc;
 } parse_ctx_t;
 
 static
-void skip_whitespace(parse_ctx_t* cx) {
+void skip_whitespace(parse_ctx_t cx[static 1]) {
 	while (cx->it < cx->len && lt_is_space(cx->data[cx->it])) {
 		++cx->it;
 	}
 }
 
 static
-lstr_t consume_string(parse_ctx_t* cx) {
+lstr_t consume_string(parse_ctx_t cx[static 1]) {
 	++cx->it; // "
-	char* start_it = &cx->data[cx->it];
+	const char* start_it = &cx->data[cx->it];
 	// TODO: This loop does not handle \\" correctly.
 	while (cx->it < cx->len && cx->data[cx->it] != '"') {
 		if (cx->data[cx->it++] == '\\')
 			++cx->it;
 	}
 	++cx->it; // "
-	return LSTR(start_it, &cx->data[cx->it] - start_it - 1);
+	return LSTR((char*)start_it, &cx->data[cx->it] - start_it - 1);
 }
 
 static
-lstr_t consume_number(parse_ctx_t* cx) {
-	char* start_it = &cx->data[cx->it];
+lstr_t consume_number(parse_ctx_t cx[static 1]) {
+	const char* start_it = &cx->data[cx->it];
 	while (cx->it < cx->len && (lt_is_digit(cx->data[cx->it]) || cx->data[cx->it] == '.' || cx->data[cx->it] == '-'))
 		++cx->it;
-	return LSTR(start_it, &cx->data[cx->it] - start_it);
+	return LSTR((char*)start_it, &cx->data[cx->it] - start_it);
 }
 
 static LT_INLINE
@@ -49,11 +49,11 @@ lt_json_t json_make(lt_json_stype_t stype) {
 	return json;
 }
 
-static lt_json_t* json_parse_object(parse_ctx_t* cx);
-static lt_json_t* json_parse_value(parse_ctx_t* cx);
+static lt_json_t* json_parse_object(parse_ctx_t cx[static 1]);
+static lt_json_t* json_parse_value(parse_ctx_t cx[static 1]);
 
 static
-lt_json_t* json_parse_array(parse_ctx_t* cx) {
+lt_json_t* json_parse_array(parse_ctx_t cx[static 1]) {
 	lt_json_t* arr = lt_malloc(cx->alloc, sizeof(lt_json_t));
 	LT_ASSERT(arr);
 	*arr = json_make(LT_JSON_ARRAY);
@@ -80,7 +80,7 @@ lt_json_t* json_parse_array(parse_ctx_t* cx) {
 }
 
 static
-lt_json_t* json_parse_value(parse_ctx_t* cx) {
+lt_json_t* json_parse_value(parse_ctx_t cx[static 1]) {
 	char c = cx->data[cx->it];
 	switch (c) {
 	case '{':
@@ -99,7 +99,7 @@ lt_json_t* json_parse_value(parse_ctx_t* cx) {
 
 	case 't': {
 		lstr_t expect = CLSTR("true");
-		if (cx->it + expect.len > cx->len || !lt_lseq(expect, LSTR(&cx->data[cx->it], expect.len)))
+		if (cx->it + expect.len > cx->len || !lt_lseq(expect, LSTR((char*)&cx->data[cx->it], expect.len)))
 			return NULL;
 		cx->it += expect.len;
 		lt_json_t* new = lt_malloc(cx->alloc, sizeof(lt_json_t));
@@ -111,7 +111,7 @@ lt_json_t* json_parse_value(parse_ctx_t* cx) {
 
 	case 'f': {
 		lstr_t expect = CLSTR("false");
-		if (cx->it + expect.len > cx->len || !lt_lseq(expect, LSTR(&cx->data[cx->it], expect.len)))
+		if (cx->it + expect.len > cx->len || !lt_lseq(expect, LSTR((char*)&cx->data[cx->it], expect.len)))
 			return NULL;
 		cx->it += expect.len;
 		lt_json_t* new = lt_malloc(cx->alloc, sizeof(lt_json_t));
@@ -123,7 +123,7 @@ lt_json_t* json_parse_value(parse_ctx_t* cx) {
 
 	case 'n': {
 		lstr_t expect = CLSTR("null");
-		if (cx->it + expect.len > cx->len || !lt_lseq(expect, LSTR(&cx->data[cx->it], expect.len)))
+		if (cx->it + expect.len > cx->len || !lt_lseq(expect, LSTR((char*)&cx->data[cx->it], expect.len)))
 			return NULL;
 		cx->it += expect.len;
 		lt_json_t* new = lt_malloc(cx->alloc, sizeof(lt_json_t));
@@ -149,7 +149,7 @@ lt_json_t* json_parse_value(parse_ctx_t* cx) {
 }
 
 static
-lt_json_t* json_parse_entry(parse_ctx_t* cx) {
+lt_json_t* json_parse_entry(parse_ctx_t cx[static 1]) {
 	skip_whitespace(cx);
 	lstr_t key = consume_string(cx);
 	skip_whitespace(cx);
@@ -158,13 +158,13 @@ lt_json_t* json_parse_entry(parse_ctx_t* cx) {
 
 	lt_json_t* val = json_parse_value(cx);
 	if (!val)
-		lt_werrf("failed to parse '%S'\n", LSTR(&cx->data[cx->it], cx->len - cx->it));
+		lt_werrf("failed to parse '%S'\n", LSTR((char*)&cx->data[cx->it], cx->len - cx->it));
 	val->key = key;
 	return val;
 }
 
 static
-lt_json_t* json_parse_object(parse_ctx_t* cx) {
+lt_json_t* json_parse_object(parse_ctx_t cx[static 1]) {
 	++cx->it; // {
 
 	lt_json_t* obj = lt_malloc(cx->alloc, sizeof(lt_json_t));
@@ -191,7 +191,7 @@ lt_json_t* json_parse_object(parse_ctx_t* cx) {
 	return obj;
 }
 
-lt_json_t* lt_json_parse(lt_alloc_t* alloc, char* data, usz len) {
+lt_json_t* lt_json_parse(lt_alloc_t alloc[static 1], const char* data, usz len) {
 	parse_ctx_t cx;
 	cx.data = data;
 	cx.len = len;
@@ -210,7 +210,7 @@ void print_indent(lt_file_t* file, int indent) {
 }
 
 static
-void json_print_recursive(lt_file_t* file, lt_json_t* json, int indent) {
+void json_print_recursive(lt_file_t* file, const lt_json_t json[static 1], int indent) {
 	switch (json->stype) {
 	case LT_JSON_ARRAY: {
 		lt_fprintf(file, "[\n");
@@ -253,15 +253,12 @@ void json_print_recursive(lt_file_t* file, lt_json_t* json, int indent) {
 	}
 }
 
-void lt_json_print(lt_file_t* file, lt_json_t* json) {
+void lt_json_print(lt_file_t* file, const lt_json_t json[static 1]) {
 	json_print_recursive(file, json, 0);
 	lt_fprintf(file, "\n");
 }
 
-lt_json_t* lt_json_find_child(lt_json_t* json, lstr_t key) {
-	if (!json)
-		return NULL;
-
+lt_json_t* lt_json_find_child(lt_json_t json[static 1], lstr_t key) {
 	LT_ASSERT(json->stype == LT_JSON_OBJECT);
 	if (json->stype != LT_JSON_OBJECT)
 		return NULL;
@@ -275,16 +272,30 @@ lt_json_t* lt_json_find_child(lt_json_t* json, lstr_t key) {
 	return NULL;
 }
 
+const lt_json_t* lt_json_find_const_child(const lt_json_t json[static 1], lstr_t key) {
+	LT_ASSERT(json->stype == LT_JSON_OBJECT);
+	if (json->stype != LT_JSON_OBJECT)
+		return NULL;
+
+	const lt_json_t* it = json->child;
+	while (it) {
+		if (lt_lseq(it->key, key))
+			return it;
+		it = it->next;
+	}
+	return NULL;
+}
+
 static LT_INLINE
-lt_json_t* find_child_of_object(lt_json_t* parent, lstr_t key) {
+const lt_json_t* find_child_of_object(const lt_json_t* parent, lstr_t key) {
 	if (!parent || parent->stype != LT_JSON_OBJECT) {
 		return NULL;
 	}
-	return lt_json_find_child(parent, key);
+	return lt_json_find_const_child(parent, key);
 }
 
-u64 lt_json_uint_or_default(lt_json_t* parent, lstr_t key, u64 otherwise) {
-	lt_json_t* child = find_child_of_object(parent, key);
+u64 lt_json_uint_or_default(const lt_json_t* parent, lstr_t key, u64 otherwise) {
+	const lt_json_t* child = find_child_of_object(parent, key);
 	u64 u;
 	if (!child || child->stype != LT_JSON_NUMBER || lt_lstou(child->str_val, &u) != LT_SUCCESS) {
 		return otherwise;
@@ -292,8 +303,8 @@ u64 lt_json_uint_or_default(lt_json_t* parent, lstr_t key, u64 otherwise) {
 	return u;
 }
 
-i64 lt_json_int_or_default(lt_json_t* parent, lstr_t key, i64 otherwise) {
-	lt_json_t* child = find_child_of_object(parent, key);
+i64 lt_json_int_or_default(const lt_json_t* parent, lstr_t key, i64 otherwise) {
+	const lt_json_t* child = find_child_of_object(parent, key);
 	i64 i;
 	if (!child || child->stype != LT_JSON_NUMBER || lt_lstoi(child->str_val, &i) != LT_SUCCESS) {
 		return otherwise;
@@ -301,8 +312,8 @@ i64 lt_json_int_or_default(lt_json_t* parent, lstr_t key, i64 otherwise) {
 	return i;
 }
 
-f64 lt_json_float_or_default(lt_json_t* parent, lstr_t key, f64 otherwise) {
-	lt_json_t* child = find_child_of_object(parent, key);
+f64 lt_json_float_or_default(const lt_json_t* parent, lstr_t key, f64 otherwise) {
+	const lt_json_t* child = find_child_of_object(parent, key);
 	f64 f;
 	if (!child || child->stype != LT_JSON_NUMBER || lt_lstof(child->str_val, &f) != LT_SUCCESS) {
 		return otherwise;
@@ -310,31 +321,31 @@ f64 lt_json_float_or_default(lt_json_t* parent, lstr_t key, f64 otherwise) {
 	return f;
 }
 
-b8 lt_json_bool_or_default(lt_json_t* parent, lstr_t key, b8 otherwise) {
-	lt_json_t* child = find_child_of_object(parent, key);
+b8 lt_json_bool_or_default(const lt_json_t* parent, lstr_t key, b8 otherwise) {
+	const lt_json_t* child = find_child_of_object(parent, key);
 	if (!child || child->stype != LT_JSON_BOOL) {
 		return otherwise;
 	}
 	return lt_lseq(child->str_val, CLSTR("true"));
 }
 
-lstr_t lt_json_str_or_default(lt_json_t* parent, lstr_t key, lstr_t otherwise) {
-	lt_json_t* child = find_child_of_object(parent, key);
+lstr_t lt_json_str_or_default(const lt_json_t* parent, lstr_t key, lstr_t otherwise) {
+	const lt_json_t* child = find_child_of_object(parent, key);
 	if (!child || child->stype != LT_JSON_STRING) {
 		return otherwise;
 	}
 	return child->str_val;
 }
 
-lstr_t lt_json_str_val_or_default(lt_json_t* parent, lstr_t key, lstr_t otherwise) {
-	lt_json_t* child = find_child_of_object(parent, key);
+lstr_t lt_json_str_val_or_default(const lt_json_t* parent, lstr_t key, lstr_t otherwise) {
+	const lt_json_t* child = find_child_of_object(parent, key);
 	if (!child) {
 		return otherwise;
 	}
 	return child->str_val;
 }
 
-lstr_t lt_json_escape_str(lstr_t src, lt_alloc_t* alloc) {
+lstr_t lt_json_escape_str(lstr_t src, lt_alloc_t alloc[static 1]) {
 	lt_strstream_t ss;
 	LT_ASSERT(lt_strstream_create(&ss, alloc) == LT_SUCCESS);
 
@@ -358,7 +369,7 @@ lstr_t lt_json_escape_str(lstr_t src, lt_alloc_t* alloc) {
 	return ss.str;
 }
 
-lstr_t lt_json_unescape_str(lstr_t src, lt_alloc_t* alloc) {
+lstr_t lt_json_unescape_str(lstr_t src, lt_alloc_t alloc[static 1]) {
 	lt_strstream_t ss;
 	LT_ASSERT(lt_strstream_create(&ss, alloc) == LT_SUCCESS);
 
@@ -387,8 +398,8 @@ lstr_t lt_json_unescape_str(lstr_t src, lt_alloc_t* alloc) {
 	return ss.str;
 }
 
-void lt_json_free(lt_json_t* json, lt_alloc_t* alloc) {
-	for (lt_json_t* it = json, *next; it; it = next) {
+void lt_json_free(const lt_json_t json[static 1], lt_alloc_t alloc[static 1]) {
+	for (const lt_json_t* it = json, *next; it; it = next) {
 		if (it->stype == LT_JSON_OBJECT || it->stype == LT_JSON_ARRAY) {
 			lt_json_free(it->child, alloc);
 		}

@@ -302,7 +302,7 @@ u32 precomp_tab[256][8] = {
 #undef X
 
 static
-lt_err_t read_header1(void* data, usz len, lt_font_t* out_font, u8** out_glyph_start) {
+lt_err_t read_header1(void* data, usz len, lt_font_t out_font[static 1], u8* out_glyph_start[static 1]) {
 	lt_psf1_header_t* head = data;
 
 	if (len < sizeof(lt_psf1_header_t) || head->height == 0)
@@ -319,7 +319,7 @@ lt_err_t read_header1(void* data, usz len, lt_font_t* out_font, u8** out_glyph_s
 }
 
 static
-lt_err_t read_header2(void* data, usz len, lt_font_t* out_font, u8** out_glyph_start) {
+lt_err_t read_header2(void* data, usz len, lt_font_t out_font[static 1], u8* out_glyph_start[static 1]) {
 	lt_psf2_header_t* head = data;
 
 	if (len < sizeof(lt_psf2_header_t) || head->version != 0)
@@ -337,7 +337,7 @@ lt_err_t read_header2(void* data, usz len, lt_font_t* out_font, u8** out_glyph_s
 	return LT_SUCCESS;
 }
 
-lt_err_t lt_font_load_psf(lt_font_t* font, void* data, usz len, lt_alloc_t* alloc) {
+lt_err_t lt_font_load_psf(lt_font_t font[static 1], void* data, usz len, lt_alloc_t alloc[static 1]) {
 	lt_err_t err;
 
 	if (len < sizeof(u32))
@@ -375,7 +375,7 @@ lt_err_t lt_font_load_psf(lt_font_t* font, void* data, usz len, lt_alloc_t* allo
 	return LT_SUCCESS;
 }
 
-lt_err_t lt_font_write_psf(lt_font_t* font, lt_file_t* file, lt_alloc_t* alloc) {
+lt_err_t lt_font_write_psf(const lt_font_t font[static 1], lt_file_t* file, lt_alloc_t alloc[static 1]) {
 	lt_err_t err;
 
 	// Allocate target buffer

@@ -1,12 +1,10 @@
 #include <lt/io.h>
 
-#include "file_def.h"
-
 #if defined(LT_UNIX)
 
-static lt_file_t lt_stdin_ = { 0, 0, 512, 0, NULL };
-static lt_file_t lt_stdout_ = { 1, 0, 512, 0, NULL };
-static lt_file_t lt_stderr_ = { 2, 0, 512, 0, NULL };
+static lt_file_t lt_stdin_ = { 0, 0, 512 };
+static lt_file_t lt_stdout_ = { 1, 0, 512 };
+static lt_file_t lt_stderr_ = { 2, 0, 512 };
 
 lt_file_t* lt_stdin = &lt_stdin_;
 lt_file_t* lt_stdout = &lt_stdout_;

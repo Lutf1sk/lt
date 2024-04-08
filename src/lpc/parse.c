@@ -87,7 +87,7 @@ static lt_err_t parse_new_expr(lt_lpc_parse_ctx_t* cx, lt_lpc_expr_t** out);
 static lt_err_t parse_new_stmt(lt_lpc_parse_ctx_t* cx, lt_lpc_stmt_t** out);
 static lt_err_t parse_new_block(lt_lpc_parse_ctx_t* cx, lt_lpc_stmt_t** out);
 
-static lt_lpc_sym_t** lt_lpc_lookup_nearest_sym(lt_lpc_sym_t** arr, usz count, lstr_t name);
+static lt_lpc_sym_t** lt_lpc_lookup_nearest_sym(usz count, lt_lpc_sym_t* arr[static count], lstr_t name);
 static lt_err_t lt_lpc_insert_global(lt_lpc_parse_ctx_t* cx, lt_lpc_sym_t* sym);
 
 static lt_err_t resolve_stmt(lt_lpc_parse_ctx_t* cx, lt_lpc_stmt_t* stmt);
@@ -741,7 +741,7 @@ LT_DEFINE_BINARY_SEARCH_NEAREST_FUNC(lt_lpc_sym_t*, lstr_t, lt_lpc_lookup_neares
 static
 lt_err_t lt_lpc_insert_global(lt_lpc_parse_ctx_t* cx, lt_lpc_sym_t* sym) {
 	usz glob_count = lt_darr_count(cx->globals);
-	lt_lpc_sym_t** at = lt_lpc_lookup_nearest_sym(cx->globals, glob_count, sym->name);
+	lt_lpc_sym_t** at = lt_lpc_lookup_nearest_sym(glob_count, cx->globals, sym->name);
 
 	if (at < cx->globals + glob_count && sym_is_equal(*at, sym->name))
 		return LT_SUCCESS;//fail("multiple definitions of symbol '%S'", sym->name);
@@ -985,7 +985,7 @@ lt_err_t lt_lpc_resolve_tree(lt_lpc_parse_ctx_t* cx) {
 
 #define PRINTF(...) lt_io_printf(callb, usr, __VA_ARGS__)
 
-void lt_lpc_write_expr(lt_lpc_expr_t* expr, lt_io_callback_t callb, void* usr, usz indent) {
+void lt_lpc_write_expr(lt_lpc_expr_t* expr, lt_write_fn_t callb, void* usr, usz indent) {
 	PRINTF("%r|%S", indent, lt_lpc_expr_type_str(expr->type));
 
 	switch ((lt_lpc_expr_type_t)expr->type) {
@@ -1085,7 +1085,7 @@ void lt_lpc_write_expr(lt_lpc_expr_t* expr, lt_io_callback_t callb, void* usr, u
 	}
 }
 
-void lt_lpc_write_stmt(lt_lpc_stmt_t* stmt, lt_io_callback_t callb, void* usr, usz indent) {
+void lt_lpc_write_stmt(lt_lpc_stmt_t* stmt, lt_write_fn_t callb, void* usr, usz indent) {
 	if (stmt->type != LT_LPCS_EXPR)
 		PRINTF("%r|%S", indent, lt_lpc_stmt_type_str(stmt->type));
 

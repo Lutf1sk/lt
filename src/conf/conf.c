@@ -32,16 +32,16 @@ struct parse_ctx {
 		goto (l); \
 	} while (0)
 
-static lt_err_t parse_val(parse_ctx_t* cx, lt_conf_t* cf);
+static lt_err_t parse_val(parse_ctx_t cx[static 1], lt_conf_t cf[static 1]);
 
 static
-void skip_whitespace(parse_ctx_t* cx) {
+void skip_whitespace(parse_ctx_t cx[static 1]) {
 	while (cx->it < cx->end && lt_is_space(*cx->it))
 		++cx->it;
 }
 
 static
-lt_err_t consume_string(parse_ctx_t* cx, lstr_t str) {
+lt_err_t consume_string(parse_ctx_t cx[static 1], lstr_t str) {
 	char* it = str.str, *end = it + str.len;
 
 	char* begin = cx->it;
@@ -61,7 +61,7 @@ lt_err_t consume_string(parse_ctx_t* cx, lstr_t str) {
 }
 
 static
-lt_err_t consume_key(parse_ctx_t* cx, lstr_t* out) {
+lt_err_t consume_key(parse_ctx_t cx[static 1], lstr_t out[static 1]) {
 	char* begin = cx->it;
 	while (cx->it < cx->end && lt_is_ident_body(*cx->it))
 		++cx->it;
@@ -81,7 +81,7 @@ lt_err_t consume_key(parse_ctx_t* cx, lstr_t* out) {
 }
 
 static
-lt_err_t parse_obj_body(parse_ctx_t* cx, lt_conf_t* cf) {
+lt_err_t parse_obj_body(parse_ctx_t cx[static 1], lt_conf_t cf[static 1]) {
 	lt_err_t err;
 
 	lt_darr(lt_conf_t) children = lt_darr_create(lt_conf_t, 16, cx->alloc);
@@ -116,7 +116,7 @@ err0:	for (lt_conf_t* it = children, *end = it + lt_darr_count(children); it < e
 }
 
 static
-lt_err_t parse_arr_body(parse_ctx_t* cx, lt_conf_t* cf) {
+lt_err_t parse_arr_body(parse_ctx_t cx[static 1], lt_conf_t cf[static 1]) {
 	lt_err_t err;
 
 	lt_darr(lt_conf_t) children = lt_darr_create(lt_conf_t, 16, cx->alloc);
@@ -146,7 +146,7 @@ err0:	for (lt_conf_t* it = children, *end = it + lt_darr_count(children); it < e
 }
 
 static
-lt_err_t parse_val(parse_ctx_t* cx, lt_conf_t* cf) {
+lt_err_t parse_val(parse_ctx_t cx[static 1], lt_conf_t cf[static 1]) {
 	lt_err_t err;
 
 	if (cx->it >= cx->end)
@@ -210,14 +210,14 @@ lt_err_t parse_val(parse_ctx_t* cx, lt_conf_t* cf) {
 	}
 }
 
-lt_err_t lt_conf_add_child(lt_conf_t* cf, lt_conf_t* child) {
+lt_err_t lt_conf_add_child(lt_conf_t cf[static 1], lt_conf_t child[static 1]) {
 	LT_ASSERT(cf->stype == LT_CONF_OBJECT || cf->stype == LT_CONF_ARRAY);
 	lt_darr_push(cf->children, *child);
 	++cf->child_count;
 	return LT_SUCCESS;
 }
 
-lt_err_t lt_conf_erase_str(lt_conf_t* cf, lstr_t str, lt_alloc_t* alloc) {
+lt_err_t lt_conf_erase_str(lt_conf_t cf[static 1], lstr_t str, lt_alloc_t alloc[static 1]) {
 	LT_ASSERT(cf->stype == LT_CONF_OBJECT || cf->stype == LT_CONF_ARRAY);
 
 	for (usz i = 0; i < cf->child_count; ++i) {
@@ -233,7 +233,7 @@ lt_err_t lt_conf_erase_str(lt_conf_t* cf, lstr_t str, lt_alloc_t* alloc) {
 	return LT_SUCCESS;
 }
 
-lt_err_t lt_conf_erase_index(lt_conf_t* cf, usz index, lt_alloc_t* alloc) {
+lt_err_t lt_conf_erase_index(lt_conf_t cf[static 1], usz index, lt_alloc_t alloc[static 1]) {
 	LT_ASSERT(cf->stype == LT_CONF_OBJECT || cf->stype == LT_CONF_ARRAY);
 
 	LT_ASSERT(index < cf->child_count);
@@ -244,7 +244,7 @@ lt_err_t lt_conf_erase_index(lt_conf_t* cf, usz index, lt_alloc_t* alloc) {
 	return LT_SUCCESS;
 }
 
-lt_err_t lt_conf_erase_key(lt_conf_t* cf, lstr_t key, lt_alloc_t* alloc) {
+lt_err_t lt_conf_erase_key(lt_conf_t cf[static 1], lstr_t key, lt_alloc_t alloc[static 1]) {
 	LT_ASSERT(cf->stype == LT_CONF_OBJECT);
 
 	for (usz i = 0; i < cf->child_count; ++i) {
@@ -259,7 +259,7 @@ lt_err_t lt_conf_erase_key(lt_conf_t* cf, lstr_t key, lt_alloc_t* alloc) {
 	return LT_ERR_NOT_FOUND;
 }
 
-lt_err_t lt_conf_parse(lt_conf_t* cf, void* data, usz len, lt_conf_err_info_t* err_info, lt_alloc_t* alloc) {
+lt_err_t lt_conf_parse(lt_conf_t cf[static 1], void* data, usz len, lt_conf_err_info_t* err_info, lt_alloc_t alloc[static 1]) {
 	parse_ctx_t cx;
 	cx.alloc = alloc;
 	cx.err_info = err_info;
@@ -271,11 +271,11 @@ lt_err_t lt_conf_parse(lt_conf_t* cf, void* data, usz len, lt_conf_err_info_t* e
 	return parse_obj_body(&cx, cf);
 }
 
-void lt_conf_free_err_info(lt_conf_err_info_t* err_info, lt_alloc_t* alloc) {
+void lt_conf_free_err_info(lt_conf_err_info_t err_info[static 1], lt_alloc_t alloc[static 1]) {
 	lt_mfree(alloc, err_info->err_str.str);
 }
 
-lt_conf_t* lt_conf_find(lt_conf_t* parent, lstr_t key_path) {
+lt_conf_t* lt_conf_find(lt_conf_t parent[static 1], lstr_t key_path) {
 	char* it = key_path.str, *end = it + key_path.len;
 	while (it < end) {
 		if (!parent || parent->stype != LT_CONF_OBJECT)
@@ -296,7 +296,7 @@ lt_conf_t* lt_conf_find(lt_conf_t* parent, lstr_t key_path) {
 	return parent;
 }
 
-lt_conf_t* lt_conf_find_int(lt_conf_t* parent, lstr_t key_path, i64* out) {
+lt_conf_t* lt_conf_find_int(lt_conf_t parent[static 1], lstr_t key_path, i64 out[static 1]) {
 	lt_conf_t* cf = lt_conf_find(parent, key_path);
 	if (!cf || cf->stype != LT_CONF_INT)
 		return NULL;
@@ -305,7 +305,7 @@ lt_conf_t* lt_conf_find_int(lt_conf_t* parent, lstr_t key_path, i64* out) {
 	return cf;
 }
 
-lt_conf_t* lt_conf_find_uint(lt_conf_t* parent, lstr_t key_path, u64* out) {
+lt_conf_t* lt_conf_find_uint(lt_conf_t parent[static 1], lstr_t key_path, u64 out[static 1]) {
 	lt_conf_t* cf = lt_conf_find(parent, key_path);
 	if (!cf || cf->stype != LT_CONF_INT)
 		return NULL;
@@ -314,7 +314,7 @@ lt_conf_t* lt_conf_find_uint(lt_conf_t* parent, lstr_t key_path, u64* out) {
 	return cf;
 }
 
-lt_conf_t* lt_conf_find_bool(lt_conf_t* parent, lstr_t key_path, b8* out) {
+lt_conf_t* lt_conf_find_bool(lt_conf_t parent[static 1], lstr_t key_path, b8 out[static 1]) {
 	lt_conf_t* cf = lt_conf_find(parent, key_path);
 	if (!cf || cf->stype != LT_CONF_BOOL)
 		return NULL;
@@ -323,7 +323,7 @@ lt_conf_t* lt_conf_find_bool(lt_conf_t* parent, lstr_t key_path, b8* out) {
 	return cf;
 }
 
-lt_conf_t* lt_conf_find_str(lt_conf_t* parent, lstr_t key_path, lstr_t* out) {
+lt_conf_t* lt_conf_find_str(lt_conf_t parent[static 1], lstr_t key_path, lstr_t out[static 1]) {
 	lt_conf_t* cf = lt_conf_find(parent, key_path);
 	if (!cf || cf->stype != LT_CONF_STRING)
 		return NULL;
@@ -332,7 +332,7 @@ lt_conf_t* lt_conf_find_str(lt_conf_t* parent, lstr_t key_path, lstr_t* out) {
 	return cf;
 }
 
-lt_conf_t* lt_conf_find_float(lt_conf_t* parent, lstr_t key_path, f64* out) {
+lt_conf_t* lt_conf_find_float(lt_conf_t parent[static 1], lstr_t key_path, f64 out[static 1]) {
 	lt_conf_t* cf = lt_conf_find(parent, key_path);
 	if (!cf || cf->stype != LT_CONF_FLOAT)
 		return NULL;
@@ -341,7 +341,7 @@ lt_conf_t* lt_conf_find_float(lt_conf_t* parent, lstr_t key_path, f64* out) {
 	return cf;
 }
 
-lt_conf_t* lt_conf_find_object(lt_conf_t* parent, lstr_t key_path, lt_conf_t** out) {
+lt_conf_t* lt_conf_find_object(lt_conf_t parent[static 1], lstr_t key_path, lt_conf_t* out[static 1]) {
 	lt_conf_t* cf = lt_conf_find(parent, key_path);
 	if (!cf || cf->stype != LT_CONF_OBJECT)
 		return NULL;
@@ -349,7 +349,7 @@ lt_conf_t* lt_conf_find_object(lt_conf_t* parent, lstr_t key_path, lt_conf_t** o
 		*out = cf;
 	return cf;
 }
-lt_conf_t* lt_conf_find_array(lt_conf_t* parent, lstr_t key_path, lt_conf_t** out) {
+lt_conf_t* lt_conf_find_array(lt_conf_t parent[static 1], lstr_t key_path, lt_conf_t* out[static 1]) {
 	lt_conf_t* cf = lt_conf_find(parent, key_path);
 	if (!cf || cf->stype != LT_CONF_ARRAY)
 		return NULL;
@@ -358,84 +358,84 @@ lt_conf_t* lt_conf_find_array(lt_conf_t* parent, lstr_t key_path, lt_conf_t** ou
 	return cf;
 }
 
-i64 lt_conf_int(lt_conf_t* parent, lstr_t key_path) {
+i64 lt_conf_int(lt_conf_t parent[static 1], lstr_t key_path) {
 	lt_conf_t* cf = lt_conf_find(parent, key_path);
 	if (!cf || cf->stype != LT_CONF_INT)
 		lt_ferrf("missing required integer field '%S.%S'\n", parent->key, key_path);
 	return cf->int_val;
 }
 
-u64 lt_conf_uint(lt_conf_t* parent, lstr_t key_path) {
+u64 lt_conf_uint(lt_conf_t parent[static 1], lstr_t key_path) {
 	lt_conf_t* cf = lt_conf_find(parent, key_path);
 	if (!cf || cf->stype != LT_CONF_INT)
 		lt_ferrf("missing required integer field '%S.%S'\n", parent->key, key_path);
 	return cf->uint_val;
 }
 
-b8 lt_conf_bool(lt_conf_t* parent, lstr_t key_path) {
+b8 lt_conf_bool(lt_conf_t parent[static 1], lstr_t key_path) {
 	lt_conf_t* cf = lt_conf_find(parent, key_path);
 	if (!cf || cf->stype != LT_CONF_BOOL)
 		lt_ferrf("missing required boolean field '%S.%S'\n", parent->key, key_path);
 	return cf->bool_val;
 }
 
-lstr_t lt_conf_str(lt_conf_t* parent, lstr_t key_path) {
+lstr_t lt_conf_str(lt_conf_t parent[static 1], lstr_t key_path) {
 	lt_conf_t* cf = lt_conf_find(parent, key_path);
 	if (!cf || cf->stype != LT_CONF_STRING)
 		lt_ferrf("missing required string field '%S.%S'\n", parent->key, key_path);
 	return cf->str_val;
 }
 
-f64 lt_conf_float(lt_conf_t* parent, lstr_t key_path) {
+f64 lt_conf_float(lt_conf_t parent[static 1], lstr_t key_path) {
 	lt_conf_t* cf = lt_conf_find(parent, key_path);
 	if (!cf || cf->stype != LT_CONF_FLOAT)
 		lt_ferrf("missing required floating-point field '%S.%S'\n", parent->key, key_path);
 	return cf->float_val;
 }
 
-lt_conf_t* lt_conf_object(lt_conf_t* parent, lstr_t key_path) {
+lt_conf_t* lt_conf_object(lt_conf_t parent[static 1], lstr_t key_path) {
 	lt_conf_t* cf = lt_conf_find(parent, key_path);
 	if (!cf || cf->stype != LT_CONF_OBJECT)
 		lt_ferrf("missing required object field '%S.%S'\n", parent->key, key_path);
 	return cf;
 }
 
-lt_conf_t* lt_conf_array(lt_conf_t* parent, lstr_t key_path)  {
+lt_conf_t* lt_conf_array(lt_conf_t parent[static 1], lstr_t key_path)  {
 	lt_conf_t* cf = lt_conf_find(parent, key_path);
 	if (!cf || cf->stype != LT_CONF_ARRAY)
 		lt_ferrf("missing required array field '%S.%S'\n", parent->key, key_path);
 	return cf;
 }
 
-i64 lt_conf_find_int_default(lt_conf_t* parent, lstr_t key_path, i64 default_) {
+i64 lt_conf_find_int_default(lt_conf_t parent[static 1], lstr_t key_path, i64 default_) {
 	lt_conf_t* cf = lt_conf_find(parent, key_path);
 	if (!cf || cf->stype != LT_CONF_INT)
 		return default_;
 	return cf->int_val;
 }
 
-u64 lt_conf_find_uint_default(lt_conf_t* parent, lstr_t key_path, u64 default_) {
+u64 lt_conf_find_uint_default(lt_conf_t parent[static 1], lstr_t key_path, u64 default_) {
 	lt_conf_t* cf = lt_conf_find(parent, key_path);
 	if (!cf || cf->stype != LT_CONF_INT)
 		return default_;
 	return cf->uint_val;
 }
 
-b8 lt_conf_find_bool_default(lt_conf_t* parent, lstr_t key_path, b8 default_) {
+b8 lt_conf_find_bool_default(lt_conf_t parent[static 1], lstr_t key_path, b8 default_) {
 	lt_conf_t* cf = lt_conf_find(parent, key_path);
 	if (!cf || cf->stype != LT_CONF_BOOL)
 		return default_;
 	return cf->bool_val;
 }
 
-lstr_t lt_conf_find_str_default(lt_conf_t* parent, lstr_t key_path, lstr_t default_) {
+lstr_t lt_conf_find_str_default(lt_conf_t parent[static 1], lstr_t key_path, lstr_t default_) {
 	lt_conf_t* cf = lt_conf_find(parent, key_path);
 	if (!cf || cf->stype != LT_CONF_STRING)
 		return default_;
 	return cf->str_val;
 }
 
-f64 lt_conf_find_float_default(lt_conf_t* parent, lstr_t key_path, f64 default_) {
+f64 lt_conf_find_float_default(lt_conf_t parent[static 1], lstr_t key_path, f64 default_) {
 	lt_conf_t* cf = lt_conf_find(parent, key_path);
 	if (!cf || cf->stype != LT_CONF_FLOAT)
 		return default_;
@@ -443,7 +443,7 @@ f64 lt_conf_find_float_default(lt_conf_t* parent, lstr_t key_path, f64 default_)
 }
 
 static
-isz lt_conf_write_indented(lt_conf_t* cf, lt_io_callback_t callb, void* usr, usz indent) {
+isz lt_conf_write_indented(lt_conf_t cf[static 1], lt_write_fn_t callb, void* usr, usz indent) {
 	usz bytes = 0;
 	isz res = 0;
 
@@ -503,12 +503,12 @@ isz lt_conf_write_indented(lt_conf_t* cf, lt_io_callback_t callb, void* usr, usz
 	}
 }
 
-isz lt_conf_write(lt_conf_t* cf, lt_io_callback_t callb, void* usr) {
+isz lt_conf_write(lt_conf_t cf[static 1], lt_write_fn_t callb, void* usr) {
 	return lt_conf_write_indented(cf, callb, usr, 0);
 }
 
 static
-void lt_conf_free_children(lt_conf_t* cf, lt_alloc_t* alloc) {
+void lt_conf_free_children(lt_conf_t cf[static 1], lt_alloc_t alloc[static 1]) {
 	for (usz i = 0; i < cf->child_count; ++i) {
 		lt_conf_t* child = &cf->children[i];
 		if (child->stype == LT_CONF_OBJECT || child->stype == LT_CONF_ARRAY)
@@ -518,7 +518,7 @@ void lt_conf_free_children(lt_conf_t* cf, lt_alloc_t* alloc) {
 	lt_darr_destroy(cf->children);
 }
 
-void lt_conf_free(lt_conf_t* cf, lt_alloc_t* alloc) {
+void lt_conf_free(lt_conf_t cf[static 1], lt_alloc_t alloc[static 1]) {
 	if (!cf || !(cf->stype == LT_CONF_OBJECT || cf->stype == LT_CONF_ARRAY))
 		return;
 	lt_conf_free_children(cf, alloc);

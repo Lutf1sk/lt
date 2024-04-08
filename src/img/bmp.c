@@ -49,10 +49,10 @@ LT_PACKED_STRUCT(lt_bmp_infoheader2) {
 	u32 identifier;
 } lt_bmp_infoheader2_t;
 
-lt_err_t lt_img_load_bmp(lt_img_t* img, void* data, usz len, lt_alloc_t* alloc) {
+lt_err_t lt_img_load_bmp(lt_img_t img[static 1], const void* data, usz len, lt_alloc_t alloc[static 1]) {
 	usz end = (usz)data + len;
 
-	lt_bmp_fileheader_t* fh = data;
+	const lt_bmp_fileheader_t* fh = data;
 	if (len < sizeof(lt_bmp_fileheader_t) || fh->magic[0] != 'B' || fh->magic[1] != 'M')
 		return LT_ERR_INVALID_FORMAT;
 

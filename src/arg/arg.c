@@ -2,7 +2,7 @@
 #include <lt/str.h>
 #include <lt/debug.h>
 
-lt_arg_iterator_t lt_arg_iterator_create(int argc, char** argv) {
+lt_arg_iterator_t lt_arg_iterator_create(int argc, char* argv[static argc]) {
 	lt_arg_iterator_t it;
 	it.end = argv + argc;
 	it.it = argv;
@@ -11,7 +11,7 @@ lt_arg_iterator_t lt_arg_iterator_create(int argc, char** argv) {
 	return it;
 }
 
-b8 lt_arg_next(lt_arg_iterator_t* it) {
+b8 lt_arg_next(lt_arg_iterator_t it[static 1]) {
 	if (++it->it >= it->end)
 		return 0;
 	it->arg_len = strlen(*it->it);
@@ -23,7 +23,7 @@ b8 lt_arg_next(lt_arg_iterator_t* it) {
 }
 
 static
-char* find_long_val(lt_arg_iterator_t* it, lstr_t key) {
+char* find_long_val(lt_arg_iterator_t it[static 1], lstr_t key) {
 	if (!key.len)
 		return NULL;
 
@@ -44,7 +44,7 @@ char* find_long_val(lt_arg_iterator_t* it, lstr_t key) {
 }
 
 static
-char* find_short_val(lt_arg_iterator_t* it, char key) {
+char* find_short_val(lt_arg_iterator_t it[static 1], char key) {
 	if (!key)
 		return NULL;
 
@@ -64,7 +64,7 @@ char* find_short_val(lt_arg_iterator_t* it, char key) {
 	return NULL;
 }
 
-b8 lt_arg_flag(lt_arg_iterator_t* it, char short_key, lstr_t long_key) {
+b8 lt_arg_flag(lt_arg_iterator_t it[static 1], char short_key, lstr_t long_key) {
 	lstr_t arg = LSTR(*it->it, it->arg_len);
 
 	char short_flag[2] = { '-', short_key };
@@ -76,7 +76,7 @@ b8 lt_arg_flag(lt_arg_iterator_t* it, char short_key, lstr_t long_key) {
 	return lt_lseq(LSTR(arg.str + 2, arg.len - 2), long_key);
 }
 
-b8 lt_arg_str(lt_arg_iterator_t* it, char short_key, lstr_t long_key, char** out) {
+b8 lt_arg_str(lt_arg_iterator_t it[static 1], char short_key, lstr_t long_key, char* out[static 1]) {
 	if (it->end_of_opt)
 		return 0;
 
@@ -88,7 +88,7 @@ b8 lt_arg_str(lt_arg_iterator_t* it, char short_key, lstr_t long_key, char** out
 	return !!arg;
 }
 
-b8 lt_arg_lstr(lt_arg_iterator_t* it, char short_key, lstr_t long_key, lstr_t* out) {
+b8 lt_arg_lstr(lt_arg_iterator_t it[static 1], char short_key, lstr_t long_key, lstr_t out[static 1]) {
 	if (it->end_of_opt)
 		return 0;
 
@@ -100,12 +100,12 @@ b8 lt_arg_lstr(lt_arg_iterator_t* it, char short_key, lstr_t long_key, lstr_t* o
 	return !!arg;
 }
 
-b8 lt_arg_int(lt_arg_iterator_t* it, char short_key, lstr_t long_key, i64* out) {
+b8 lt_arg_int(lt_arg_iterator_t it[static 1], char short_key, lstr_t long_key, i64 out[static 1]) {
 	// !!
 	return 0;
 }
 
-b8 lt_arg_uint(lt_arg_iterator_t* it, char short_key, lstr_t long_key, u64* out) {
+b8 lt_arg_uint(lt_arg_iterator_t it[static 1], char short_key, lstr_t long_key, u64 out[static 1]) {
 	// !!
 	return 0;
 }

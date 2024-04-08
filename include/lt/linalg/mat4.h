@@ -35,7 +35,7 @@
 #endif
 
 static LT_INLINE
-lt_vec4_t lt_v4mulm(lt_vec4_t v, const lt_mat4_t* m) {
+lt_vec4_t lt_v4mulm(lt_vec4_t v, const lt_mat4_t m[static 1]) {
 	return LT_VEC4(
 		m->data[0][0] * v.x + m->data[1][0] * v.y + m->data[2][0] * v.z + m->data[3][0] * v.w,
 		m->data[0][1] * v.x + m->data[1][1] * v.y + m->data[2][1] * v.z + m->data[3][1] * v.w,
@@ -45,13 +45,13 @@ lt_vec4_t lt_v4mulm(lt_vec4_t v, const lt_mat4_t* m) {
 }
 
 static LT_INLINE
-lt_vec3_t lt_v3mulm4(lt_vec3_t v, f32 w, const lt_mat4_t* m) {
+lt_vec3_t lt_v3mulm4(lt_vec3_t v, f32 w, const lt_mat4_t m[static 1]) {
 	return lt_v4mulm(LT_VEC4(v.x, v.y, v.z, w), m).xyz;
 }
 
 
 static LT_INLINE
-lt_mat4_t lt_m4mul(const lt_mat4_t* m1, const lt_mat4_t* m2) {
+lt_mat4_t lt_m4mul(const lt_mat4_t m1[static 1], const lt_mat4_t m2[static 1]) {
 	return LT_MAT4V(
 		lt_v4mulm(m2->i, m1),
 		lt_v4mulm(m2->j, m1),
@@ -90,6 +90,6 @@ lt_mat4_t lt_m4scale(lt_vec3_t scale) {
 
 lt_mat4_t lt_m4model(lt_vec3_t pos, lt_vec3_t rot, lt_vec3_t scale);
 
-lt_mat4_t lt_m4inverse(const lt_mat4_t* m);
+lt_mat4_t lt_m4inverse(const lt_mat4_t m[static 1]);
 
 #endif

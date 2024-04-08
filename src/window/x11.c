@@ -15,7 +15,7 @@
 #	include <lt/internal.h>
 
 static lt_keycode_t lt_lookup_key(lt_window_t* win, xcb_keycode_t keycode, u16 state);
-static void lt_generate_keytab(lt_window_t* win, lt_alloc_t* alloc);
+static void lt_generate_keytab(lt_window_t* win, lt_alloc_t alloc[static 1]);
 
 Display* lt_display = NULL;
 xcb_connection_t* lt_conn = NULL;
@@ -66,7 +66,7 @@ double mode_rate(xcb_randr_mode_info_t* mode) {
 	return (double)mode->dot_clock / ((double)mode->htotal * vtotal);
 }
 
-lt_err_t lt_window_init(lt_alloc_t* alloc) {
+lt_err_t lt_window_init(lt_alloc_t alloc[static 1]) {
 	lt_err_t err;
 
 	lt_xproto_init();
@@ -96,11 +96,11 @@ lt_err_t lt_window_init(lt_alloc_t* alloc) {
 	// EWMH
 	xcb_intern_atom_cookie_t* ewmh_cookie = xcb_ewmh_init_atoms(lt_conn, &lt_ewmh);
 	if (!xcb_ewmh_init_atoms_replies(&lt_ewmh, ewmh_cookie, NULL))
-		lt_werr(CLSTR("Failed to initialize EWMH atoms\n"));
+		lt_werrf("failed to initialize EWMH atoms\n");
 
 	WM_DELETE_WINDOW = get_atom(CLSTR("WM_DELETE_WINDOW"));
 	if (WM_DELETE_WINDOW == XCB_ATOM_NONE)
-		lt_werr(CLSTR("WM_DELETE_WINDOW not found\n"));
+		lt_werrf("WM_DELETE_WINDOW not found\n");
 
 	// Find outputs
 	xcb_randr_get_screen_resources_current_cookie_t scrres_cookie =
@@ -177,7 +177,7 @@ err1:	XCloseDisplay(lt_display);
 err0:	return err;
 }
 
-void lt_window_terminate(lt_alloc_t* alloc) {
+void lt_window_terminate(lt_alloc_t alloc[static 1]) {
 	if (clipboard_initialized)
 		clipboard_initialized = 0;
 
@@ -298,7 +298,7 @@ void lt_window_set_clipboard(lstr_t str) {
 	}
 }*/
 
-lstr_t lt_window_get_clipboard(lt_alloc_t* alloc) {
+lstr_t lt_window_get_clipboard(lt_alloc_t alloc[static 1]) {
 	if (!clipboard_initialized)
 		clipboard_initialize();
 
@@ -359,11 +359,11 @@ int lt_window_output_count(void) {
 	return lt_output_count;
 }
 
-lt_output_t* lt_window_outputs(void) {
+const lt_output_t* lt_window_outputs(void) {
 	return lt_outputs;
 }
 
-lt_window_t* lt_window_create(lt_window_description_t* desc, lt_alloc_t* alloc) {
+lt_window_t* lt_window_create(const lt_window_description_t desc[static 1], lt_alloc_t alloc[static 1]) {
 	int output = desc->output_index;
 
 	// Calculate window dimensions
@@ -424,7 +424,7 @@ lt_window_t* lt_window_create(lt_window_description_t* desc, lt_alloc_t* alloc) 
 	if (xcb_request_check(lt_conn, window_cookie))
 		return NULL;
 	if (xcb_request_check(lt_conn, title_cookie))
-		lt_werr(CLSTR("Failed to set window title\n"));
+		lt_werrf("failed to set window title\n");
 	if (xcb_request_check(lt_conn, map_cookie))
 		goto setup_err;
 
@@ -437,7 +437,7 @@ lt_window_t* lt_window_create(lt_window_description_t* desc, lt_alloc_t* alloc) 
 		xcb_void_cookie_t gc_cookie = xcb_create_gc(lt_conn, gc, window, gc_mask, gc_list);
 
 		if (xcb_request_check(lt_conn, gc_cookie))
-			lt_werr(CLSTR("Failed to create graphics context\n"));
+			lt_werrf("failed to create graphics context\n");
 	}
 
 	// Listen for close events
@@ -478,7 +478,7 @@ setup_err:
 	return NULL;
 }
 
-void lt_window_destroy(lt_window_t* win, lt_alloc_t* alloc) {
+void lt_window_destroy(const lt_window_t* win, lt_alloc_t alloc[static 1]) {
 	if (win->glctx) {
 		XFreeColormap(lt_display, win->clrmap);
 		glXMakeCurrent(lt_display, None, NULL);
@@ -619,7 +619,7 @@ b8 translate_event(lt_window_t* win, xcb_generic_event_t* gev, lt_window_event_t
 	}
 }
 
-usz lt_window_poll_events(lt_window_t* win, lt_window_event_t* events, usz max_events) {
+usz lt_window_poll_events(lt_window_t* win, usz max_events, lt_window_event_t events[static max_events]) {
 	win->key_press_map[LT_KEY_SCROLL_UP] = 0;
 	win->key_press_map[LT_KEY_SCROLL_DOWN] = 0;
 	memcpy(win->old_key_press_map, win->key_press_map, sizeof(win->key_press_map));
@@ -639,7 +639,7 @@ usz lt_window_poll_events(lt_window_t* win, lt_window_event_t* events, usz max_e
 	return ev_count;
 }
 
-usz lt_window_wait_events(lt_window_t* win, lt_window_event_t* events, usz max_events) {
+usz lt_window_wait_events(lt_window_t* win, usz max_events, lt_window_event_t events[static max_events]) {
 	memcpy(win->old_key_press_map, win->key_press_map, sizeof(win->key_press_map));
 
 	usz ev_count = 0;
@@ -714,12 +714,12 @@ void lt_window_set_size(lt_window_t* win, int w, int h) {
 	xcb_configure_window(lt_conn, win->window, XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, values);
 }
 
-void lt_window_get_pos(lt_window_t* win, int* x, int* y) {
+void lt_window_get_pos(const lt_window_t* win, int x[static 1], int y[static 1]) {
 	*x = win->pos_x;
 	*y = win->pos_y;
 }
 
-void lt_window_get_size(lt_window_t* win, int* w, int* h) {
+void lt_window_get_size(const lt_window_t* win, int w[static 1], int h[static 1]) {
 	*w = win->size_w;
 	*h = win->size_h;
 }
@@ -727,7 +727,7 @@ void lt_window_get_size(lt_window_t* win, int* w, int* h) {
 extern int strncmp(const char*, const char*, usz);
 
 static
-void lt_generate_keytab(lt_window_t* win, lt_alloc_t* alloc) {
+void lt_generate_keytab(lt_window_t* win, lt_alloc_t alloc[static 1]) {
 	const struct { int key; char* name; } keymap[] = {
 		{ LT_KEY_TILDE, "TLDE" },
 		{ LT_KEY_1, "AE01" }, { LT_KEY_2, "AE02" }, { LT_KEY_3, "AE03" }, { LT_KEY_4, "AE04" },
@@ -824,7 +824,7 @@ lt_keycode_t lt_lookup_key(lt_window_t* win, xcb_keycode_t keycode, u16 state) {
 	return win->keytab[keycode - win->scan_min];
 }
 
-void lt_window_gl_swap_buffers(lt_window_t* win) {
+void lt_window_gl_swap_buffers(const lt_window_t* win) {
 	glXSwapBuffers(lt_display, win->window);
 }
 

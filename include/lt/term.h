@@ -90,6 +90,6 @@ lt_err_t lt_update_term_dimensions(void);
 b8 lt_term_key_available(void);
 u32 lt_term_getkey(void);
 
-isz lt_term_write_direct(char* str, usz len);
+isz lt_term_write_direct(const char* str, usz len);
 
 #endif

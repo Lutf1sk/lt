@@ -31,10 +31,10 @@ u32 clr_load24(u8* ptr) {
 	return ((u32)0xFF << 24) | ((u32)ptr[0] << 16) | ((u32)ptr[1] << 8) | (u32)ptr[2];
 }
 
-lt_err_t lt_img_load_tga(lt_img_t* img, void* data, usz len, lt_alloc_t* alloc) {
+lt_err_t lt_img_load_tga(lt_img_t img[static 1], const void* data, usz len, lt_alloc_t alloc[static 1]) {
 	lt_err_t err;
 
-	lt_tga_header_t* h = data;
+	const lt_tga_header_t* h = data;
 
 	if (len < sizeof(lt_tga_header_t))
 		return LT_ERR_INVALID_FORMAT;

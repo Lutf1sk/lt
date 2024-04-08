@@ -24,7 +24,7 @@ void lt_vk_load_device(VkDevice device) {
 	volkLoadDevice(device);
 }
 
-lt_err_t lt_vk_create_window_surface(lt_window_t* win, VkInstance inst, VkAllocationCallbacks* alloc, VkSurfaceKHR* out_surface) {
+lt_err_t lt_vk_create_window_surface(const lt_window_t* win, VkInstance inst, VkAllocationCallbacks* alloc, VkSurfaceKHR out_surface[static 1]) {
 #if defined(LT_X11)
 
 	VkXcbSurfaceCreateInfoKHR cinf;
@@ -57,7 +57,7 @@ lt_err_t lt_vk_create_generic_instance(
 		VkAllocationCallbacks* alloc,
 		usz layer_count, const char* layer_names[static layer_count],
 		usz ext_count, const char* ext_names[static ext_count],
-		VkInstance* inst)
+		VkInstance inst[static 1])
 {
 	VkApplicationInfo appinf;
 	appinf.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;

@@ -37,7 +37,7 @@ lt_err_t lt_c_define(lt_c_preproc_ctx_t* cx, lstr_t name, lstr_t value, lt_darr(
 	name = lt_lstrim(name);
 
 	usz def_count = lt_darr_count(cx->defines);
-	lt_c_define_t* at = lookup_nearest_define(cx->defines, def_count, name);
+	lt_c_define_t* at = lookup_nearest_define(def_count, cx->defines, name);
 
 	if (at < cx->defines + def_count && lt_lseq(at->name, name)) {
 // 		if (!lt_lseq(at->value, value))
@@ -71,7 +71,7 @@ lt_err_t lt_c_redefine(lt_c_preproc_ctx_t* cx, lstr_t name, lstr_t value, lt_dar
 	name = lt_lstrim(name);
 
 	usz def_count = lt_darr_count(cx->defines);
-	lt_c_define_t* at = lookup_nearest_define(cx->defines, def_count, name);
+	lt_c_define_t* at = lookup_nearest_define(def_count, cx->defines, name);
 
 	if (at < cx->defines + def_count && lt_lseq(at->name, name)) {
 		at->name = name;
@@ -93,7 +93,7 @@ lt_err_t lt_c_redefine(lt_c_preproc_ctx_t* cx, lstr_t name, lstr_t value, lt_dar
 }
 
 lt_err_t lt_c_undefine(lt_c_preproc_ctx_t* cx, lstr_t name) {
-	lt_c_define_t* at = lookup_define(cx->defines, lt_darr_count(cx->defines), name);
+	lt_c_define_t* at = lookup_define(lt_darr_count(cx->defines), cx->defines, name);
 	if (!at)
 		return LT_SUCCESS;
 
@@ -103,7 +103,7 @@ lt_err_t lt_c_undefine(lt_c_preproc_ctx_t* cx, lstr_t name) {
 }
 
 lt_c_define_t* lt_c_lookup_define(lt_c_preproc_ctx_t* cx, lstr_t name) {
-	return lookup_define(cx->defines, lt_darr_count(cx->defines), name);
+	return lookup_define(lt_darr_count(cx->defines), cx->defines, name);
 }
 
 static b8 str_pending_bounded(lt_c_preproc_ctx_t* cx, lstr_t str);
@@ -1176,7 +1176,7 @@ lt_err_t parse_directive(lt_c_preproc_ctx_t* cx, lt_strstream_t* ss) {
 		lstr_t name;
 		if ((err = consume_identifier(cx, &name)))
 			return err;
-		lt_c_define_t* def = lookup_define(cx->defines, lt_darr_count(cx->defines), name);
+		lt_c_define_t* def = lookup_define(lt_darr_count(cx->defines), cx->defines, name);
 		push_scope(cx, def != NULL);
 	}
 
@@ -1184,7 +1184,7 @@ lt_err_t parse_directive(lt_c_preproc_ctx_t* cx, lt_strstream_t* ss) {
 		lstr_t name;
 		if ((err = consume_identifier(cx, &name)))
 			return err;
-		lt_c_define_t* def = lookup_define(cx->defines, lt_darr_count(cx->defines), name);
+		lt_c_define_t* def = lookup_define(lt_darr_count(cx->defines), cx->defines, name);
 		push_scope(cx, def == NULL);
 	}
 

@@ -4,8 +4,6 @@
 #include <lt/str.h>
 #include <lt/text.h>
 
-#include "file_def.h"
-
 #include <stdio.h>
 
 #if defined(LT_UNIX)
@@ -40,7 +38,7 @@ int lt_perms_to_posix(lt_file_perms_t perms) {
 
 #endif
 
-lt_file_t* lt_fopenp(lstr_t path_, lt_file_mode_t mode, lt_file_perms_t perms, lt_alloc_t* alloc) {
+lt_file_t* lt_fopenp(lstr_t path_, lt_file_mode_t mode, lt_file_perms_t perms, lt_alloc_t alloc[static 1]) {
 	if (path_.len > LT_PATH_MAX)
 		return NULL; // !! LT_ERR_PATH_TOO_LONG
 	char path[LT_PATH_MAX + 1];
@@ -100,7 +98,7 @@ lt_file_t* lt_fopenp(lstr_t path_, lt_file_mode_t mode, lt_file_perms_t perms, l
 #endif
 }
 
-void lt_fclose(lt_file_t* file, lt_alloc_t* alloc) {
+void lt_fclose(const lt_file_t file[static 1], lt_alloc_t alloc[static 1]) {
 #if defined(LT_UNIX)
 	close(file->fd);
 
@@ -160,7 +158,7 @@ lt_err_t lt_fmovep(lstr_t from, lstr_t to) {
 	return LT_SUCCESS;
 }
 
-lt_err_t lt_fcopyp(lstr_t from, lstr_t to, void* buf, usz bufsz, lt_alloc_t* alloc) {
+lt_err_t lt_fcopyp(lstr_t from, lstr_t to, void* buf, usz bufsz, lt_alloc_t alloc[static 1]) {
 	lt_err_t err;
 
 	lt_file_t* inf = lt_fopenp(from, LT_FILE_R, 0, alloc);
@@ -235,7 +233,7 @@ lt_err_t lt_fsymlinkp(lstr_t from, lstr_t to) {
 	return LT_SUCCESS;
 }
 
-lt_err_t lt_freadallp(lstr_t path, lstr_t* out, lt_alloc_t* alloc) {
+lt_err_t lt_freadallp(lstr_t path, lstr_t out[static 1], lt_alloc_t alloc[static 1]) {
 	lt_file_t* file = lt_fopenp(path, LT_FILE_R, 0, alloc);
 	if (!file)
 		return LT_ERR_UNKNOWN; // !!
@@ -257,7 +255,7 @@ lt_err_t lt_freadallp(lstr_t path, lstr_t* out, lt_alloc_t* alloc) {
 	return LT_SUCCESS;
 }
 
-isz lt_fread(lt_file_t* file, void* data, usz size) {
+isz lt_fread(lt_file_t file[static 1], void* data, usz size) {
 #if defined(LT_UNIX)
 	isz read_bytes = read(file->fd, data, size);
 	if (read_bytes < 0)
@@ -278,7 +276,7 @@ isz lt_fread(lt_file_t* file, void* data, usz size) {
 
 #include <lt/strstream.h>
 
-lt_err_t lt_freadallp_utf8(lstr_t path, lstr_t* out, lt_alloc_t* alloc) {
+lt_err_t lt_freadallp_utf8(lstr_t path, lstr_t out[static 1], lt_alloc_t alloc[static 1]) {
 	lt_err_t err;
 
 	lstr_t file_data;
@@ -342,7 +340,7 @@ lt_err_t lt_freadallp_utf8(lstr_t path, lstr_t* out, lt_alloc_t* alloc) {
 	return LT_SUCCESS;
 }
 
-isz lt_fwrite(lt_file_t* file, void* data, usz size) {
+isz lt_fwrite(lt_file_t file[static 1], const void* data, usz size) {
 #if defined(LT_UNIX)
 	isz write_bytes = write(file->fd, data, size);
 	if (write_bytes < 0)
@@ -361,18 +359,18 @@ isz lt_fwrite(lt_file_t* file, void* data, usz size) {
 #endif
 }
 
-usz lt_fsize(lt_file_t* file) {
+usz lt_fsize(lt_file_t file[static 1]) {
 	return file->size;
 }
 
-isz lt_vfprintf(lt_file_t* file, char* fmt, va_list argl) {
-	return lt_io_vprintf((lt_io_callback_t)lt_fwrite, file, fmt, argl);
+isz lt_vfprintf(lt_file_t file[static 1], const char* fmt, va_list argl) {
+	return lt_io_vprintf((lt_write_fn_t)lt_fwrite, file, fmt, argl);
 }
 
-isz lt_fprintf(lt_file_t* file, char* fmt, ...) {
+isz lt_fprintf(lt_file_t file[static 1], const char* fmt, ...) {
 	va_list argl;
 	va_start(argl, fmt);
-	isz res = lt_io_vprintf((lt_io_callback_t)lt_fwrite, file, fmt, argl);
+	isz res = lt_io_vprintf((lt_write_fn_t)lt_fwrite, file, fmt, argl);
 	va_end(argl);
 	return res;
 }

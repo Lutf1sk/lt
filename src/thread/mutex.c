@@ -10,16 +10,21 @@ struct lt_mutex {
 	pthread_mutex_t pmut;
 } lt_mutex_t;
 
-lt_mutex_t* lt_mutex_create(lt_alloc_t* alloc) {
+lt_mutex_t* lt_mutex_create(lt_alloc_t alloc[static 1]) {
 	pthread_mutex_t pmut = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
-	if (pthread_mutex_init(&pmut, NULL))
+	if (pthread_mutex_init(&pmut, NULL)) {
 		return NULL;
+	}
 	lt_mutex_t* m = lt_malloc(alloc, sizeof(lt_mutex_t));
+	if (!m) {
+		pthread_mutex_destroy(&pmut);
+		return NULL;
+	}
 	m->pmut = pmut;
 	return m;
 }
 
-void lt_mutex_destroy(lt_mutex_t* m, lt_alloc_t* alloc) {
+void lt_mutex_destroy(lt_mutex_t* m, lt_alloc_t alloc[static 1]) {
 	pthread_mutex_destroy(&m->pmut);
 	lt_mfree(alloc, m);
 }
@@ -42,11 +47,16 @@ struct lt_mutex {
 	HANDLE wmut;
 } lt_mutex_t;
 
-lt_mutex_t* lt_mutex_create(lt_alloc_t* alloc) {
+lt_mutex_t* lt_mutex_create(lt_alloc_t alloc[static 1]) {
 	HANDLE wmut = CreateMutex(NULL, FALSE, NULL);
-	if (!wmut)
+	if (!wmut) {
 		return NULL;
+	}
 	lt_mutex_t* m = lt_malloc(alloc, sizeof(lt_mutex_t));
+	if (!m) {
+		CloseHandle(wmut);
+		return NULL;
+	}
 	m->wmut = wmut;
 	return m;
 }

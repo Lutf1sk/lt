@@ -12,10 +12,10 @@ void custom_assert(b8 success, lstr_t str) {
 }
 
 #undef LT_ASSERT
-#define LT_ASSERT(x) custom_assert((x), CLSTR(#x))
+#define LT_ASSERT(x) custom_assert((x) != 0, CLSTR(#x))
 
 static
-void consume_content(lt_elf64_t* e, u8** it, u32 (*fmts)[2], usz fmt_count, lstr_t* out_path) {
+void consume_content(const lt_elf64_t e[static 1], u8* it[static 1], usz fmt_count, u32 fmts[static fmt_count][2], lstr_t out_path[static 1]) {
 	for (usz i = 0; i < fmt_count; ++i) {
 		switch (fmts[i][0]) {
 		case LT_DWARF_LNCT_PATH:
@@ -57,7 +57,7 @@ void consume_content(lt_elf64_t* e, u8** it, u32 (*fmts)[2], usz fmt_count, lstr
 #define MAX_FILE_FMT_COUNT 8
 #define MAX_DIR_FMT_COUNT 8
 
-lt_err_t lt_elf64_lookup_vaddr(lt_elf64_t* e, usz vaddr, usz* out_line, lstr_t* out_file_name, void* p_) {
+lt_err_t lt_elf64_lookup_vaddr(const lt_elf64_t e[static 1], usz vaddr, usz out_line[static 1], lstr_t out_file_name[static 1], void* p_) {
 	if (!e->dbgline_sh || !e->dbgline_strtab_sh)
 		return LT_ERR_UNKNOWN;
 
@@ -67,6 +67,7 @@ lt_err_t lt_elf64_lookup_vaddr(lt_elf64_t* e, usz vaddr, usz* out_line, lstr_t* 
 	else
 		p = p_;
 
+	LT_ASSERT(p);
 	LT_ASSERT(p->max_ops_per_instr == 1);
 	LT_ASSERT(p->addr_size == 8);
 
@@ -90,7 +91,7 @@ lt_err_t lt_elf64_lookup_vaddr(lt_elf64_t* e, usz vaddr, usz* out_line, lstr_t* 
 	lt_darr(lstr_t) dirs = lt_darr_create(lstr_t, 32, lt_libc_heap);
 	for (usz i = 0; i < dir_count; ++i) {
 		lstr_t path = NLSTRI();
-		consume_content(e, &it, dir_fmts, dir_fmt_count, &path);
+		consume_content(e, &it, dir_fmt_count, dir_fmts, &path);
 		lt_darr_push(dirs, path);
 
 	}
@@ -111,7 +112,7 @@ lt_err_t lt_elf64_lookup_vaddr(lt_elf64_t* e, usz vaddr, usz* out_line, lstr_t* 
 	u32 file_count = lt_dwarf_uleb128(&it);
 	for (usz i = 0; i < file_count; ++i) {
 		lstr_t path = NLSTRI();
-		consume_content(e, &it, file_fmts, file_fmt_count, &path);
+		consume_content(e, &it, file_fmt_count, file_fmts, &path);
 		lt_darr_push(filenames, path);
 	}
 

@@ -155,38 +155,38 @@ lt_vec4d_t lt_v4dlerp(lt_vec4d_t a, lt_vec4d_t b, f64 t) {
 
 static LT_INLINE
 lt_vec4d_t lt_v4dlerpc(lt_vec4d_t a, lt_vec4d_t b, f64 t) {
-	return lt_v4dlerp(a, b, lt_clamp_f64(t, 0.0f, 1.0f));
+	return lt_v4dlerp(a, b, lt_clamp(t, 0.0f, 1.0f));
 }
 
 
 static LT_INLINE
 lt_vec4d_t lt_v4dmin(lt_vec4d_t a, lt_vec4d_t b) {
-	return LT_VEC4D(lt_min_f64(a.x, b.x), lt_min_f64(a.y, b.y), lt_min_f64(a.z, b.z), lt_min_f64(a.w, b.w));
+	return LT_VEC4D(lt_min(a.x, b.x), lt_min(a.y, b.y), lt_min(a.z, b.z), lt_min(a.w, b.w));
 }
 
 static LT_INLINE
 lt_vec4d_t lt_v4dmax(lt_vec4d_t a, lt_vec4d_t b) {
-	return LT_VEC4D(lt_max_f64(a.x, b.x), lt_max_f64(a.y, b.y), lt_max_f64(a.z, b.z), lt_max_f64(a.w, b.w));
+	return LT_VEC4D(lt_max(a.x, b.x), lt_max(a.y, b.y), lt_max(a.z, b.z), lt_max(a.w, b.w));
 }
 
 static LT_INLINE
 lt_vec4d_t lt_v4dclamp(lt_vec4d_t v, lt_vec4d_t min, lt_vec4d_t max) {
-	return LT_VEC4D(lt_clamp_f64(v.x, min.x, max.x), lt_clamp_f64(v.y, min.y, max.y), lt_clamp_f64(v.z, min.z, max.z), lt_clamp_f64(v.w, min.w, max.w));
+	return LT_VEC4D(lt_clamp(v.x, min.x, max.x), lt_clamp(v.y, min.y, max.y), lt_clamp(v.z, min.z, max.z), lt_clamp(v.w, min.w, max.w));
 }
 
 static LT_INLINE
 lt_vec4d_t lt_v4dclampf(lt_vec4d_t v, f64 min, f64 max) {
-	return LT_VEC4D(lt_clamp_f64(v.x, min, max), lt_clamp_f64(v.y, min, max), lt_clamp_f64(v.z, min, max), lt_clamp_f64(v.w, min, max));
+	return LT_VEC4D(lt_clamp(v.x, min, max), lt_clamp(v.y, min, max), lt_clamp(v.z, min, max), lt_clamp(v.w, min, max));
 }
 
 static LT_INLINE
 f64 lt_v4dmincomp(lt_vec4d_t v) {
-	return lt_min_f64(v.w, lt_min_f64(v.z, lt_min_f64(v.x, v.y)));
+	return lt_min(v.w, lt_min(v.z, lt_min(v.x, v.y)));
 }
 
 static LT_INLINE
 f64 lt_v4dmaxcomp(lt_vec4d_t v) {
-	return lt_max_f64(v.w, lt_max_f64(v.z, lt_max_f64(v.x, v.y)));
+	return lt_max(v.w, lt_max(v.z, lt_max(v.x, v.y)));
 }
 
 

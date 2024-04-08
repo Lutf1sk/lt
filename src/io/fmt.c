@@ -6,7 +6,7 @@
 #define BUFSZ 1024
 
 static LT_FLATTEN
-isz buffered_write(lt_io_callback_t callb, void* usr, char** it, char* end, lstr_t data) {
+isz buffered_write(lt_write_fn_t callb, void* usr, char** it, char* end, lstr_t data) {
 	isz written = 0;
 	if (*it + data.len > end) {
 		char* start = end - BUFSZ;
@@ -32,7 +32,7 @@ isz lt_io_dummy_callb(void* usr, void* data, usz len) {
 }
 
 static LT_FLATTEN LT_INLINE
-isz lt_io_printuq(lt_io_callback_t callb, void* usr, char** buf_it, char* buf_end, u64 n) {
+isz lt_io_printuq(lt_write_fn_t callb, void* usr, char** buf_it, char* buf_end, u64 n) {
 	char buf[NUM_MAX], *end = buf + sizeof(buf), *it = end - 1;
 
 	// Fill buffer backwards with the remainder of n/10
@@ -45,7 +45,7 @@ isz lt_io_printuq(lt_io_callback_t callb, void* usr, char** buf_it, char* buf_en
 }
 
 static LT_FLATTEN LT_INLINE
-isz lt_io_printiq(lt_io_callback_t callb, void* usr, char** buf_it, char* buf_end, i64 n) {
+isz lt_io_printiq(lt_write_fn_t callb, void* usr, char** buf_it, char* buf_end, i64 n) {
 	isz written = 0;
 
 	// Handle signed values
@@ -59,7 +59,7 @@ isz lt_io_printiq(lt_io_callback_t callb, void* usr, char** buf_it, char* buf_en
 static char io_hex_char[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
 static LT_FLATTEN LT_INLINE
-isz lt_io_printhq(lt_io_callback_t callb, void* usr, char** buf_it, char* buf_end, u64 n) {
+isz lt_io_printhq(lt_write_fn_t callb, void* usr, char** buf_it, char* buf_end, u64 n) {
 	char buf[NUM_MAX], *end = buf + sizeof(buf), *it = end - 1;
 
 	// Fill buffer backwards with the lowest nibble of n
@@ -72,7 +72,7 @@ isz lt_io_printhq(lt_io_callback_t callb, void* usr, char** buf_it, char* buf_en
 }
 
 static LT_FLATTEN LT_INLINE
-isz lt_io_printbq(lt_io_callback_t callb, void* usr, char** buf_it, char* buf_end, u64 n) {
+isz lt_io_printbq(lt_write_fn_t callb, void* usr, char** buf_it, char* buf_end, u64 n) {
 	char buf[NUM_MAX], *end = buf + sizeof(buf), *it = end - 1;
 
 	while (n > 1) {
@@ -84,7 +84,7 @@ isz lt_io_printbq(lt_io_callback_t callb, void* usr, char** buf_it, char* buf_en
 }
 
 static LT_FLATTEN LT_INLINE
-isz lt_io_printmq(lt_io_callback_t callb, void* usr, char** buf_it, char* buf_end, u64 n) {
+isz lt_io_printmq(lt_write_fn_t callb, void* usr, char** buf_it, char* buf_end, u64 n) {
 	char buf[NUM_MAX] = "B";
 	usz len = 1;
 
@@ -128,11 +128,11 @@ isz lt_io_printmq(lt_io_callback_t callb, void* usr, char** buf_it, char* buf_en
 }
 
 static LT_INLINE
-isz lt_io_printfq(lt_io_callback_t callb, void* usr, char** buf_it, char* buf_end, f64 n) {
+isz lt_io_printfq(lt_write_fn_t callb, void* usr, char** buf_it, char* buf_end, f64 n) {
 	return -LT_ERR_UNSUPPORTED;
 }
 
-isz lt_io_vprintf(lt_io_callback_t callb, void* usr, char* fmt, va_list argl) {
+isz lt_io_vprintf(lt_write_fn_t callb, void* usr, const char* fmt, va_list argl) {
 	char buf[BUFSZ], *buf_it = buf, *buf_end = buf_it + BUFSZ;
 
 	isz written = 0;
@@ -140,7 +140,7 @@ isz lt_io_vprintf(lt_io_callback_t callb, void* usr, char* fmt, va_list argl) {
 	char c;
 	while ((c = *fmt) != 0) {
 		if (c != '%') {
-			char* substr_start = fmt;
+			const char* substr_start = fmt;
 			while ((c = *fmt) != 0 && c != '%') {
 				++fmt;
 			}
@@ -260,7 +260,7 @@ isz lt_io_vprintf(lt_io_callback_t callb, void* usr, char* fmt, va_list argl) {
 			usz repeat = va_arg(argl, usz);
 
 			for (;;) {
-				usz writable = lt_min_usz(repeat, buf_end - buf_it);
+				usz writable = lt_min(repeat, buf_end - buf_it);
 				repeat -= writable;
 				buf_it += lt_mset8(buf_it, val, writable);
 
@@ -291,7 +291,7 @@ isz lt_io_vprintf(lt_io_callback_t callb, void* usr, char* fmt, va_list argl) {
 }
 
 LT_FLATTEN
-isz lt_io_printf(lt_io_callback_t callb, void* usr, char* fmt, ...) {
+isz lt_io_printf(lt_write_fn_t callb, void* usr, const char* fmt, ...) {
 	va_list argl;
 	va_start(argl, fmt);
 	isz bytes = lt_io_vprintf(callb, usr, fmt, argl);

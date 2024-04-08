@@ -3,7 +3,7 @@
 #include <lt/debug.h>
 
 static
-void* lt_pmalloc_if(lt_pool_t* pool, usz size) {
+void* lt_pmalloc_if(lt_pool_t pool[static 1], usz size) {
 	if (size > pool->chunk_size) {
 		lt_werrf("pool allocation failed, size is larger than chunk size\n");
 		return NULL;
@@ -12,7 +12,7 @@ void* lt_pmalloc_if(lt_pool_t* pool, usz size) {
 }
 
 static
-void* lt_pmrealloc_if(lt_pool_t* pool, void* chunk, usz size) {
+void* lt_pmrealloc_if(lt_pool_t pool[static 1], void* chunk, usz size) {
 	if (size > pool->chunk_size) {
 		lt_werrf("pool allocation failed, size is larger than chunk size\n");
 		return NULL;
@@ -60,14 +60,14 @@ lt_pool_t* lt_pmcreate(lt_alloc_t* parent, usz size, usz chunk_size, usz flags) 
 	return lt_pmcreatem(parent, base, size, chunk_size, flags);
 }
 
-void lt_pmdestroy(lt_pool_t* pool) {
+void lt_pmdestroy(const lt_pool_t pool[static 1]) {
 	if (pool->parent)
 		lt_mfree(pool->parent, pool);
 	else
-		lt_vmfree(pool, pool->size);
+		lt_vmfree((void*)pool, pool->size);
 }
 
-void lt_pmreset(lt_pool_t* pool) {
+void lt_pmreset(lt_pool_t pool[static 1]) {
 	void** last = &pool->head;
 	void* it = pool->base;
 	for (usz i = 0; i < pool->chunk_count; ++i) {
@@ -77,7 +77,7 @@ void lt_pmreset(lt_pool_t* pool) {
 	}
 }
 
-void* lt_pmalloc(lt_pool_t* pool) {
+void* lt_pmalloc(lt_pool_t pool[static 1]) {
 	void** head = pool->head;
 	if (!head) {
 		lt_werrf("pool allocation failed, not enough memory\n");
@@ -87,8 +87,8 @@ void* lt_pmalloc(lt_pool_t* pool) {
 	return head;
 }
 
-void lt_pmfree(lt_pool_t* pool, void* chunk) {
+void lt_pmfree(lt_pool_t pool[static 1], const void* chunk) {
 	*(void**)chunk = pool->head;
-	pool->head = chunk;
+	pool->head = (void*)chunk;
 }
 

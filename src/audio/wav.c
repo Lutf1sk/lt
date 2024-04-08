@@ -33,7 +33,7 @@ LT_PACKED_STRUCT(lt_wav_fileheader) {
 	char wave_sign[4];
 } lt_wav_fileheader_t;
 
-lt_err_t lt_audio_load_wav(lt_audio_t* audio, void* data, usz len, lt_alloc_t* alloc) {
+lt_err_t lt_audio_load_wav(lt_audio_t audio[static 1], void* data, usz len, lt_alloc_t alloc[static 1]) {
 	lt_wav_fileheader_t* fh = data;
 	if (len < sizeof(lt_wav_fileheader_t) || memcmp(fh->header.sign, "RIFF", 4) != 0 || memcmp(fh->wave_sign, "WAVE", 4) != 0)
 		return LT_ERR_INVALID_FORMAT;

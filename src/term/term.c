@@ -337,7 +337,7 @@ unescaped:
 	return c | mod;
 }
 
-isz lt_term_write_direct(char* str, usz len) {
+isz lt_term_write_direct(const char* str, usz len) {
 	write(STDOUT_FILENO, str, len);
 	fsync(STDOUT_FILENO);
 	return 0;
@@ -504,7 +504,7 @@ u32 lt_term_getkey(void) {
 	}
 }
 
-isz lt_term_write_direct(char* str, usz len) {
+isz lt_term_write_direct(const char* str, usz len) {
 	WriteConsole(lt_stdout->hnd, str, len, NULL, NULL);
 	return 0;
 }

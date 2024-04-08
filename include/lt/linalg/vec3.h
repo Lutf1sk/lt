@@ -195,7 +195,7 @@ lt_vec3_t lt_v3lerp(lt_vec3_t a, lt_vec3_t b, f32 t) {
 
 static LT_INLINE
 lt_vec3_t lt_v3lerpc(lt_vec3_t a, lt_vec3_t b, f32 t) {
-	return lt_v3lerp(a, b, lt_clamp_f32(t, 0.0f, 1.0f));
+	return lt_v3lerp(a, b, lt_clamp(t, 0.0f, 1.0f));
 }
 
 static LT_INLINE
@@ -216,32 +216,32 @@ lt_vec3_t lt_v3rotate(lt_vec3_t v, f32 angle, lt_vec3_t axis) {
 
 static LT_INLINE
 lt_vec3_t lt_v3min(lt_vec3_t a, lt_vec3_t b) {
-	return LT_VEC3(lt_min_f32(a.x, b.x), lt_min_f32(a.y, b.y), lt_min_f32(a.z, b.z));
+	return LT_VEC3(lt_min(a.x, b.x), lt_min(a.y, b.y), lt_min(a.z, b.z));
 }
 
 static LT_INLINE
 lt_vec3_t lt_v3max(lt_vec3_t a, lt_vec3_t b) {
-	return LT_VEC3(lt_max_f32(a.x, b.x), lt_max_f32(a.y, b.y), lt_max_f32(a.z, b.z));
+	return LT_VEC3(lt_max(a.x, b.x), lt_max(a.y, b.y), lt_max(a.z, b.z));
 }
 
 static LT_INLINE
 lt_vec3_t lt_v3clamp(lt_vec3_t v, lt_vec3_t min, lt_vec3_t max) {
-	return LT_VEC3(lt_clamp_f32(v.x, min.x, max.x), lt_clamp_f32(v.y, min.y, max.y), lt_clamp_f32(v.z, min.z, max.z));
+	return LT_VEC3(lt_clamp(v.x, min.x, max.x), lt_clamp(v.y, min.y, max.y), lt_clamp(v.z, min.z, max.z));
 }
 
 static LT_INLINE
 lt_vec3_t lt_v3clampf(lt_vec3_t v, f32 min, f32 max) {
-	return LT_VEC3(lt_clamp_f32(v.x, min, max), lt_clamp_f32(v.y, min, max), lt_clamp_f32(v.z, min, max));
+	return LT_VEC3(lt_clamp(v.x, min, max), lt_clamp(v.y, min, max), lt_clamp(v.z, min, max));
 }
 
 static LT_INLINE
 f32 lt_v3mincomp(lt_vec3_t v) {
-	return lt_min_f32(v.z, lt_min_f32(v.x, v.y));
+	return lt_min(v.z, lt_min(v.x, v.y));
 }
 
 static LT_INLINE
 f32 lt_v3maxcomp(lt_vec3_t v) {
-	return lt_max_f32(v.z, lt_max_f32(v.x, v.y));
+	return lt_max(v.z, lt_max(v.x, v.y));
 }
 
 

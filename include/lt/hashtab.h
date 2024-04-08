@@ -13,10 +13,10 @@ struct lt_hashtab {
 	void** values[LT_HASHTAB_SIZE];
 } lt_hashtab_t;
 
-void lt_hashtab_init(lt_hashtab_t* htab);
-void lt_hashtab_free(lt_hashtab_t* htab, lt_alloc_t* alloc);
+void lt_hashtab_init(lt_hashtab_t out_htab[static 1]);
+void lt_hashtab_free(const lt_hashtab_t htab[static 1], lt_alloc_t alloc[static 1]);
 
-void lt_hashtab_insert(lt_hashtab_t* htab, u32 hash, void* val, lt_alloc_t* alloc);
+void lt_hashtab_insert(lt_hashtab_t htab[static 1], u32 hash, void* val, lt_alloc_t alloc[static 1]);
 
 typedef
 struct lt_hashtab_iterator {
@@ -25,7 +25,7 @@ struct lt_hashtab_iterator {
 } lt_hashtab_iterator_t;
 
 static LT_INLINE
-void* lt_hashtab_next(lt_hashtab_t* tab, lt_hashtab_iterator_t* it) {
+void* lt_hashtab_next(const lt_hashtab_t tab[static 1], lt_hashtab_iterator_t it[static 1]) {
 	while (it->i < LT_HASHTAB_SIZE) {
 		usz count = tab->counts[it->i];
 		if (count == 1) {
@@ -64,15 +64,15 @@ void* lt_hashtab_next(lt_hashtab_t* tab, lt_hashtab_iterator_t* it) {
 											\
 	return NULL;
 
-#define LT_DEFINE_HASHTAB_FIND_FUNC(T, Tkey, name, is_equal)	\
-	T* name(lt_hashtab_t* htab, u32 hash, Tkey key) {			\
-		LT_HASHTAB_FIND_BODY(T, is_equal)						\
+#define LT_DEFINE_HASHTAB_FIND_FUNC(T, Tkey, name, is_equal)			\
+	T* name(const lt_hashtab_t htab[static 1], u32 hash, Tkey key) {	\
+		LT_HASHTAB_FIND_BODY(T, is_equal)								\
 	}
 
 
 static LT_INLINE
-u32 lt_hash(void* mem_, usz size) {
-	u8* mem = mem_;
+u32 lt_hash(const void* mem_, usz size) {
+	const u8* mem = mem_;
 	u32 hash = size;
 
 	for (usz i = 0; i < size; ++i)

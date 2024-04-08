@@ -11,8 +11,8 @@ void* lt_libc_malloc(void* usr, usz size) {
 }
 
 static
-void lt_libc_free(void* usr, void* mem) {
-	free(mem);
+void lt_libc_free(void* usr, const void* mem) {
+	free((void*)mem);
 }
 
 static

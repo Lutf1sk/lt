@@ -33,7 +33,7 @@
 	}
 
 #define LT_DEFINE_BUBBLE_SORT_FUNC(T, name, is_lesser)	\
-	void name(T* arr, usz count) {						\
+	void name(usz count, T arr[static count]) {			\
 		LT_BUBBLE_SORT_BODY(T, is_lesser)				\
 	}
 
@@ -65,7 +65,7 @@
 	}
 
 #define LT_DEFINE_MINMAX_SORT_FUNC(T, name, is_lesser)	\
-	void name(T* arr, usz count) {						\
+	void name(usz count, T arr[static count]) {			\
 		LT_MINMAX_SORT_BODY(T, is_lesser)				\
 	}
 
@@ -93,7 +93,7 @@
 	}
 
 #define LT_DEFINE_INSERTION_SORT_FUNC(T, name, is_lesser)	\
-	void name(T* arr, usz count) {							\
+	void name(usz count, T arr[static count]) {				\
 		LT_INSERTION_SORT_BODY(T, is_lesser)				\
 	}
 
@@ -176,10 +176,12 @@
 	}
 
 #define LT_DEFINE_QUICKSORT_FUNC(T, name, is_lesser)	\
-	void name(T* arr, usz count) {						\
+	void name(usz count, T arr[static count]) {			\
 		LT_QUICKSORT_BODY(T, is_lesser)					\
 	}
 
+
+// !! potential memory leak
 #define LT_MERGE_SORT_BODY(T, is_lesser)												\
 	T* arr1 = lt_malloc(alloc, count * sizeof(T));										\
 	T* arr2 = lt_malloc(alloc, count * sizeof(T));										\
@@ -259,13 +261,13 @@
 	lt_mfree(alloc, warr);																\
 	return rarr;
 
-#define LT_DEFINE_MERGE_SORT_FUNC(T, name, is_lesser)		\
-	T* merge_sort(T* arr, usz count, lt_alloc_t* alloc) {	\
-		LT_MERGE_SORT_BODY(T, is_lesser);					\
+#define LT_DEFINE_MERGE_SORT_FUNC(T, name, is_lesser)							\
+	T* merge_sort(usz count, T arr[static count], lt_alloc_t alloc[static 1]) {	\
+		LT_MERGE_SORT_BODY(T, is_lesser);										\
 	}
 
 #define LT_DEFINE_BINARY_SEARCH_FUNC(T, Tkey, name, is_lesser, is_equal)	\
-	T* name(T* arr, usz count, Tkey key) {									\
+	T* name(usz count, T arr[static count], Tkey key) {						\
 		if (!count)															\
 			return NULL;													\
 																			\
@@ -286,7 +288,7 @@
 	}
 
 #define LT_DEFINE_BINARY_SEARCH_NEAREST_FUNC(T, Tkey, name, is_lesser, is_equal)	\
-	T* name(T* arr, usz count, Tkey key) {											\
+	T* name(usz count, T arr[static count], Tkey key) {								\
 		T* start = arr;																\
 		T* end = arr + count;														\
 																					\

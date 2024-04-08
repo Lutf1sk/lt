@@ -20,7 +20,7 @@ lstr_t conv_tab[] = {
 };
 
 LT_FLATTEN
-lstr_t lt_htmlencode(lstr_t str, lt_alloc_t* alloc) {
+lstr_t lt_htmlencode(lstr_t str, lt_alloc_t alloc[static 1]) {
 	lt_err_t err;
 
 	lt_strstream_t ss;
@@ -28,13 +28,13 @@ lstr_t lt_htmlencode(lstr_t str, lt_alloc_t* alloc) {
 		lt_werrf("unhandled %S in lt_htmlencode\n", lt_err_str(err));
 		return NLSTR();
 	}
-	if (lt_write_htmlencoded((lt_io_callback_t)lt_strstream_write, &ss, str) < 0) {
+	if (lt_write_htmlencoded((lt_write_fn_t)lt_strstream_write, &ss, str) < 0) {
 		// !!
 	}
 	return ss.str;
 }
 
-isz lt_write_htmlencoded(lt_io_callback_t callb, void* usr, lstr_t str) {
+isz lt_write_htmlencoded(lt_write_fn_t callb, void* usr, lstr_t str) {
 	isz res;
 
 	usz written = 0;
@@ -68,7 +68,7 @@ isz lt_write_htmlencoded(lt_io_callback_t callb, void* usr, lstr_t str) {
 	return written + res;
 }
 
-isz lt_write_htmlencoded_char8(lt_io_callback_t callb, void* usr, u8 c) {
+isz lt_write_htmlencoded_char8(lt_write_fn_t callb, void* usr, u8 c) {
 	isz res;
 
 	if (!lt_html_reserved_char_tab[c]) {

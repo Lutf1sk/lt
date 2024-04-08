@@ -53,22 +53,22 @@ lt_arena_t* lt_amcreate(lt_alloc_t* parent, usz size, usz flags) {
 	return lt_amcreatem(parent, base, size, flags);
 }
 
-void lt_amdestroy(lt_arena_t* arena) {
+void lt_amdestroy(const lt_arena_t arena[static 1]) {
 	if (arena->parent)
 		lt_mfree(arena->parent, arena);
 	else
-		lt_vmfree(arena, arena->size);
+		lt_vmfree((void*)arena, arena->size);
 }
 
-void* lt_amsave(lt_arena_t* arena) {
+void* lt_amsave(const lt_arena_t arena[static 1]) {
 	return arena->top;
 }
 
-void lt_amrestore(lt_arena_t* arena, void* restore_point) {
+void lt_amrestore(lt_arena_t arena[static 1], void* restore_point) {
 	arena->top = restore_point;
 }
 
-void* lt_amalloc_for_caller(lt_arena_t* arena, usz size, void* caller) {
+void* lt_amalloc_for_caller(lt_arena_t arena[static 1], usz size, const void* caller) {
 	size = lt_align_fwd(size, LT_ALLOC_DEFAULT_ALIGN);
 
 	node_t* start = arena->top;
@@ -86,12 +86,12 @@ void* lt_amalloc_for_caller(lt_arena_t* arena, usz size, void* caller) {
 }
 
 LT_FLATTEN
-void* lt_amalloc(lt_arena_t* arena, usz size) {
+void* lt_amalloc(lt_arena_t arena[static 1], usz size) {
 	return lt_amalloc_for_caller(arena, size, LT_RETURN_ADDR - 1);
 }
 
-void lt_amfree(lt_arena_t* arena, void* ptr) {
-	node_t* node = node_from_ptr(ptr);
+void lt_amfree(lt_arena_t arena[static 1], const void* ptr) {
+	node_t* node = node_from_ptr((void*)ptr);
 	if (node->free)
 		lt_werrf("called mfree on free'd block\n");
 
@@ -100,7 +100,7 @@ void lt_amfree(lt_arena_t* arena, void* ptr) {
 		arena->top = node;
 }
 
-void* lt_amrealloc_for_caller(lt_arena_t* arena, void* ptr, usz new_size, void* caller) {
+void* lt_amrealloc_for_caller(lt_arena_t arena[static 1], void* ptr, usz new_size, const void* caller) {
 	if (!ptr)
 		return lt_amalloc_for_caller(arena, new_size, caller);
 
@@ -128,7 +128,7 @@ void* lt_amrealloc_for_caller(lt_arena_t* arena, void* ptr, usz new_size, void* 
 }
 
 LT_FLATTEN
-void* lt_amrealloc(lt_arena_t* arena, void* ptr, usz new_size) {
+void* lt_amrealloc(lt_arena_t arena[static 1], void* ptr, usz new_size) {
 	return lt_amrealloc_for_caller(arena, ptr, new_size, LT_RETURN_ADDR);
 }
 

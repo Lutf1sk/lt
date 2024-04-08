@@ -7,7 +7,7 @@
 #include <lt/mem.h>
 
 static
-void merge_line(lt_texted_t* ed, usz line) {
+void merge_line(lt_texted_t ed[static 1], usz line) {
 	usz dst_idx = line;
 	usz src_idx = line + 1;
 	lt_darr_insert(ed->lines[dst_idx], lt_darr_count(ed->lines[dst_idx]), ed->lines[src_idx], lt_darr_count(ed->lines[src_idx]));
@@ -16,13 +16,13 @@ void merge_line(lt_texted_t* ed, usz line) {
 }
 
 static
-void newline(lt_texted_t* ed, usz posy) {
+void newline(lt_texted_t ed[static 1], usz posy) {
 	lt_darr(char) new_line = lt_darr_create(char, 32, lt_darr_head(ed->lines)->alloc);
 	lt_darr_insert(ed->lines, posy, &new_line, 1);
 }
 
 static
-void split(lt_texted_t* ed, usz posy, usz posx) {
+void split(lt_texted_t ed[static 1], usz posy, usz posx) {
 	usz src_idx = posy;
 	usz dst_idx = posy + 1;
 
@@ -35,7 +35,7 @@ void split(lt_texted_t* ed, usz posy, usz posx) {
 }
 
 static
-void sync_tx(lt_texted_t* ed) {
+void sync_tx(lt_texted_t ed[static 1]) {
 	if (ed->find_visual_x)
 		ed->target_x = ed->find_visual_x(ed->usr, lt_texted_line_str(ed, ed->cursor_y), ed->cursor_x);
 	else
@@ -43,21 +43,21 @@ void sync_tx(lt_texted_t* ed) {
 }
 
 static
-void goto_tx(lt_texted_t* ed) {
+void goto_tx(lt_texted_t ed[static 1]) {
 	if (ed->find_cursor_x)
 		ed->cursor_x = ed->find_cursor_x(ed->usr, lt_texted_line_str(ed, ed->cursor_y), ed->target_x);
 	else
-		ed->cursor_x = lt_min_usz(ed->target_x, lt_darr_count(ed->lines[ed->cursor_y]));
+		ed->cursor_x = lt_min(ed->target_x, lt_darr_count(ed->lines[ed->cursor_y]));
 }
 
 static
-void sync_s(lt_texted_t* ed) {
+void sync_s(lt_texted_t ed[static 1]) {
 	ed->select_y = ed->cursor_y;
 	ed->select_x = ed->cursor_x;
 }
 
 static
-void goto_selection_start(lt_texted_t* ed) {
+void goto_selection_start(lt_texted_t ed[static 1]) {
 	usz x1, y1;
 	lt_texted_get_selection(ed, &x1, &y1, NULL, NULL);
 	ed->select_y = ed->cursor_y = y1;
@@ -65,14 +65,14 @@ void goto_selection_start(lt_texted_t* ed) {
 }
 
 static
-void goto_selection_end(lt_texted_t* ed) {
+void goto_selection_end(lt_texted_t ed[static 1]) {
 	usz x2, y2;
 	lt_texted_get_selection(ed, NULL, NULL, &x2, &y2);
 	ed->select_y = ed->cursor_y = y2;
 	ed->select_x = ed->cursor_x = x2;
 }
 
-lt_err_t lt_texted_create(lt_texted_t* ed, lt_alloc_t* alloc) {
+lt_err_t lt_texted_create(lt_texted_t ed[static 1], lt_alloc_t alloc[static 1]) {
 	ed->select_y = ed->cursor_y = 0;
 	ed->select_x = ed->cursor_x = ed->target_x = 0;
 	ed->usr = NULL;
@@ -83,13 +83,13 @@ lt_err_t lt_texted_create(lt_texted_t* ed, lt_alloc_t* alloc) {
 	return LT_SUCCESS;
 }
 
-void lt_texted_destroy(lt_texted_t* ed) {
+void lt_texted_destroy(lt_texted_t ed[static 1]) {
 	for (usz i = 0; i < lt_darr_count(ed->lines); ++i)
 		lt_darr_destroy(ed->lines[i]);
 	lt_darr_destroy(ed->lines);
 }
 
-void lt_texted_clear(lt_texted_t* ed) {
+void lt_texted_clear(lt_texted_t ed[static 1]) {
 	lt_darr(char) first_line = ed->lines[0];
 	lt_darr_clear(first_line);
 
@@ -105,7 +105,7 @@ void lt_texted_clear(lt_texted_t* ed) {
 	sync_tx(ed);
 }
 
-isz lt_texted_write_contents(lt_texted_t* ed, lt_io_callback_t callb, void* usr) {
+isz lt_texted_write_contents(lt_texted_t ed[static 1], lt_write_fn_t callb, void* usr) {
 	isz bytes = callb(usr, ed->lines[0], lt_darr_count(ed->lines[0]));
 	if (bytes < 0)
 		return bytes;
@@ -126,7 +126,7 @@ isz lt_texted_write_contents(lt_texted_t* ed, lt_io_callback_t callb, void* usr)
 	return bytes;
 }
 
-isz lt_texted_write_range(lt_texted_t* ed, usz x1, usz y1, usz x2, usz y2, lt_io_callback_t callb, void* usr) {
+isz lt_texted_write_range(lt_texted_t ed[static 1], usz x1, usz y1, usz x2, usz y2, lt_write_fn_t callb, void* usr) {
 	LT_ASSERT(y1 >= 0 && y1 < lt_darr_count(ed->lines));
 	LT_ASSERT(y2 >= 0 && y2 < lt_darr_count(ed->lines));
 	LT_ASSERT(x1 >= 0 && x1 <= lt_darr_count(ed->lines[y1]));
@@ -162,7 +162,7 @@ isz lt_texted_write_range(lt_texted_t* ed, usz x1, usz y1, usz x2, usz y2, lt_io
 	return bytes;
 }
 
-void lt_texted_erase_range(lt_texted_t* ed, usz x1, usz y1, usz x2, usz y2) {
+void lt_texted_erase_range(lt_texted_t ed[static 1], usz x1, usz y1, usz x2, usz y2) {
 	if (y2 == y1) {
 		lt_darr_erase(ed->lines[y1], x1, x2 - x1);
 		return;
@@ -180,11 +180,11 @@ void lt_texted_erase_range(lt_texted_t* ed, usz x1, usz y1, usz x2, usz y2) {
 	merge_line(ed, y1);
 }
 
-b8 lt_texted_selection_present(lt_texted_t* ed) {
+b8 lt_texted_selection_present(lt_texted_t ed[static 1]) {
 	return !(ed->select_y == ed->cursor_y && ed->select_x == ed->cursor_x);
 }
 
-b8 lt_texted_get_selection(lt_texted_t* ed, usz* out_x1, usz* out_y1, usz* out_x2, usz* out_y2) {
+b8 lt_texted_get_selection(lt_texted_t ed[static 1], usz* out_x1, usz* out_y1, usz* out_x2, usz* out_y2) {
 	usz y1 = ed->cursor_y;
 	usz x1 = ed->cursor_x;
 	usz y2 = ed->select_y;
@@ -209,14 +209,14 @@ b8 lt_texted_get_selection(lt_texted_t* ed, usz* out_x1, usz* out_y1, usz* out_x
 	return !(y1 == y2 && x1 == x2);
 }
 
-isz lt_texted_write_selection(lt_texted_t* ed, lt_io_callback_t callb, void* usr) {
+isz lt_texted_write_selection(lt_texted_t ed[static 1], lt_write_fn_t callb, void* usr) {
 	usz x1, y1, x2, y2;
 	if (!lt_texted_get_selection(ed, &x1, &y1, &x2, &y2))
 		return 0;
 	return lt_texted_write_range(ed, x1, y1, x2, y2, callb, usr);
 }
 
-usz lt_texted_selection_len(lt_texted_t* ed) {
+usz lt_texted_selection_len(lt_texted_t ed[static 1]) {
 	usz start_y, start_x, end_y, end_x;
 	lt_texted_get_selection(ed, &start_y, &start_x, &end_y, &end_x);
 
@@ -232,7 +232,7 @@ usz lt_texted_selection_len(lt_texted_t* ed) {
 	return len;
 }
 
-void lt_texted_erase_selection(lt_texted_t* ed) {
+void lt_texted_erase_selection(lt_texted_t ed[static 1]) {
 	usz x1, y1, x2, y2;
 	if (!lt_texted_get_selection(ed, &x1, &y1, &x2, &y2))
 		return;
@@ -240,7 +240,7 @@ void lt_texted_erase_selection(lt_texted_t* ed) {
 	lt_texted_gotoxy(ed, x1, y1, 1);
 }
 
-b8 lt_texted_input_str(lt_texted_t* ed, lstr_t str) {
+b8 lt_texted_input_str(lt_texted_t ed[static 1], lstr_t str) {
 	if (lt_texted_selection_present(ed))
 		lt_texted_erase_selection(ed);
 
@@ -270,7 +270,7 @@ b8 lt_texted_input_str(lt_texted_t* ed, lstr_t str) {
 	return it != str.str;
 }
 
-void lt_texted_cursor_left(lt_texted_t* ed, b8 sync_selection) {
+void lt_texted_cursor_left(lt_texted_t ed[static 1], b8 sync_selection) {
 	if (sync_selection && lt_texted_selection_present(ed)) {
 		goto_selection_start(ed);
 		return;
@@ -291,7 +291,7 @@ void lt_texted_cursor_left(lt_texted_t* ed, b8 sync_selection) {
 		sync_s(ed);
 }
 
-void lt_texted_cursor_right(lt_texted_t* ed, b8 sync_selection) {
+void lt_texted_cursor_right(lt_texted_t ed[static 1], b8 sync_selection) {
 	if (sync_selection && lt_texted_selection_present(ed)) {
 		goto_selection_end(ed);
 		return;
@@ -311,7 +311,7 @@ void lt_texted_cursor_right(lt_texted_t* ed, b8 sync_selection) {
 		sync_s(ed);
 }
 
-void lt_texted_cursor_up(lt_texted_t* ed, b8 sync_selection) {
+void lt_texted_cursor_up(lt_texted_t ed[static 1], b8 sync_selection) {
 	if (sync_selection && ed->cursor_y != ed->select_y) {
 		goto_selection_start(ed);
 		return;
@@ -325,7 +325,7 @@ void lt_texted_cursor_up(lt_texted_t* ed, b8 sync_selection) {
 		sync_s(ed);
 }
 
-void lt_texted_cursor_down(lt_texted_t* ed, b8 sync_selection) {
+void lt_texted_cursor_down(lt_texted_t ed[static 1], b8 sync_selection) {
 	if (sync_selection && ed->cursor_y != ed->select_y) {
 		goto_selection_end(ed);
 		return;
@@ -338,7 +338,7 @@ void lt_texted_cursor_down(lt_texted_t* ed, b8 sync_selection) {
 		sync_s(ed);
 }
 
-usz lt_texted_find_word_fwd(lt_texted_t* ed) {
+usz lt_texted_find_word_fwd(lt_texted_t ed[static 1]) {
 	usz cpos = ed->cursor_x;
 	char* str = ed->lines[ed->cursor_y];
 	usz len = lt_darr_count(str);
@@ -364,7 +364,7 @@ usz lt_texted_find_word_fwd(lt_texted_t* ed) {
 	return cpos;
 }
 
-usz lt_texted_find_word_bwd(lt_texted_t* ed) {
+usz lt_texted_find_word_bwd(lt_texted_t ed[static 1]) {
 	usz cpos = ed->cursor_x;
 	char* str = ed->lines[ed->cursor_y];
 
@@ -393,7 +393,7 @@ usz lt_texted_find_word_bwd(lt_texted_t* ed) {
 	return cpos;
 }
 
-void lt_texted_step_left(lt_texted_t* ed, b8 sync_selection) {
+void lt_texted_step_left(lt_texted_t ed[static 1], b8 sync_selection) {
 	if (sync_selection && lt_texted_selection_present(ed)) {
 		goto_selection_start(ed);
 		return;
@@ -411,7 +411,7 @@ void lt_texted_step_left(lt_texted_t* ed, b8 sync_selection) {
 		sync_s(ed);
 }
 
-void lt_texted_step_right(lt_texted_t* ed, b8 sync_selection) {
+void lt_texted_step_right(lt_texted_t ed[static 1], b8 sync_selection) {
 	if (sync_selection && lt_texted_selection_present(ed)) {
 		goto_selection_end(ed);
 		return;
@@ -433,17 +433,17 @@ void lt_texted_step_right(lt_texted_t* ed, b8 sync_selection) {
 
 #define VSTEP 2
 
-void lt_texted_step_up(lt_texted_t* ed, b8 sync_selection) {
+void lt_texted_step_up(lt_texted_t ed[static 1], b8 sync_selection) {
 	for (usz i = 0; i < VSTEP; ++i)
 		lt_texted_cursor_up(ed, sync_selection);
 }
 
-void lt_texted_step_down(lt_texted_t* ed, b8 sync_selection) {
+void lt_texted_step_down(lt_texted_t ed[static 1], b8 sync_selection) {
 	for (usz i = 0; i < VSTEP; ++i)
 		lt_texted_cursor_down(ed, sync_selection);
 }
 
-void lt_texted_delete_bwd(lt_texted_t* ed) {
+void lt_texted_delete_bwd(lt_texted_t ed[static 1]) {
 	if (lt_texted_selection_present(ed)) {
 		lt_texted_erase_selection(ed);
 		return;
@@ -468,7 +468,7 @@ void lt_texted_delete_bwd(lt_texted_t* ed) {
 	sync_s(ed);
 }
 
-void lt_texted_delete_fwd(lt_texted_t* ed) {
+void lt_texted_delete_fwd(lt_texted_t ed[static 1]) {
 	if (lt_texted_selection_present(ed)) {
 		lt_texted_erase_selection(ed);
 		return;
@@ -485,7 +485,7 @@ void lt_texted_delete_fwd(lt_texted_t* ed) {
 	sync_s(ed);
 }
 
-void lt_texted_delete_word_bwd(lt_texted_t* ed) {
+void lt_texted_delete_word_bwd(lt_texted_t ed[static 1]) {
 	if (lt_texted_selection_present(ed)) {
 		lt_texted_erase_selection(ed);
 		return;
@@ -508,7 +508,7 @@ void lt_texted_delete_word_bwd(lt_texted_t* ed) {
 	sync_s(ed);
 }
 
-void lt_texted_delete_word_fwd(lt_texted_t* ed) {
+void lt_texted_delete_word_fwd(lt_texted_t ed[static 1]) {
 	if (lt_texted_selection_present(ed)) {
 		lt_texted_erase_selection(ed);
 		return;
@@ -526,7 +526,7 @@ void lt_texted_delete_word_fwd(lt_texted_t* ed) {
 	sync_s(ed);
 }
 
-void lt_texted_break_line(lt_texted_t* ed) {
+void lt_texted_break_line(lt_texted_t ed[static 1]) {
 	split(ed, ed->cursor_y, ed->cursor_x);
 	++ed->cursor_y;
 	ed->cursor_x = 0;
@@ -535,29 +535,29 @@ void lt_texted_break_line(lt_texted_t* ed) {
 	sync_s(ed);
 }
 
-void lt_texted_gotox(lt_texted_t* ed, usz x, b8 sync_selection) {
-	ed->cursor_x = lt_min_usz(x, lt_darr_count(ed->lines[ed->cursor_y]));
+void lt_texted_gotox(lt_texted_t ed[static 1], usz x, b8 sync_selection) {
+	ed->cursor_x = lt_min(x, lt_darr_count(ed->lines[ed->cursor_y]));
 	sync_tx(ed);
 	if (sync_selection)
 		sync_s(ed);
 }
 
-void lt_texted_gotoy(lt_texted_t* ed, usz y, b8 sync_selection) {
-	ed->cursor_y = lt_min_usz(y, lt_darr_count(ed->lines) - 1);
+void lt_texted_gotoy(lt_texted_t ed[static 1], usz y, b8 sync_selection) {
+	ed->cursor_y = lt_min(y, lt_darr_count(ed->lines) - 1);
 	goto_tx(ed);
 	if (sync_selection)
 		sync_s(ed);
 }
 
-void lt_texted_gotoxy(lt_texted_t* ed, usz x, usz y, b8 sync_selection) {
-	ed->cursor_y = lt_min_usz(y, lt_darr_count(ed->lines) - 1);
-	ed->cursor_x = lt_min_usz(x, lt_darr_count(ed->lines[ed->cursor_y]));
+void lt_texted_gotoxy(lt_texted_t ed[static 1], usz x, usz y, b8 sync_selection) {
+	ed->cursor_y = lt_min(y, lt_darr_count(ed->lines) - 1);
+	ed->cursor_x = lt_min(x, lt_darr_count(ed->lines[ed->cursor_y]));
 	sync_tx(ed);
 	if (sync_selection)
 		sync_s(ed);
 }
 
-void lt_texted_delete_selection_prefix(lt_texted_t* ed, lstr_t pfx) {
+void lt_texted_delete_selection_prefix(lt_texted_t ed[static 1], lstr_t pfx) {
 	usz start_y, end_y;
 	lt_texted_get_selection(ed, NULL, &start_y, NULL, &end_y);
 
@@ -567,13 +567,13 @@ void lt_texted_delete_selection_prefix(lt_texted_t* ed, lstr_t pfx) {
 			lt_darr_erase(ed->lines[i], 0, pfx.len);
 	}
 
-	ed->cursor_x = lt_min_usz(ed->cursor_x, lt_darr_count(ed->lines[ed->cursor_y]));
-	ed->select_x = lt_min_usz(ed->select_x, lt_darr_count(ed->lines[ed->select_y]));
+	ed->cursor_x = lt_min(ed->cursor_x, lt_darr_count(ed->lines[ed->cursor_y]));
+	ed->select_x = lt_min(ed->select_x, lt_darr_count(ed->lines[ed->select_y]));
 
 	sync_tx(ed);
 }
 
-void lt_texted_prefix_selection(lt_texted_t* ed, lstr_t pfx) {
+void lt_texted_prefix_selection(lt_texted_t ed[static 1], lstr_t pfx) {
 	usz start_y, end_y;
 	lt_texted_get_selection(ed, NULL, &start_y, NULL, &end_y);
 
@@ -585,7 +585,7 @@ void lt_texted_prefix_selection(lt_texted_t* ed, lstr_t pfx) {
 	sync_tx(ed);
 }
 
-void lt_texted_prefix_nonempty_selection(lt_texted_t* ed, lstr_t pfx) {
+void lt_texted_prefix_nonempty_selection(lt_texted_t ed[static 1], lstr_t pfx) {
 	usz start_y, end_y;
 	lt_texted_get_selection(ed, NULL, &start_y, NULL, &end_y);
 
@@ -602,7 +602,7 @@ void lt_texted_prefix_nonempty_selection(lt_texted_t* ed, lstr_t pfx) {
 	}
 }
 
-usz lt_texted_count_line_leading_indent(lt_texted_t* ed, usz line) {
+usz lt_texted_count_line_leading_indent(lt_texted_t ed[static 1], usz line) {
 	lstr_t str = lt_texted_line_str(ed, line);
 	usz i = 0;
 	while (i < str.len && lt_is_space(str.str[i]))
@@ -610,7 +610,7 @@ usz lt_texted_count_line_leading_indent(lt_texted_t* ed, usz line) {
 	return i;
 }
 
-b8 lt_texted_find_next_occurence(lt_texted_t* ed, lstr_t str, usz* out_x, usz* out_y) {
+b8 lt_texted_find_next_occurence(lt_texted_t ed[static 1], lstr_t str, usz* out_x, usz* out_y) {
 	usz line = ed->cursor_y;
 	usz col = ed->cursor_x;
 	usz line_count = lt_darr_count(ed->lines);
@@ -638,7 +638,7 @@ b8 lt_texted_find_next_occurence(lt_texted_t* ed, lstr_t str, usz* out_x, usz* o
 	return 0;
 }
 
-b8 lt_texted_find_last_occurence(lt_texted_t* ed, lstr_t str, usz* out_x, usz* out_y) {
+b8 lt_texted_find_last_occurence(lt_texted_t ed[static 1], lstr_t str, usz* out_x, usz* out_y) {
 	isz line = ed->cursor_y;
 	isz col = ed->cursor_x;
 
@@ -670,7 +670,7 @@ b8 lt_texted_find_last_occurence(lt_texted_t* ed, lstr_t str, usz* out_x, usz* o
 	return 0;
 }
 
-b8 lt_texted_iterate_occurences(lt_texted_t* ed, lstr_t str, lt_texted_iterator_t* it) {
+b8 lt_texted_iterate_occurences(lt_texted_t ed[static 1], lstr_t str, lt_texted_iterator_t* it) {
 	if (!str.len)
 		return 0;
 
@@ -699,11 +699,11 @@ b8 lt_texted_iterate_occurences(lt_texted_t* ed, lstr_t str, lt_texted_iterator_
 	return 0;
 }
 
-b8 lt_texted_iterate_occurences_bwd(lt_texted_t* ed, lstr_t str, lt_texted_iterator_t* it) {
+b8 lt_texted_iterate_occurences_bwd(lt_texted_t ed[static 1], lstr_t str, lt_texted_iterator_t* it) {
 	if (!str.len)
 		return 0;
 
-	isz i = lt_min_isz(it->line, lt_texted_line_count(ed) - 1), j = it->col - 1;
+	isz i = lt_min(it->line, lt_texted_line_count(ed) - 1), j = it->col - 1;
 	for (;;) {
 		lstr_t line_str = lt_texted_line_str(ed, i);
 

@@ -16,10 +16,10 @@ struct lt_img {
 	void* data;
 } lt_img_t;
 
-lt_err_t lt_img_load_tga(lt_img_t* img, void* data, usz len, lt_alloc_t* alloc);
-lt_err_t lt_img_load_bmp(lt_img_t* img, void* data, usz len, lt_alloc_t* alloc);
-lt_err_t lt_img_load(lt_img_t* img, void* data, usz len, lt_alloc_t* alloc);
+lt_err_t lt_img_load_tga(lt_img_t out_img[static 1], const void* data, usz len, lt_alloc_t alloc[static 1]);
+lt_err_t lt_img_load_bmp(lt_img_t out_img[static 1], const void* data, usz len, lt_alloc_t alloc[static 1]);
+lt_err_t lt_img_load(lt_img_t out_img[static 1], const void* data, usz len, lt_alloc_t alloc[static 1]);
 
-void lt_img_free(lt_img_t* img, lt_alloc_t* alloc);
+void lt_img_free(const lt_img_t img[static 1], lt_alloc_t alloc[static 1]);
 
 #endif

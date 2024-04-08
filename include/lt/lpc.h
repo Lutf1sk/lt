@@ -349,12 +349,12 @@ lstr_t lt_lpc_stmt_type_str(lt_lpc_stmt_type_t type) {
 	return lt_lpc_stmt_type_strtab[type];
 }
 
-lt_lpc_sym_t** lt_lpc_lookup_sym(lt_lpc_sym_t** arr, usz count, lstr_t name);
+lt_lpc_sym_t** lt_lpc_lookup_sym(usz count, lt_lpc_sym_t* arr[static count], lstr_t name);
 
 lt_err_t lt_lpc_parse(lt_lpc_parse_ctx_t* cx, lt_lpc_tk_t* tokens, usz token_count, lt_arena_t* alloc);
 lt_err_t lt_lpc_resolve_tree(lt_lpc_parse_ctx_t* cx);
 
-void lt_lpc_write_expr(lt_lpc_expr_t* expr, lt_io_callback_t callb, void* usr, usz indent);
-void lt_lpc_write_stmt(lt_lpc_stmt_t* stmt, lt_io_callback_t callb, void* usr, usz indent);
+void lt_lpc_write_expr(lt_lpc_expr_t* expr, lt_write_fn_t callb, void* usr, usz indent);
+void lt_lpc_write_stmt(lt_lpc_stmt_t* stmt, lt_write_fn_t callb, void* usr, usz indent);
 
 #endif

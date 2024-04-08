@@ -4,10 +4,11 @@
 #include <lt/debug.h>
 
 b8 lt_elf_verify_magic(void* fh) {
+	LT_ASSERT(fh);
 	return memcmp(fh, (u8[]){ 0x7F,'E','L','F' }, 4) == 0;
 }
 
-lstr_t lt_elf64_str(lt_elf64_t* e, lt_elf64_sh_t* strtab_sh, usz offs) {
+lstr_t lt_elf64_str(const lt_elf64_t e[static 1], const lt_elf64_sh_t strtab_sh[static 1], usz offs) {
 	LT_ASSERT(strtab_sh);
 	LT_ASSERT(offs < strtab_sh->size);
 
@@ -17,7 +18,7 @@ lstr_t lt_elf64_str(lt_elf64_t* e, lt_elf64_sh_t* strtab_sh, usz offs) {
 	return LSTR(str, strnlen(str, end - str));
 }
 
-void lt_elf64_init(void* data, usz size, lt_elf64_t* e) {
+void lt_elf64_init(void* data, usz size, lt_elf64_t e[static 1]) {
 	e->fh = data;
 	e->base = data;
 	e->size = size;
@@ -55,7 +56,7 @@ void lt_elf64_init(void* data, usz size, lt_elf64_t* e) {
 	}
 }
 
-usz lt_elf64_vaddr_to_offs(lt_elf64_t* e, usz vaddr) {
+usz lt_elf64_vaddr_to_offs(const lt_elf64_t e[static 1], usz vaddr) {
 	for (usz i = 0; i < e->fh->ph_count; ++i) {
 		lt_elf64_ph_t* ph = lt_elf64_ph(e, i);
 		if (ph->type != LT_ELF_PH_LOAD)
@@ -66,7 +67,7 @@ usz lt_elf64_vaddr_to_offs(lt_elf64_t* e, usz vaddr) {
 	return vaddr;
 }
 
-lt_elf64_sh_t* lt_elf64_sh_by_name(lt_elf64_t* e, lstr_t name) {
+lt_elf64_sh_t* lt_elf64_sh_by_name(const lt_elf64_t e[static 1], lstr_t name) {
 	for (usz i = 0; i < e->fh->sh_count; ++i) {
 		lt_elf64_sh_t* sh = lt_elf64_sh(e, i);
 		lstr_t shname = lt_elf64_str(e, e->sh_strtab_sh, sh->name_stab_offs);
@@ -76,7 +77,7 @@ lt_elf64_sh_t* lt_elf64_sh_by_name(lt_elf64_t* e, lstr_t name) {
 	return NULL;
 }
 
-lt_elf64_sym_t* lt_elf64_sym_by_name(lt_elf64_t* e, lstr_t name) {
+lt_elf64_sym_t* lt_elf64_sym_by_name(const lt_elf64_t e[static 1], lstr_t name) {
 	if (!e->sym_strtab_sh)
 		return NULL;
 
@@ -88,7 +89,7 @@ lt_elf64_sym_t* lt_elf64_sym_by_name(lt_elf64_t* e, lstr_t name) {
 	return NULL;
 }
 
-lt_elf64_sym_t* lt_elf64_sym_by_vaddr(lt_elf64_t* e, usz vaddr) {
+lt_elf64_sym_t* lt_elf64_sym_by_vaddr(const lt_elf64_t e[static 1], usz vaddr) {
 	if (!e->sym_strtab_sh)
 		return NULL;
 

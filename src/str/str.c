@@ -31,16 +31,17 @@ lstr_t lt_lstrim(lstr_t str) {
 	return lt_lstrim_left(lt_lstrim_right(str));
 }
 
-char* lt_lstos(lstr_t lstr, lt_alloc_t* alloc) {
+char* lt_lstos(lstr_t lstr, lt_alloc_t alloc[static 1]) {
 	char* cstr = lt_malloc(alloc, lstr.len + 1);
-	if (!cstr)
+	if (!cstr) {
 		return NULL;
+	}
 	memcpy(cstr, lstr.str, lstr.len);
 	cstr[lstr.len] = 0;
 	return cstr;
 }
 
-lt_err_t lt_lstof(lstr_t str, f64* out) {
+lt_err_t lt_lstof(lstr_t str, f64 out[static 1]) {
 	if (!str.len)
 		return LT_ERR_IS_EMPTY;
 
@@ -83,7 +84,7 @@ done:
 	return LT_SUCCESS;
 }
 
-lt_err_t lt_lstoi(lstr_t str, i64* out) {
+lt_err_t lt_lstoi(lstr_t str, i64 out[static 1]) {
 	if (!str.len) {
 		return LT_ERR_IS_EMPTY;
 	}
@@ -110,7 +111,7 @@ lt_err_t lt_lstoi(lstr_t str, i64* out) {
 	return LT_SUCCESS;
 }
 
-lt_err_t lt_lstou(lstr_t str, u64* out) {
+lt_err_t lt_lstou(lstr_t str, u64 out[static 1]) {
 	if (!str.len) {
 		return LT_ERR_IS_EMPTY;
 	}
@@ -154,7 +155,7 @@ static u8 hex_conv_tab[256] = {
 	['F'] = 0xF, ['f'] = 0xF,
  };
 
-lt_err_t lt_lshextou(lstr_t str, u64* out) {
+lt_err_t lt_lshextou(lstr_t str, u64 out[static 1]) {
 	if (!str.len) {
 		return LT_ERR_IS_EMPTY;
 	}
@@ -244,7 +245,7 @@ lstr_t lt_lstrim_trailing_slash(lstr_t path) {
 	}
 }
 
-lstr_t lt_lsbuild(lt_alloc_t* alloc, char* fmt, ...) {
+lstr_t lt_lsbuild(lt_alloc_t alloc[static 1], const char* fmt, ...) {
 	va_list argl;
 	va_start(argl, fmt);
 	lstr_t str;

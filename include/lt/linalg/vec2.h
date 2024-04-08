@@ -158,38 +158,38 @@ lt_vec2_t lt_v2lerp(lt_vec2_t a, lt_vec2_t b, f32 t) {
 
 static LT_INLINE
 lt_vec2_t lt_v2lerpc(lt_vec2_t a, lt_vec2_t b, f32 t) {
-	return lt_v2lerp(a, b, lt_clamp_f32(t, 0.0f, 1.0f));
+	return lt_v2lerp(a, b, lt_clamp(t, 0.0f, 1.0f));
 }
 
 
 static LT_INLINE
 lt_vec2_t lt_v2min(lt_vec2_t a, lt_vec2_t b) {
-	return LT_VEC2(lt_min_f32(a.x, b.x), lt_min_f32(a.y, b.y));
+	return LT_VEC2(lt_min(a.x, b.x), lt_min(a.y, b.y));
 }
 
 static LT_INLINE
 lt_vec2_t lt_v2max(lt_vec2_t a, lt_vec2_t b) {
-	return LT_VEC2(lt_max_f32(a.x, b.x), lt_max_f32(a.y, b.y));
+	return LT_VEC2(lt_max(a.x, b.x), lt_max(a.y, b.y));
 }
 
 static LT_INLINE
 lt_vec2_t lt_v2clamp(lt_vec2_t v, lt_vec2_t min, lt_vec2_t max) {
-	return LT_VEC2(lt_clamp_f32(v.x, min.x, max.x), lt_clamp_f32(v.y, min.y, max.y));
+	return LT_VEC2(lt_clamp(v.x, min.x, max.x), lt_clamp(v.y, min.y, max.y));
 }
 
 static LT_INLINE
 lt_vec2_t lt_v2clampf(lt_vec2_t v, f32 min, f32 max) {
-	return LT_VEC2(lt_clamp_f32(v.x, min, max), lt_clamp_f32(v.y, min, max));
+	return LT_VEC2(lt_clamp(v.x, min, max), lt_clamp(v.y, min, max));
 }
 
 static LT_INLINE
 f32 lt_v2mincomp(lt_vec2_t v) {
-	return lt_min_f32(v.x, v.y);
+	return lt_min(v.x, v.y);
 }
 
 static LT_INLINE
 f32 lt_v2maxcomp(lt_vec2_t v) {
-	return lt_max_f32(v.x, v.y);
+	return lt_max(v.x, v.y);
 }
 
 

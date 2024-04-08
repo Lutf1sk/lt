@@ -21,10 +21,10 @@
 
 // time.c
 
-u64 lt_hfreq_time_nsec(void);
-u64 lt_hfreq_time_usec(void);
-u64 lt_hfreq_time_msec(void);
-u64 lt_hfreq_time_sec(void);
+u64 lt_time_nsec(void);
+u64 lt_time_usec(void);
+u64 lt_time_msec(void);
+u64 lt_time_sec(void);
 
 // sleep.c
 

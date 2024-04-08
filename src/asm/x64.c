@@ -75,7 +75,7 @@ u8 dsp_op_char(i64* dsp_ptr, usz dspsz) {
 }
 
 static
-usz parse_mod00_sib(lt_instr_stream_t* stream, u8 rex) {
+usz parse_mod00_sib(lt_instr_stream_t stream[static 1], u8 rex) {
 	u8 sib;
 	if (!lt_instr_stream_consume(stream, &sib, 1))
 		return 0;
@@ -102,7 +102,7 @@ usz parse_mod00_sib(lt_instr_stream_t* stream, u8 rex) {
 }
 
 static
-usz parse_dsp_sib(lt_instr_stream_t* stream, u8 rex, usz dsp_bytes) {
+usz parse_dsp_sib(lt_instr_stream_t stream[static 1], u8 rex, usz dsp_bytes) {
 	u8 sib;
 	if (!lt_instr_stream_consume(stream, &sib, 1))
 		return 0;
@@ -121,7 +121,8 @@ usz parse_dsp_sib(lt_instr_stream_t* stream, u8 rex, usz dsp_bytes) {
 				regs[base].sized_names[SZ_8], regs[index].sized_names[SZ_8], 1 << SIB_SCALE(sib), dsp_op, dsp);
 }
 
-usz parse_mrm(lt_instr_stream_t* stream, u8 size, u8 mrm, u8 rex) {
+static
+usz parse_mrm(lt_instr_stream_t stream[static 1], u8 size, u8 mrm, u8 rex) {
 	u8 mod = MODRM_MOD(mrm);
 	u8 rm = MODRM_RM(mrm);
 	u8 b_rm = (!!(rex & REX_B) << 3) | rm;
@@ -158,7 +159,7 @@ usz parse_mrm(lt_instr_stream_t* stream, u8 size, u8 mrm, u8 rex) {
 	}
 }
 
-usz lt_x64_disasm_instr(lt_instr_stream_t* stream) {
+usz lt_x64_disasm_instr(lt_instr_stream_t stream[static 1]) {
 	usz lpfx_count = 0;
 	u16 lpfx_bits = 0;
 

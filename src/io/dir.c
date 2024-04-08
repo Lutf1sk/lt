@@ -5,28 +5,12 @@
 #ifdef LT_LINUX
 #	include <dirent.h>
 #	include <sys/stat.h>
-
-typedef
-struct lt_dir {
-	DIR* dp;
-	lt_dirent_t ent;
-} lt_dir_t;
-
-#elif defined(LT_WINDOWS)
+#elifdef LT_WINDOWS
 #	define WIN32_LEAN_AND_MEAN
 #	include <windows.h>
-
-typedef
-struct lt_dir {
-	b8 eof;
-	WIN32_FIND_DATA ffd;
-	HANDLE fhnd;
-	lt_dirent_t ent;
-} lt_dir_t;
-
 #endif
 
-lt_dir_t* lt_dopenp(lstr_t path, lt_alloc_t* alloc) {
+lt_dir_t* lt_dopenp(lstr_t path, lt_alloc_t alloc[static 1]) {
 	if (path.len >= LT_PATH_MAX)
 		return NULL; // !! LT_ERR_PATH_TOO_LONG
 
@@ -69,7 +53,7 @@ lt_dir_t* lt_dopenp(lstr_t path, lt_alloc_t* alloc) {
 	return dir;
 }
 
-void lt_dclose(lt_dir_t* dir, lt_alloc_t* alloc) {
+void lt_dclose(const lt_dir_t dir[static 1], lt_alloc_t alloc[static 1]) {
 #ifdef LT_LINUX
 	closedir(dir->dp);
 #elif defined(LT_WINDOWS)
@@ -78,7 +62,7 @@ void lt_dclose(lt_dir_t* dir, lt_alloc_t* alloc) {
 	lt_mfree(alloc, dir);
 }
 
-lt_dirent_t* lt_dread(lt_dir_t* dir) {
+lt_dirent_t* lt_dread(lt_dir_t dir[static 1]) {
 #ifdef LT_LINUX
 
 	struct dirent* dirent = readdir(dir->dp);
@@ -115,7 +99,7 @@ lt_dirent_t* lt_dread(lt_dir_t* dir) {
 	return &dir->ent;
 }
 
-lt_err_t lt_dcopyp(lstr_t from, lstr_t to, void* buf, usz bufsz, lt_alloc_t* alloc) {
+lt_err_t lt_dcopyp(lstr_t from, lstr_t to, void* buf, usz bufsz, lt_alloc_t alloc[static 1]) {
 	lt_err_t err, ret = LT_SUCCESS;
 
 	if ((err = lt_mkdir(to)) && err != LT_ERR_EXISTS)

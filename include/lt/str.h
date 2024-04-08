@@ -57,28 +57,28 @@ lstr_t lt_lssplit_bwd(lstr_t str, char delim) {
 }
 
 static LT_INLINE
-lstr_t lt_lsfroms(char* cstr) {
-	return LSTR(cstr, strlen(cstr));
+lstr_t lt_lsfroms(const char* cstr) {
+	return LSTR((char*)cstr, strlen(cstr));
 }
 
-char* lt_lstos(lstr_t lstr, lt_alloc_t* alloc);
+char* lt_lstos(lstr_t lstr, lt_alloc_t alloc[static 1]);
 
 static LT_INLINE
-lstr_t lt_lsfrom_range(char* start, char* end) {
-	return LSTR(start, end - start);
+lstr_t lt_lsfrom_range(const char* start, const char* end) {
+	return LSTR((char*)start, end - start);
 }
 
 lstr_t lt_lstrim_left(lstr_t str);
 lstr_t lt_lstrim_right(lstr_t str);
 lstr_t lt_lstrim(lstr_t str);
 
-lt_err_t lt_lstof(lstr_t, f64* out);
-lt_err_t lt_lstoi(lstr_t, i64* out);
-lt_err_t lt_lstou(lstr_t, u64* out);
-lt_err_t lt_lshextou(lstr_t str, u64* out);
+lt_err_t lt_lstof(lstr_t, f64 out[static 1]);
+lt_err_t lt_lstoi(lstr_t, i64 out[static 1]);
+lt_err_t lt_lstou(lstr_t, u64 out[static 1]);
+lt_err_t lt_lshextou(lstr_t str, u64 out[static 1]);
 
-lstr_t lt_lsbuild(lt_alloc_t* alloc, char* fmt, ...);
-char* lt_sbuild(lt_alloc_t* alloc, char* fmt, ...);
+lstr_t lt_lsbuild(lt_alloc_t alloc[static 1], const char* fmt, ...);
+char* lt_sbuild(lt_alloc_t alloc[static 1], const char* fmt, ...);
 
 lstr_t lt_lsdirname(lstr_t path);
 lstr_t lt_lsbasename(lstr_t path);

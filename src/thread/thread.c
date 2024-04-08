@@ -9,7 +9,7 @@
 typedef
 struct lt_thread {
 	pthread_t pthread;
-	lt_thread_proc_t proc;
+	lt_thread_fn_t proc;
 	void* args;
 } lt_thread_t;
 
@@ -20,7 +20,7 @@ void* lt_thread_start_wrapper(void* args) {
 	return NULL;
 }
 
-lt_thread_t* lt_thread_create(lt_thread_proc_t proc, void* args, lt_alloc_t* alloc) {
+lt_thread_t* lt_thread_create(lt_thread_fn_t proc, void* args, lt_alloc_t alloc[static 1]) {
 	lt_thread_t* thread = lt_malloc(alloc, sizeof(lt_thread_t));
 	if (!thread)
 		return NULL;
@@ -33,38 +33,38 @@ lt_thread_t* lt_thread_create(lt_thread_proc_t proc, void* args, lt_alloc_t* all
 	return thread;
 }
 
-b8 lt_thread_join(lt_thread_t* thread, lt_alloc_t* alloc) {
+b8 lt_thread_join(const lt_thread_t* thread, lt_alloc_t alloc[static 1]) {
 	if (pthread_join(thread->pthread, NULL) != 0)
 		return 0;
 	lt_mfree(alloc, thread);
 	return 1;
 }
 
-lt_err_t lt_thread_terminate(lt_thread_t* thread) {
+lt_err_t lt_thread_terminate(const lt_thread_t* thread) {
 	if (pthread_kill(thread->pthread, SIGTERM))
 		return LT_ERR_UNKNOWN;
 	return LT_SUCCESS;
 }
 
-lt_err_t lt_thread_kill(lt_thread_t* thread) {
+lt_err_t lt_thread_kill(const lt_thread_t* thread) {
 	if (pthread_kill(thread->pthread, SIGKILL))
 		return LT_ERR_UNKNOWN;
 	return LT_SUCCESS;
 }
 
-lt_err_t lt_thread_stop(lt_thread_t* thread) {
+lt_err_t lt_thread_stop(const lt_thread_t* thread) {
 	if (pthread_kill(thread->pthread, SIGSTOP))
 		return LT_ERR_UNKNOWN;
 	return LT_SUCCESS;
 }
 
-lt_err_t lt_thread_continue(lt_thread_t* thread) {
+lt_err_t lt_thread_continue(const lt_thread_t* thread) {
 	if (pthread_kill(thread->pthread, SIGCONT))
 		return LT_ERR_UNKNOWN;
 	return LT_SUCCESS;
 }
 
-lt_err_t lt_thread_cancel(lt_thread_t* thread) {
+lt_err_t lt_thread_cancel(const lt_thread_t* thread) {
 	if (pthread_cancel(thread->pthread))
 		return LT_ERR_UNKNOWN;
 	return LT_SUCCESS;
@@ -88,7 +88,7 @@ DWORD WINAPI lt_thread_start_wrapper(void* args) {
 	return 0;
 }
 
-lt_thread_t* lt_thread_create(lt_thread_proc_t proc, void* args, lt_alloc_t* alloc) {
+lt_thread_t* lt_thread_create(lt_thread_proc_t proc, void* args, lt_alloc_t alloc[static 1]) {
 	lt_thread_t* thread = lt_malloc(alloc, sizeof(lt_thread_t));
 	if (!thread)
 		return NULL;
@@ -102,7 +102,7 @@ lt_thread_t* lt_thread_create(lt_thread_proc_t proc, void* args, lt_alloc_t* all
 	return thread;
 }
 
-b8 lt_thread_join(lt_thread_t* thread, lt_alloc_t* alloc) {
+b8 lt_thread_join(const lt_thread_t* thread, lt_alloc_t alloc[static 1]) {
 	if (WaitForSingleObject(thread->hnd, INFINITE) != WAIT_OBJECT_0)
 		return 0;
 	CloseHandle(thread->hnd);

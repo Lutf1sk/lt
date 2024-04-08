@@ -2,7 +2,7 @@
 #include <lt/mem.h>
 #include <lt/debug.h>
 
-void* lt_darr_create_(usz elem_size, usz initial_count, lt_alloc_t* alloc) {
+void* lt_darr_create_(usz elem_size, usz initial_count, lt_alloc_t alloc[static 1]) {
 	LT_ASSERT(elem_size && initial_count);
 
 	usz alloced_size = initial_count * elem_size;

@@ -24,7 +24,7 @@
 #endif
 
 static LT_INLINE
-lt_vec3_t lt_v3mulm(lt_vec3_t v, const lt_mat3_t* m) {
+lt_vec3_t lt_v3mulm(lt_vec3_t v, const lt_mat3_t m[static 1]) {
 	return LT_VEC3(
 		m->data[0][0] * v.x + m->data[1][0] * v.y + m->data[2][0] * v.z,
 		m->data[0][1] * v.x + m->data[1][1] * v.y + m->data[2][1] * v.z,
@@ -34,7 +34,7 @@ lt_vec3_t lt_v3mulm(lt_vec3_t v, const lt_mat3_t* m) {
 
 
 static LT_INLINE
-lt_mat3_t lt_m3mul(const lt_mat3_t* m1, const lt_mat3_t* m2) {
+lt_mat3_t lt_m3mul(const lt_mat3_t m1[static 1], const lt_mat3_t m2[static 1]) {
 	return LT_MAT3V(
 		lt_v3mulm(m1->i, m2),
 		lt_v3mulm(m1->j, m2),

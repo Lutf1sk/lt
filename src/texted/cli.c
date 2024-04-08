@@ -4,7 +4,7 @@
 #include <lt/texted.h>
 #include <lt/ctype.h>
 
-b8 lt_texted_input_term_key(lt_texted_t* ed, lt_strstream_t* clipboard, u32 key) {
+b8 lt_texted_input_term_key(lt_texted_t ed[static 1], lt_strstream_t* clipboard, u32 key) {
 	switch (key) {
 	case LT_TERM_KEY_LEFT: lt_texted_cursor_left(ed, 1); return 0;
 	case LT_TERM_KEY_RIGHT: lt_texted_cursor_right(ed, 1); return 0;
@@ -43,7 +43,7 @@ b8 lt_texted_input_term_key(lt_texted_t* ed, lt_strstream_t* clipboard, u32 key)
 			return 0;
 		if (clipboard != NULL) {
 			lt_strstream_clear(clipboard);
-			lt_texted_write_selection(ed, (lt_io_callback_t)lt_strstream_write, clipboard);
+			lt_texted_write_selection(ed, (lt_write_fn_t)lt_strstream_write, clipboard);
 		}
 		lt_texted_erase_selection(ed);
 		return 1;
@@ -54,7 +54,7 @@ b8 lt_texted_input_term_key(lt_texted_t* ed, lt_strstream_t* clipboard, u32 key)
 		if (clipboard == NULL)
 			return 0;
 		lt_strstream_clear(clipboard);
-		lt_texted_write_selection(ed, (lt_io_callback_t)lt_strstream_write, clipboard);
+		lt_texted_write_selection(ed, (lt_write_fn_t)lt_strstream_write, clipboard);
 		return 1;
 
 	case 'V'|LT_TERM_MOD_CTRL:

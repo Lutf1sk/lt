@@ -17,7 +17,7 @@
 #endif
 
 static LT_INLINE
-lt_vec2_t lt_v2mulm(lt_vec2_t v, const lt_mat2_t* m) {
+lt_vec2_t lt_v2mulm(lt_vec2_t v, const lt_mat2_t m[static 1]) {
 	return LT_VEC2(
 		m->data[0][0] * v.x + m->data[1][0] * v.y,
 		m->data[0][1] * v.x + m->data[1][1] * v.y
@@ -26,7 +26,7 @@ lt_vec2_t lt_v2mulm(lt_vec2_t v, const lt_mat2_t* m) {
 
 
 static LT_INLINE
-lt_mat2_t lt_m2mul(const lt_mat2_t* m1, const lt_mat2_t* m2) {
+lt_mat2_t lt_m2mul(const lt_mat2_t m1[static 1], const lt_mat2_t m2[static 1]) {
 	return LT_MAT2V(
 		lt_v2mulm(m1->i, m2),
 		lt_v2mulm(m1->j, m2)

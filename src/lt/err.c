@@ -8,7 +8,7 @@
 #	include <errno.h>
 #	define LAST_ERROR_STR() strerror(errno)
 
-char* strerror(int err);
+const char* strerror(int err);
 void LT_NORETURN exit(int code);
 
 #elif defined(LT_WINDOWS)
@@ -18,17 +18,12 @@ void LT_NORETURN exit(int code);
 #endif
 
 // strerror wrapper
-char* lt_os_err_str(void) {
+const char* lt_os_err_str(void) {
 	return LAST_ERROR_STR();
 }
 
 // Fatal errors
-void LT_NORETURN lt_ferr(lstr_t str) {
-	lt_fprintf(lt_stderr, FG_BRED"error"RESET": %S", str);
-	exit(1);
-}
-
-void LT_NORETURN lt_ferrf(char* fmt, ...) {
+void LT_NORETURN lt_ferrf(const char* fmt, ...) {
 	lt_fprintf(lt_stderr, FG_BRED"error"RESET": ");
 
 	va_list list;
@@ -38,13 +33,7 @@ void LT_NORETURN lt_ferrf(char* fmt, ...) {
 	exit(1);
 }
 
-void LT_NORETURN lt_ferrb(lstr_t str) {
-	lt_fprintf(lt_stderr, FG_BRED"error"RESET": %S", str);
-	lt_stack_trace(1);
-	exit(1);
-}
-
-void LT_NORETURN lt_ferrbf(char* fmt, ...) {
+void LT_NORETURN lt_ferrbf(const char* fmt, ...) {
 	lt_fprintf(lt_stderr, FG_BRED"error"RESET": ");
 
 	va_list list;
@@ -57,11 +46,7 @@ void LT_NORETURN lt_ferrbf(char* fmt, ...) {
 }
 
 // Warnings
-void lt_werr(lstr_t str) {
-	lt_fprintf(lt_stderr, FG_BMAGENTA"warning"RESET": %S", str);
-}
-
-void lt_werrf(char* fmt, ...) {
+void lt_werrf(const char* fmt, ...) {
 	lt_fprintf(lt_stderr, FG_BMAGENTA"warning"RESET": ");
 
 	va_list list;
@@ -70,12 +55,7 @@ void lt_werrf(char* fmt, ...) {
 	va_end(list);
 }
 
-void lt_werrb(lstr_t str) {
-	lt_fprintf(lt_stderr, FG_BMAGENTA"warning"RESET": %S", str);
-	lt_stack_trace(1);
-}
-
-void lt_werrbf(char* fmt, ...) {
+void lt_werrbf(const char* fmt, ...) {
 	lt_fprintf(lt_stderr, FG_BMAGENTA"warning"RESET": ");
 
 	va_list list;
@@ -87,11 +67,7 @@ void lt_werrbf(char* fmt, ...) {
 }
 
 // Debug info
-void lt_ierr(lstr_t str) {
-	lt_fprintf(lt_stderr, FG_BCYAN"info"RESET": %S", str);
-}
-
-void lt_ierrf(char* fmt, ...) {
+void lt_ierrf(const char* fmt, ...) {
 	lt_fprintf(lt_stderr, FG_BCYAN"info"RESET": ");
 
 	va_list list;
@@ -100,12 +76,7 @@ void lt_ierrf(char* fmt, ...) {
 	va_end(list);
 }
 
-void lt_ierrb(lstr_t str) {
-	lt_fprintf(lt_stderr, FG_BCYAN"info"RESET": %S", str);
-	lt_stack_trace(1);
-}
-
-void lt_ierrbf(char* fmt, ...) {
+void lt_ierrbf(const char* fmt, ...) {
 	lt_fprintf(lt_stderr, FG_BCYAN"info"RESET": ");
 
 	va_list list;

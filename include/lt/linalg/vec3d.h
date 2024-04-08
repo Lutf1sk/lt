@@ -195,7 +195,7 @@ lt_vec3d_t lt_v3dlerp(lt_vec3d_t a, lt_vec3d_t b, f64 t) {
 
 static LT_INLINE
 lt_vec3d_t lt_v3dlerpc(lt_vec3d_t a, lt_vec3d_t b, f64 t) {
-	return lt_v3dlerp(a, b, lt_clamp_f64(t, 0.0f, 1.0f));
+	return lt_v3dlerp(a, b, lt_clamp(t, 0.0f, 1.0f));
 }
 
 static LT_INLINE
@@ -216,32 +216,32 @@ lt_vec3d_t lt_v3drotate(lt_vec3d_t v, f64 angle, lt_vec3d_t axis) {
 
 static LT_INLINE
 lt_vec3d_t lt_v3dmin(lt_vec3d_t a, lt_vec3d_t b) {
-	return LT_VEC3D(lt_min_f64(a.x, b.x), lt_min_f64(a.y, b.y), lt_min_f64(a.z, b.z));
+	return LT_VEC3D(lt_min(a.x, b.x), lt_min(a.y, b.y), lt_min(a.z, b.z));
 }
 
 static LT_INLINE
 lt_vec3d_t lt_v3dmax(lt_vec3d_t a, lt_vec3d_t b) {
-	return LT_VEC3D(lt_max_f64(a.x, b.x), lt_max_f64(a.y, b.y), lt_max_f64(a.z, b.z));
+	return LT_VEC3D(lt_max(a.x, b.x), lt_max(a.y, b.y), lt_max(a.z, b.z));
 }
 
 static LT_INLINE
 lt_vec3d_t lt_v3dclamp(lt_vec3d_t v, lt_vec3d_t min, lt_vec3d_t max) {
-	return LT_VEC3D(lt_clamp_f64(v.x, min.x, max.x), lt_clamp_f64(v.y, min.y, max.y), lt_clamp_f64(v.z, min.z, max.z));
+	return LT_VEC3D(lt_clamp(v.x, min.x, max.x), lt_clamp(v.y, min.y, max.y), lt_clamp(v.z, min.z, max.z));
 }
 
 static LT_INLINE
 lt_vec3d_t lt_v3dclampf(lt_vec3d_t v, f64 min, f64 max) {
-	return LT_VEC3D(lt_clamp_f64(v.x, min, max), lt_clamp_f64(v.y, min, max), lt_clamp_f64(v.z, min, max));
+	return LT_VEC3D(lt_clamp(v.x, min, max), lt_clamp(v.y, min, max), lt_clamp(v.z, min, max));
 }
 
 static LT_INLINE
 f64 lt_v3dmincomp(lt_vec3d_t v) {
-	return lt_min_f64(v.z, lt_min_f64(v.x, v.y));
+	return lt_min(v.z, lt_min(v.x, v.y));
 }
 
 static LT_INLINE
 f64 lt_v3dmaxcomp(lt_vec3d_t v) {
-	return lt_max_f64(v.z, lt_max_f64(v.x, v.y));
+	return lt_max(v.z, lt_max(v.x, v.y));
 }
 
 

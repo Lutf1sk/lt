@@ -108,11 +108,11 @@ LT_PACKED_STRUCT(lt_dwarf_stmt_prologue) {
 	u8 opcode_base;
 } lt_dwarf_stmt_prologue_t;
 
-void lt_dwarf_lns_init(lt_dwarf_lns_t* m, lt_dwarf_stmt_prologue_t* p);
+void lt_dwarf_lns_init(lt_dwarf_lns_t m[static 1], const lt_dwarf_stmt_prologue_t p[static 1]);
 
-u32 lt_dwarf_uleb128(u8** sp);
-i32 lt_dwarf_sleb128(u8** sp);
+u32 lt_dwarf_uleb128(u8* sp[static 1]);
+i32 lt_dwarf_sleb128(u8* sp[static 1]);
 
-usz lt_dwarf_execute(lt_dwarf_lns_t* m, lt_dwarf_stmt_prologue_t* p, u8* instr);
+usz lt_dwarf_execute(lt_dwarf_lns_t m[static 1], const lt_dwarf_stmt_prologue_t p[static 1], u8* instr);
 
 #endif

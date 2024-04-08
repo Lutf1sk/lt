@@ -4,7 +4,7 @@
 #include <lt/io.h>
 #include <lt/mem.h>
 
-#if defined(LT_UNIX)
+#ifdef LT_UNIX
 #	include <sys/socket.h>
 #	include <netdb.h>
 #	include <unistd.h>
@@ -12,7 +12,7 @@
 #	define SOCKET int
 #	define INIT_IF_NECESSARY(x)
 #	define LAST_ERROR() lt_errno()
-#elif defined(LT_WINDOWS)
+#elifdef LT_WINDOWS
 #	define WIN32_LEAN_AND_MEAN 1
 #	include <windows.h>
 #	include <winsock2.h>
@@ -36,11 +36,6 @@ static WSADATA wsadata;
 #endif
 
 typedef
-struct lt_socket {
-	SOCKET fd;
-} lt_socket_t;
-
-typedef
 struct lt_sockaddr_impl {
 	socklen_t addr_len;
 	struct sockaddr addr;
@@ -55,7 +50,7 @@ int lt_socktype_to_native(lt_socktype_t type) {
 	}
 }
 
-lt_err_t lt_sockaddr_resolve(lstr_t addr, u16 port, lt_socktype_t type, lt_sockaddr_t* out_addr_, lt_alloc_t* alloc) {
+lt_err_t lt_sockaddr_resolve(lstr_t addr, u16 port, lt_socktype_t type, lt_sockaddr_t out_addr_[static 1], lt_alloc_t alloc[static 1]) {
 	INIT_IF_NECESSARY(LAST_ERROR());
 	lt_sockaddr_impl_t* out_addr = (lt_sockaddr_impl_t*)out_addr_;
 
@@ -84,7 +79,7 @@ lt_err_t lt_sockaddr_resolve(lstr_t addr, u16 port, lt_socktype_t type, lt_socka
 	return LT_SUCCESS;
 }
 
-lt_socket_t* lt_socket_create(lt_socktype_t type, lt_alloc_t* alloc) {
+lt_socket_t* lt_socket_create(lt_socktype_t type, lt_alloc_t alloc[static 1]) {
 	INIT_IF_NECESSARY(NULL);
 	SOCKET fd = socket(AF_INET, lt_socktype_to_native(type), 0);
 	if (fd < 0)
@@ -95,28 +90,28 @@ lt_socket_t* lt_socket_create(lt_socktype_t type, lt_alloc_t* alloc) {
 	return sock;
 }
 
-void lt_socket_close(lt_socket_t* sock) {
-#if defined(LT_UNIX)
+void lt_socket_close(const lt_socket_t sock[static 1]) {
+#ifdef LT_UNIX
 	close(sock->fd);
-#elif defined(LT_WINDOWS)
+#elifdef LT_WINDOWS
 	closesocket(sock->fd);
 #endif
 }
 
-void lt_socket_destroy(lt_socket_t* sock, lt_alloc_t* alloc) {
+void lt_socket_destroy(const lt_socket_t sock[static 1], lt_alloc_t alloc[static 1]) {
 	lt_socket_close(sock);
 	lt_mfree(alloc, sock);
 }
 
-lt_err_t lt_socket_connect(lt_socket_t* sock, const lt_sockaddr_t* addr_) {
-	lt_sockaddr_impl_t* addr = (lt_sockaddr_impl_t*)addr_;
+lt_err_t lt_socket_connect(const lt_socket_t sock[static 1], const lt_sockaddr_t addr_[static 1]) {
+	const lt_sockaddr_impl_t* addr = (const lt_sockaddr_impl_t*)addr_;
 	if (connect(sock->fd, &addr->addr, addr->addr_len) < 0) {
 		return LAST_ERROR();
 	}
 	return LT_SUCCESS;
 }
 
-lt_err_t lt_socket_server(lt_socket_t* sock, u16 port) {
+lt_err_t lt_socket_server(const lt_socket_t sock[static 1], u16 port) {
 	int reuse_addr = 1;
 	if (setsockopt(sock->fd, SOL_SOCKET, SO_REUSEADDR, (void*)&reuse_addr, sizeof(int)) < 0)
 		return LAST_ERROR();
@@ -133,7 +128,7 @@ lt_err_t lt_socket_server(lt_socket_t* sock, u16 port) {
 	return LT_SUCCESS;
 }
 
-lt_socket_t* lt_socket_accept(lt_socket_t* sock, lt_sockaddr_t* out_addr_, lt_alloc_t* alloc) {
+lt_socket_t* lt_socket_accept(const lt_socket_t sock[static 1], lt_sockaddr_t out_addr_[static 1], lt_alloc_t alloc[static 1]) {
 	struct sockaddr new_addr, *new_addr_p = &new_addr;
 	socklen_t new_size = sizeof(new_addr), *new_size_p = &new_size;
 
@@ -156,19 +151,19 @@ lt_socket_t* lt_socket_accept(lt_socket_t* sock, lt_sockaddr_t* out_addr_, lt_al
 	return new_sock;
 }
 
-u32 lt_sockaddr_ipv4_addr(lt_sockaddr_t* addr_) {
-	lt_sockaddr_impl_t* addr = (lt_sockaddr_impl_t*) addr_;
-	struct sockaddr_in* addr_in = (struct sockaddr_in*)&addr->addr;
+u32 lt_sockaddr_ipv4_addr(const lt_sockaddr_t addr_[static 1]) {
+	const lt_sockaddr_impl_t* addr = (const lt_sockaddr_impl_t*) addr_;
+	const struct sockaddr_in* addr_in = (const struct sockaddr_in*)&addr->addr;
 	return htonl(addr_in->sin_addr.s_addr);
 }
 
-u16 lt_sockaddr_ipv4_port(lt_sockaddr_t* addr_) {
-	lt_sockaddr_impl_t* addr = (lt_sockaddr_impl_t*) addr_;
-	struct sockaddr_in* addr_in = (struct sockaddr_in*)&addr->addr;
+u16 lt_sockaddr_ipv4_port(const lt_sockaddr_t addr_[static 1]) {
+	const lt_sockaddr_impl_t* addr = (const lt_sockaddr_impl_t*) addr_;
+	const struct sockaddr_in* addr_in = (const struct sockaddr_in*)&addr->addr;
 	return ntohs(addr_in->sin_port);
 }
 
-isz lt_socket_send(lt_socket_t* sock, void* data, usz size) {
+isz lt_socket_send(const lt_socket_t sock[static 1], const void* data, usz size) {
 	isz res = send(sock->fd, data, size, MSG_NOSIGNAL);
 	if (res == 0)
 		return -LT_ERR_CLOSED;
@@ -177,7 +172,7 @@ isz lt_socket_send(lt_socket_t* sock, void* data, usz size) {
 	return res;
 }
 
-isz lt_socket_recv(lt_socket_t* sock, void* data, usz size) {
+isz lt_socket_recv(const lt_socket_t sock[static 1], void* data, usz size) {
 	isz res = recv(sock->fd, data, size, 0);
 	if (res == 0)
 		return -LT_ERR_CLOSED;

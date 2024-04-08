@@ -155,38 +155,38 @@ lt_vec4_t lt_v4lerp(lt_vec4_t a, lt_vec4_t b, f32 t) {
 
 static LT_INLINE
 lt_vec4_t lt_v4lerpc(lt_vec4_t a, lt_vec4_t b, f32 t) {
-	return lt_v4lerp(a, b, lt_clamp_f32(t, 0.0f, 1.0f));
+	return lt_v4lerp(a, b, lt_clamp(t, 0.0f, 1.0f));
 }
 
 
 static LT_INLINE
 lt_vec4_t lt_v4min(lt_vec4_t a, lt_vec4_t b) {
-	return LT_VEC4(lt_min_f32(a.x, b.x), lt_min_f32(a.y, b.y), lt_min_f32(a.z, b.z), lt_min_f32(a.w, b.w));
+	return LT_VEC4(lt_min(a.x, b.x), lt_min(a.y, b.y), lt_min(a.z, b.z), lt_min(a.w, b.w));
 }
 
 static LT_INLINE
 lt_vec4_t lt_v4max(lt_vec4_t a, lt_vec4_t b) {
-	return LT_VEC4(lt_max_f32(a.x, b.x), lt_max_f32(a.y, b.y), lt_max_f32(a.z, b.z), lt_max_f32(a.w, b.w));
+	return LT_VEC4(lt_max(a.x, b.x), lt_max(a.y, b.y), lt_max(a.z, b.z), lt_max(a.w, b.w));
 }
 
 static LT_INLINE
 lt_vec4_t lt_v4clamp(lt_vec4_t v, lt_vec4_t min, lt_vec4_t max) {
-	return LT_VEC4(lt_clamp_f32(v.x, min.x, max.x), lt_clamp_f32(v.y, min.y, max.y), lt_clamp_f32(v.z, min.z, max.z), lt_clamp_f32(v.w, min.w, max.w));
+	return LT_VEC4(lt_clamp(v.x, min.x, max.x), lt_clamp(v.y, min.y, max.y), lt_clamp(v.z, min.z, max.z), lt_clamp(v.w, min.w, max.w));
 }
 
 static LT_INLINE
 lt_vec4_t lt_v4clampf(lt_vec4_t v, f32 min, f32 max) {
-	return LT_VEC4(lt_clamp_f32(v.x, min, max), lt_clamp_f32(v.y, min, max), lt_clamp_f32(v.z, min, max), lt_clamp_f32(v.w, min, max));
+	return LT_VEC4(lt_clamp(v.x, min, max), lt_clamp(v.y, min, max), lt_clamp(v.z, min, max), lt_clamp(v.w, min, max));
 }
 
 static LT_INLINE
 f32 lt_v4mincomp(lt_vec4_t v) {
-	return lt_min_f32(v.w, lt_min_f32(v.z, lt_min_f32(v.x, v.y)));
+	return lt_min(v.w, lt_min(v.z, lt_min(v.x, v.y)));
 }
 
 static LT_INLINE
 f32 lt_v4maxcomp(lt_vec4_t v) {
-	return lt_max_f32(v.w, lt_max_f32(v.z, lt_max_f32(v.x, v.y)));
+	return lt_max(v.w, lt_max(v.z, lt_max(v.x, v.y)));
 }
 
 

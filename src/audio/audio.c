@@ -9,7 +9,7 @@
 
 #include <alsa/asoundlib.h>
 
-lt_err_t lt_audio_stream_create(lt_audio_stream_t* s, u32 rate, u32 channels, lt_audio_stream_flags_t flags, lt_alloc_t* alloc) {
+lt_err_t lt_audio_stream_create(lt_audio_stream_t s[static 1], u32 rate, u32 channels, lt_audio_stream_flags_t flags, lt_alloc_t alloc[static 1]) {
 	lt_err_t err;
 
 	snd_pcm_stream_t stream = SND_PCM_STREAM_PLAYBACK;
@@ -59,42 +59,42 @@ err0:	snd_pcm_close(s->handle);
 		return err;
 }
 
-void lt_audio_stream_destroy(lt_audio_stream_t* s, lt_alloc_t* alloc) {
+void lt_audio_stream_destroy(lt_audio_stream_t s[static 1], lt_alloc_t alloc[static 1]) {
 	lt_mfree(alloc, s->pollfds);
 	snd_pcm_close(s->handle);
 }
 
-lt_err_t lt_audio_stream_start(lt_audio_stream_t* s) {
+lt_err_t lt_audio_stream_start(lt_audio_stream_t s[static 1]) {
 	if (snd_pcm_start(s->handle) < 0)
 		return LT_ERR_UNKNOWN;
 	return LT_SUCCESS;
 }
 
-lt_err_t lt_audio_stream_stop(lt_audio_stream_t* s) {
+lt_err_t lt_audio_stream_stop(lt_audio_stream_t s[static 1]) {
 	if (snd_pcm_drop(s->handle) < 0)
 		return LT_ERR_UNKNOWN;
 	return LT_SUCCESS;
 }
 
-lt_err_t lt_audio_stream_drain(lt_audio_stream_t* s) {
+lt_err_t lt_audio_stream_drain(lt_audio_stream_t s[static 1]) {
 	if (snd_pcm_drain(s->handle) < 0)
 		return LT_ERR_UNKNOWN;
 	return LT_SUCCESS;
 }
 
-lt_err_t lt_audio_stream_pause(lt_audio_stream_t* s) {
+lt_err_t lt_audio_stream_pause(lt_audio_stream_t s[static 1]) {
 	if (snd_pcm_resume(s->handle) < 0)
 		return LT_ERR_UNKNOWN;
 	return LT_SUCCESS;
 }
 
-lt_err_t lt_audio_stream_resume(lt_audio_stream_t* s) {
+lt_err_t lt_audio_stream_resume(lt_audio_stream_t s[static 1]) {
 	if (snd_pcm_resume(s->handle) < 0)
 		return LT_ERR_UNKNOWN;
 	return LT_SUCCESS;
 }
 
-lt_err_t lt_audio_stream_wait(lt_audio_stream_t* s) {
+lt_err_t lt_audio_stream_wait(lt_audio_stream_t s[static 1]) {
 	int res = poll(s->pollfds, s->pollfd_count, -1);
 	if (res < 0)
 		return LT_ERR_INTERRUPTED;
@@ -108,7 +108,7 @@ lt_err_t lt_audio_stream_wait(lt_audio_stream_t* s) {
 	return LT_ERR_NOT_FOUND;
 }
 
-isz lt_audio_stream_write(lt_audio_stream_t* s, void* data, usz frame_count) {
+isz lt_audio_stream_write(lt_audio_stream_t s[static 1], void* data, usz frame_count) {
 	isz res = snd_pcm_writei(s->handle, data, frame_count);
 	if (res < 0) {
 		if (res == -EPIPE) {
@@ -120,13 +120,13 @@ isz lt_audio_stream_write(lt_audio_stream_t* s, void* data, usz frame_count) {
 	return res;
 }
 
-isz lt_audio_stream_read(lt_audio_stream_t* s, void* data, usz frame_count) {
+isz lt_audio_stream_read(lt_audio_stream_t s[static 1], void* data, usz frame_count) {
 	snd_pcm_readi(s->handle, data, frame_count);
 	return LT_SUCCESS;
 }
 
 
-lt_err_t lt_audio_load(lt_audio_t* audio, void* data, usz len, lt_alloc_t* alloc) {
+lt_err_t lt_audio_load(lt_audio_t audio[static 1], void* data, usz len, lt_alloc_t alloc[static 1]) {
 	return lt_audio_load_wav(audio, data, len, alloc);
 }
 

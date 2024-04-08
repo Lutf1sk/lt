@@ -2,15 +2,15 @@
 #include <lt/mem.h>
 #include <lt/text.h>
 
-lt_err_t lt_font_load(lt_font_t* font, void* data, usz len, lt_alloc_t* alloc) {
+lt_err_t lt_font_load(lt_font_t font[static 1], void* data, usz len, lt_alloc_t alloc[static 1]) {
 	return lt_font_load_psf(font, data, len, alloc);
 }
 
-void lt_font_destroy(lt_font_t* font, lt_alloc_t* alloc) {
+void lt_font_destroy(const lt_font_t font[static 1], lt_alloc_t alloc[static 1]) {
 	lt_mfree(alloc, font->glyph_data);
 }
 
-void lt_font_render(lt_font_t* font, lstr_t text, u32* buf) {
+void lt_font_render(const lt_font_t font[static 1], lstr_t text, u32* buf) {
 	usz w = font->width, h = font->height;
 	usz dwords = w * h;
 
@@ -35,7 +35,7 @@ void lt_font_render(lt_font_t* font, lstr_t text, u32* buf) {
 	}
 }
 
-usz lt_font_text_width(lt_font_t* font, lstr_t text) {
+usz lt_font_text_width(const lt_font_t font[static 1], lstr_t text) {
 	return lt_utf8_glyph_count(text) * font->width;
 }
 

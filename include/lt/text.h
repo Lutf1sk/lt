@@ -8,7 +8,7 @@
 #define LT_UTF8_BOM CLSTR("\xEF\xBB\xBF")
 
 // utf8.c
-usz lt_utf8_encode(u32 sym, char* out);
+usz lt_utf8_encode(u32 sym, char out[static 4]);
 
 static inline
 usz lt_utf8_encode_len(u32 v) {
@@ -22,7 +22,7 @@ usz lt_utf8_encode_len(u32 v) {
 		return 4;
 }
 
-usz lt_utf8_decode(char* str, u32* out);
+usz lt_utf8_decode(const char str[static 4], u32 out[static 1]);
 
 static inline
 usz lt_utf8_decode_len(char v) {

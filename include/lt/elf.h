@@ -315,31 +315,31 @@ struct lt_elf64 {
 } lt_elf64_t;
 
 static LT_INLINE
-lt_elf64_sh_t* lt_elf64_sh(lt_elf64_t* e, usz i) {
+lt_elf64_sh_t* lt_elf64_sh(const lt_elf64_t e[static 1], usz i) {
 	return (void*)((usz)e->fh + e->fh->sh_offset + e->fh->sh_size * i);
 }
 
 static LT_INLINE
-lt_elf64_ph_t* lt_elf64_ph(lt_elf64_t* e, usz i) {
+lt_elf64_ph_t* lt_elf64_ph(const lt_elf64_t e[static 1], usz i) {
 	return (void*)((usz)e->fh + e->fh->ph_offset + e->fh->ph_size * i);
 }
 
 static LT_INLINE
-void* lt_elf64_offs(lt_elf64_t* e, usz offs) {
+void* lt_elf64_offs(const lt_elf64_t e[static 1], usz offs) {
 	return (void*)((usz)e->base + offs);
 }
 
-lstr_t lt_elf64_str(lt_elf64_t* e, lt_elf64_sh_t* strtab_sh, usz offs);
+lstr_t lt_elf64_str(const lt_elf64_t e[static 1], const lt_elf64_sh_t strtab_sh[static 1], usz offs);
 
-void lt_elf64_init(void* data, usz size, lt_elf64_t* e);
+void lt_elf64_init(void* data, usz size, lt_elf64_t out_e[static 1]);
 
-usz lt_elf64_vaddr_to_offs(lt_elf64_t* e, usz vaddr);
+usz lt_elf64_vaddr_to_offs(const lt_elf64_t e[static 1], usz vaddr);
 
-lt_elf64_sh_t* lt_elf64_sh_by_name(lt_elf64_t* e, lstr_t name);
+lt_elf64_sh_t* lt_elf64_sh_by_name(const lt_elf64_t e[static 1], lstr_t name);
 
-lt_elf64_sym_t* lt_elf64_sym_by_name(lt_elf64_t* e, lstr_t name);
-lt_elf64_sym_t* lt_elf64_sym_by_vaddr(lt_elf64_t* e, usz vaddr);
+lt_elf64_sym_t* lt_elf64_sym_by_name(const lt_elf64_t e[static 1], lstr_t name);
+lt_elf64_sym_t* lt_elf64_sym_by_vaddr(const lt_elf64_t e[static 1], usz vaddr);
 
-lt_err_t lt_elf64_lookup_vaddr(lt_elf64_t* e, usz vaddr, usz* out_line, lstr_t* out_file_name, void*);
+lt_err_t lt_elf64_lookup_vaddr(const lt_elf64_t e[static 1], usz vaddr, usz out_line[static 1], lstr_t out_file_name[static 1], void* addr);
 
 #endif

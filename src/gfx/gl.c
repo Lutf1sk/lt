@@ -56,7 +56,7 @@ lt_err_t lt_gfx_init(void) {
 	return LT_SUCCESS;
 }
 
-lt_err_t lt_gfx_create(lt_gfx_t* gfx, lt_window_t* win, lt_alloc_t* alloc) {
+lt_err_t lt_gfx_create(lt_gfx_t gfx[static 1], const lt_window_t* win, lt_alloc_t alloc[static 1]) {
 	lt_err_t err;
 
 	gfx->window = win;
@@ -112,13 +112,13 @@ err1:	lt_texture_destroy(&gfx->white_texture);
 err0:	return err;
 }
 
-void lt_gfx_destroy(lt_gfx_t* gfx) {
+void lt_gfx_destroy(const lt_gfx_t gfx[static 1]) {
 	lt_texture_destroy(&gfx->white_texture);
 	lt_mesh_destroy(&gfx->rect_mesh);
 	lt_pipeline_destroy(&gfx->default_pipeline);
 }
 
-lt_err_t lt_gfx_begin(lt_gfx_t* gfx) {
+lt_err_t lt_gfx_begin(lt_gfx_t gfx[static 1]) {
 	int w, h;
 	lt_window_get_size(gfx->window, &w, &h);
 
@@ -136,34 +136,34 @@ lt_err_t lt_gfx_begin(lt_gfx_t* gfx) {
 	return LT_SUCCESS;
 }
 
-lt_err_t lt_gfx_end(lt_gfx_t* gfx) {
+lt_err_t lt_gfx_end(lt_gfx_t gfx[static 1]) {
 	lt_window_gl_swap_buffers(gfx->window);
 
 	return LT_SUCCESS;
 }
 
-void lt_gfx_bind_pipeline(lt_gfx_t* gfx, lt_pipeline_t* pl) {
+void lt_gfx_bind_pipeline(lt_gfx_t gfx[static 1], const lt_pipeline_t pl[static 1]) {
 	glUseProgram(pl->gl_prog);
 }
 
-void lt_gfx_bind_texture(lt_gfx_t* gfx, lt_texture_t* tex) {
+void lt_gfx_bind_texture(lt_gfx_t gfx[static 1], const lt_texture_t tex[static 1]) {
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, tex->gl_tex);
 }
 
-void lt_gfx_set_scissor(lt_gfx_t* gfx, isz x, isz y, isz w, isz h) {
+void lt_gfx_set_scissor(lt_gfx_t gfx[static 1], isz x, isz y, isz w, isz h) {
 	// Flip the Y axis, since OpenGL's origin is in the bottom left
 	int winw, winh;
 	lt_window_get_size(gfx->window, &winw, &winh);
 	glScissor(x, winh - (y + h), w, h);
 }
 
-void lt_gfx_draw_mesh(lt_gfx_t* gfx, lt_mesh_t* mesh) {
+void lt_gfx_draw_mesh(lt_gfx_t gfx[static 1], const lt_mesh_t mesh[static 1]) {
 	glBindVertexArray(mesh->gl_vao);
 	glDrawElements(GL_TRIANGLES, mesh->index_count, GL_UNSIGNED_INT, NULL);
 }
 
-void lt_gfx_draw_rectctd(lt_gfx_t* gfx, isz x, isz y, isz w, isz h, u32 color, lt_texture_t* tex, u32 depth) {
+void lt_gfx_draw_rectctd(lt_gfx_t gfx[static 1], isz x, isz y, isz w, isz h, u32 color, const lt_texture_t tex[static 1], u32 depth) {
 	lt_gfx_bind_pipeline(gfx, &gfx->default_pipeline);
 	lt_gfx_bind_texture(gfx, tex);
 
@@ -186,11 +186,11 @@ void lt_gfx_draw_rectctd(lt_gfx_t* gfx, isz x, isz y, isz w, isz h, u32 color, l
 	lt_gfx_draw_mesh(gfx, &gfx->rect_mesh);
 }
 
-void lt_gfx_draw_rectcd(lt_gfx_t* gfx, isz x, isz y, isz w, isz h, u32 color, u32 depth) {
+void lt_gfx_draw_rectcd(lt_gfx_t gfx[static 1], isz x, isz y, isz w, isz h, u32 color, u32 depth) {
 	lt_gfx_draw_rectctd(gfx, x, y, w, h, color, &gfx->white_texture, depth);
 }
 
-lt_err_t lt_gfx_render_text(lt_gfx_t* gfx, lstr_t text, lt_font_t* font, usz flags, lt_texture_t* out_tex) {
+lt_err_t lt_gfx_render_text(lt_gfx_t gfx[static 1], lstr_t text, const lt_font_t* font, usz flags, lt_texture_t out_tex[static 1]) {
 	lt_img_t img;
 	img.format = LT_IMG_RGBA;
 	img.flags = 0;
@@ -206,7 +206,7 @@ lt_err_t lt_gfx_render_text(lt_gfx_t* gfx, lstr_t text, lt_font_t* font, usz fla
 	return err;
 }
 
-void lt_gfx_wait_idle(lt_gfx_t* gfx) {
+void lt_gfx_wait_idle(lt_gfx_t gfx[static 1]) {
 	glFinish();
 }
 
@@ -248,7 +248,7 @@ b8 check_program_link_error(int prog, lt_alloc_t* alloc) {
 	return 0;
 }
 
-lt_err_t lt_pipeline_create(lt_gfx_t* gfx, lt_pipeline_t* pl, int source_fmt, lstr_t vert_source, lstr_t frag_source) {
+lt_err_t lt_pipeline_create(lt_gfx_t gfx[static 1], lt_pipeline_t pl[static 1], int source_fmt, lstr_t vert_source, lstr_t frag_source) {
 	lt_err_t err;
 
 	if (source_fmt != LT_SHADER_FMT_GLSL)
@@ -286,53 +286,53 @@ err1:	glDeleteShader(vert_shader);
 err0:	return err;
 }
 
-void lt_pipeline_destroy(lt_pipeline_t* pl) {
+void lt_pipeline_destroy(const lt_pipeline_t pl[static 1]) {
 	glDeleteProgram(pl->gl_prog);
 }
 
-void lt_pipeline_uniform_u32(lt_pipeline_t* pl, u32 location, u32 v) {
+void lt_pipeline_uniform_u32(const lt_pipeline_t pl[static 1], u32 location, u32 v) {
 	glUseProgram(pl->gl_prog);
 	glUniform1i(location, v);
 }
 
-void lt_pipeline_uniform_f32(lt_pipeline_t* pl, u32 location, f32 v) {
+void lt_pipeline_uniform_f32(const lt_pipeline_t pl[static 1], u32 location, f32 v) {
 	glUseProgram(pl->gl_prog);
 	glUniform1f(location, v);
 }
 
-void lt_pipeline_uniform_mat2(lt_pipeline_t* pl, u32 location, float* v) {
+void lt_pipeline_uniform_mat2(const lt_pipeline_t pl[static 1], u32 location, const float v[static 4]) {
 	glUseProgram(pl->gl_prog);
 	glUniformMatrix2fv(location, 1, GL_FALSE, v);
 }
 
-void lt_pipeline_uniform_mat3(lt_pipeline_t* pl, u32 location, float* v) {
+void lt_pipeline_uniform_mat3(const lt_pipeline_t pl[static 1], u32 location, const float v[static 9]) {
 	glUseProgram(pl->gl_prog);
 	glUniformMatrix3fv(location, 1, GL_FALSE, v);
 }
 
-void lt_pipeline_uniform_mat4(lt_pipeline_t* pl, u32 location, float* v) {
+void lt_pipeline_uniform_mat4(const lt_pipeline_t pl[static 1], u32 location, const float v[static 16]) {
 	glUseProgram(pl->gl_prog);
 	glUniformMatrix4fv(location, 1, GL_FALSE, v);
 }
 
-void lt_pipeline_uniform_vec2(lt_pipeline_t* pl, u32 location, float* v) {
+void lt_pipeline_uniform_vec2(const lt_pipeline_t pl[static 1], u32 location, const float v[static 2]) {
 	glUseProgram(pl->gl_prog);
 	glUniform2fv(location, 1, v);
 }
 
-void lt_pipeline_uniform_vec3(lt_pipeline_t* pl, u32 location, float* v) {
+void lt_pipeline_uniform_vec3(const lt_pipeline_t pl[static 1], u32 location, const float v[static 3]) {
 	glUseProgram(pl->gl_prog);
 	glUniform3fv(location, 1, v);
 }
 
-void lt_pipeline_uniform_vec4(lt_pipeline_t* pl, u32 location, float* v) {
+void lt_pipeline_uniform_vec4(const lt_pipeline_t pl[static 1], u32 location, const float v[static 4]) {
 	glUseProgram(pl->gl_prog);
 	glUniform4fv(location, 1, v);
 }
 
 // mesh
 
-lt_err_t lt_mesh_create(lt_gfx_t* gfx, lt_mesh_t* mesh, lt_model_t* model) {
+lt_err_t lt_mesh_create(lt_gfx_t gfx[static 1], lt_mesh_t mesh[static 1], const lt_model_t model[static 1]) {
 	glGenVertexArrays(1, &mesh->gl_vao);
 	glBindVertexArray(mesh->gl_vao);
 
@@ -363,7 +363,7 @@ lt_err_t lt_mesh_create(lt_gfx_t* gfx, lt_mesh_t* mesh, lt_model_t* model) {
 	return LT_SUCCESS;
 }
 
-void lt_mesh_destroy(lt_mesh_t* mesh) {
+void lt_mesh_destroy(const lt_mesh_t mesh[static 1]) {
 	glDeleteBuffers(1, &mesh->gl_idxbuf);
 	glDeleteBuffers(1, &mesh->gl_posbuf);
 	glDeleteBuffers(1, &mesh->gl_uvbuf);
@@ -371,7 +371,7 @@ void lt_mesh_destroy(lt_mesh_t* mesh) {
 	glDeleteVertexArrays(1, &mesh->gl_vao);
 }
 
-lt_err_t lt_mesh_upload(lt_gfx_t* gfx, lt_mesh_t* mesh, lt_model_t* model) {
+lt_err_t lt_mesh_upload(lt_gfx_t gfx[static 1], lt_mesh_t mesh[static 1], const lt_model_t model[static 1]) {
 	glBindVertexArray(mesh->gl_vao);
 
 	if (model->indices) {
@@ -397,7 +397,7 @@ lt_err_t lt_mesh_upload(lt_gfx_t* gfx, lt_mesh_t* mesh, lt_model_t* model) {
 
 // texture
 
-lt_err_t lt_texture_create(lt_gfx_t* gfx, lt_texture_t* tex, usz flags, lt_img_t* img) {
+lt_err_t lt_texture_create(lt_gfx_t gfx[static 1], lt_texture_t tex[static 1], usz flags, const lt_img_t* img) {
 	glActiveTexture(GL_TEXTURE0);
 	glGenTextures(1, &tex->gl_tex);
 
@@ -419,11 +419,11 @@ lt_err_t lt_texture_create(lt_gfx_t* gfx, lt_texture_t* tex, usz flags, lt_img_t
 	return LT_SUCCESS;
 }
 
-void lt_texture_destroy(lt_texture_t* tex) {
+void lt_texture_destroy(const lt_texture_t tex[static 1]) {
 	glDeleteTextures(1, &tex->gl_tex);
 }
 
-lt_err_t lt_texture_upload(lt_gfx_t* gfx, lt_texture_t* tex, lt_img_t* img) {
+lt_err_t lt_texture_upload(lt_gfx_t gfx[static 1], lt_texture_t tex[static 1], const lt_img_t* img) {
 	if (img->format != LT_IMG_RGBA)
 		return LT_ERR_UNSUPPORTED;
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img->width, img->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, img->data);

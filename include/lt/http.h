@@ -58,16 +58,16 @@ struct lt_http_msg {
 
 lstr_t lt_http_method_str(lt_http_method_t method);
 
-lt_err_t lt_http_msg_create(lt_http_msg_t* out_msg, lt_alloc_t* alloc);
-void lt_http_msg_destroy(const lt_http_msg_t* msg, lt_alloc_t* alloc);
+lt_err_t lt_http_msg_create(lt_http_msg_t out_msg[static 1], lt_alloc_t alloc[static 1]);
+void lt_http_msg_destroy(const lt_http_msg_t msg[static 1], lt_alloc_t alloc[static 1]);
 
-lt_err_t lt_http_add_header(lt_http_msg_t* msg, lstr_t key, lstr_t val);
-lstr_t* lt_http_find_header(const lt_http_msg_t* msg, lstr_t key);
+lt_err_t lt_http_add_header(lt_http_msg_t msg[static 1], lstr_t key, lstr_t val);
+lstr_t* lt_http_find_header(const lt_http_msg_t msg[static 1], lstr_t key);
 
-lt_err_t lt_http_parse_request(lt_http_msg_t* out_request, lt_io_callback_t callb, void* usr, lt_alloc_t* alloc);
-lt_err_t lt_http_parse_response(lt_http_msg_t* out_response, lt_io_callback_t callb, void* usr, lt_alloc_t* alloc);
+lt_err_t lt_http_parse_request(lt_http_msg_t out_request[static 1], lt_read_fn_t callb, void* usr, lt_alloc_t alloc[static 1]);
+lt_err_t lt_http_parse_response(lt_http_msg_t out_response[static 1], lt_read_fn_t callb, void* usr, lt_alloc_t alloc[static 1]);
 
-lt_err_t lt_http_write_request(const lt_http_msg_t* request, lt_io_callback_t callb, void* usr);
-lt_err_t lt_http_write_response(const lt_http_msg_t* response, lt_io_callback_t callb, void* usr);
+lt_err_t lt_http_write_request(const lt_http_msg_t request[static 1], lt_write_fn_t callb, void* usr);
+lt_err_t lt_http_write_response(const lt_http_msg_t response[static 1], lt_write_fn_t callb, void* usr);
 
 #endif

@@ -11,7 +11,7 @@ struct lt_io_alloc_ctx {
 	usz asize;
 } lt_io_alloc_ctx_t;
 
-isz lt_alloc_io_callb(lt_io_alloc_ctx_t* cx, void* data, usz len) {
+isz lt_alloc_io_callb(lt_io_alloc_ctx_t* cx, const void* data, usz len) {
 	if (!len)
 		return len;
 
@@ -30,7 +30,7 @@ isz lt_alloc_io_callb(lt_io_alloc_ctx_t* cx, void* data, usz len) {
 	return len;
 }
 
-isz lt_vaprintf(lstr_t* out, lt_alloc_t* alloc, char* fmt, va_list argl) {
+isz lt_vaprintf(lstr_t out[static 1], lt_alloc_t alloc[static 1], const char* fmt, va_list argl) {
 	lt_io_alloc_ctx_t ctx;
 	ctx.alloc = alloc;
 	ctx.str = lt_malloc(alloc, INITIAL_SIZE);
@@ -40,7 +40,7 @@ isz lt_vaprintf(lstr_t* out, lt_alloc_t* alloc, char* fmt, va_list argl) {
 	if (!ctx.str)
 		return -LT_ERR_OUT_OF_MEMORY;
 
-	isz res = lt_io_vprintf((lt_io_callback_t)lt_alloc_io_callb, &ctx, fmt, argl);
+	isz res = lt_io_vprintf((lt_write_fn_t)lt_alloc_io_callb, &ctx, fmt, argl);
 	if (res < 0) {
 		lt_mfree(alloc, ctx.str);
 		return res;
@@ -51,7 +51,7 @@ isz lt_vaprintf(lstr_t* out, lt_alloc_t* alloc, char* fmt, va_list argl) {
 }
 
 LT_FLATTEN
-isz lt_aprintf(lstr_t* out, lt_alloc_t* alloc, char* fmt, ...) {
+isz lt_aprintf(lstr_t out[static 1], lt_alloc_t alloc[static 1], const char* fmt, ...) {
 	va_list argl;
 	va_start(argl, fmt);
 	isz res = lt_vaprintf(out, alloc, fmt, argl);

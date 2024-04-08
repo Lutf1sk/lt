@@ -241,7 +241,7 @@ lt_err_t insert_sym(lt_c_parse_ctx_t* cx, lt_darr(lt_c_sym_t*)* arr, lt_c_sym_t*
 		*arr = lt_darr_create(lt_c_sym_t*, 4, &cx->alloc->interf);
 
 	usz glob_count = lt_darr_count(*arr);
-	lt_c_sym_t** at = lookup_nearest_sym(*arr, glob_count, sym->name);
+	lt_c_sym_t** at = lookup_nearest_sym(glob_count, *arr, sym->name);
 
 	if (at < *arr + glob_count && sym_is_equal(*at, sym->name)) {
 		if (syms_compatible(sym, *at))
@@ -260,7 +260,7 @@ lt_err_t insert_struct_incomplete(lt_c_parse_ctx_t* cx, lstr_t tag, lt_c_sym_t**
 		cx->syms->structs = lt_darr_create(lt_c_sym_t*, 4, &cx->alloc->interf);
 
 	usz glob_count = lt_darr_count(cx->syms->structs);
-	lt_c_sym_t** at = lookup_nearest_sym(cx->syms->structs, glob_count, tag);
+	lt_c_sym_t** at = lookup_nearest_sym(glob_count, cx->syms->structs, tag);
 
 	if (at < cx->syms->structs + glob_count && sym_is_equal(*at, tag)) {
 		*out_sym = *at;
@@ -294,7 +294,7 @@ lt_err_t insert_union_incomplete(lt_c_parse_ctx_t* cx, lstr_t tag, lt_c_sym_t** 
 		cx->syms->unions = lt_darr_create(lt_c_sym_t*, 4, &cx->alloc->interf);
 
 	usz glob_count = lt_darr_count(cx->syms->unions);
-	lt_c_sym_t** at = lookup_nearest_sym(cx->syms->unions, glob_count, tag);
+	lt_c_sym_t** at = lookup_nearest_sym(glob_count, cx->syms->unions, tag);
 
 	if (at < cx->syms->unions + glob_count && sym_is_equal(*at, tag)) {
 		*out_sym = *at;
@@ -328,7 +328,7 @@ lt_err_t insert_enum_incomplete(lt_c_parse_ctx_t* cx, lstr_t tag, lt_c_sym_t** o
 		cx->syms->enums = lt_darr_create(lt_c_sym_t*, 4, &cx->alloc->interf);
 
 	usz glob_count = lt_darr_count(cx->syms->enums);
-	lt_c_sym_t** at = lookup_nearest_sym(cx->syms->enums, glob_count, tag);
+	lt_c_sym_t** at = lookup_nearest_sym(glob_count, cx->syms->enums, tag);
 
 	if (at < cx->syms->enums + glob_count && sym_is_equal(*at, tag)) {
 		*out_sym = *at;
@@ -367,7 +367,7 @@ lt_err_t insert_func_incomplete(lt_c_parse_ctx_t* cx, lstr_t name, lt_c_type_t* 
 		cx->syms->symbols = lt_darr_create(lt_c_sym_t*, 4, &cx->alloc->interf);
 
 	usz glob_count = lt_darr_count(cx->syms->symbols);
-	lt_c_sym_t** at = lookup_nearest_sym(cx->syms->symbols, glob_count, name);
+	lt_c_sym_t** at = lookup_nearest_sym(glob_count, cx->syms->symbols, name);
 
 	if (at < cx->syms->symbols + glob_count && sym_is_equal(*at, name)) {
 		if ((*at)->type != LT_CSYM_FUNC || !type_eq((*at)->func.type, type))
@@ -401,7 +401,7 @@ lt_c_sym_t* find_sym(lt_c_symtab_t* symtab, lstr_t name) {
 		if (symtab->symbols == NULL)
 			continue;
 
-		lt_c_sym_t** psym = lookup_sym(symtab->symbols, lt_darr_count(symtab->symbols), name);
+		lt_c_sym_t** psym = lookup_sym(lt_darr_count(symtab->symbols), symtab->symbols, name);
 		if (psym)
 			return *psym;
 	}
@@ -414,7 +414,7 @@ lt_c_sym_t* find_union(lt_c_symtab_t* symtab, lstr_t name) {
 		if (symtab->unions == NULL)
 			continue;
 
-		lt_c_sym_t** psym = lookup_sym(symtab->unions, lt_darr_count(symtab->unions), name);
+		lt_c_sym_t** psym = lookup_sym(lt_darr_count(symtab->unions), symtab->unions, name);
 		if (psym)
 			return *psym;
 	}
@@ -427,7 +427,7 @@ lt_c_sym_t* find_struct(lt_c_symtab_t* symtab, lstr_t name) {
 		if (symtab->structs == NULL)
 			continue;
 
-		lt_c_sym_t** psym = lookup_sym(symtab->structs, lt_darr_count(symtab->structs), name);
+		lt_c_sym_t** psym = lookup_sym(lt_darr_count(symtab->structs), symtab->structs, name);
 		if (psym)
 			return *psym;
 	}
@@ -440,7 +440,7 @@ lt_c_sym_t* find_enum(lt_c_symtab_t* symtab, lstr_t name) {
 		if (symtab->enums == NULL)
 			continue;
 
-		lt_c_sym_t** psym = lookup_sym(symtab->enums, lt_darr_count(symtab->enums), name);
+		lt_c_sym_t** psym = lookup_sym(lt_darr_count(symtab->enums), symtab->enums, name);
 		if (psym)
 			return *psym;
 	}
@@ -1973,7 +1973,7 @@ lt_err_t lt_c_parse(lt_c_parse_ctx_t* cx, lt_c_tk_t* tokens, usz token_count, lt
 	return LT_SUCCESS;
 }
 
-void lt_c_write_type(lt_c_type_t* type, lt_io_callback_t callb, void* usr, usz indent) {
+void lt_c_write_type(lt_c_type_t* type, lt_write_fn_t callb, void* usr, usz indent) {
 	LT_ASSERT(type);
 
 	switch ((lt_c_data_type_t)type->type) {
@@ -2026,10 +2026,10 @@ void lt_c_write_type(lt_c_type_t* type, lt_io_callback_t callb, void* usr, usz i
 	}
 }
 
-void lt_c_write_expr(lt_c_expr_t* expr, lt_io_callback_t callb, void* usr, usz indent) {
+void lt_c_write_expr(lt_c_expr_t* expr, lt_write_fn_t callb, void* usr, usz indent) {
 	
 }
 
-void lt_c_write_stmt(lt_c_stmt_t* stmt, lt_io_callback_t callb, void* usr, usz indent) {
+void lt_c_write_stmt(lt_c_stmt_t* stmt, lt_write_fn_t callb, void* usr, usz indent) {
 	
 }
