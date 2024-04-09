@@ -28,6 +28,12 @@ void lt_texted_destroy(lt_texted_t ed[static 1]);
 
 void lt_texted_clear(lt_texted_t ed[static 1]);
 
+void lt_texted_sync_tx(lt_texted_t ed[static 1]);
+void lt_texted_sync_selection(lt_texted_t ed[static 1]);
+
+isz lt_texted_findtx(lt_texted_t ed[static 1]);
+void lt_texted_gototx(lt_texted_t ed[static 1]);
+
 static LT_INLINE
 usz lt_texted_line_count(lt_texted_t ed[static 1]) {
 	return lt_darr_count(ed->lines);
