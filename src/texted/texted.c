@@ -565,14 +565,20 @@ void lt_texted_delete_selection_prefix(lt_texted_t ed[static 1], lstr_t pfx) {
 
 	for (usz i = start_y; i <= end_y; ++i) {
 		lstr_t line = lt_texted_line_str(ed, i);
-		if (line.len >= pfx.len && memcmp(pfx.str, line.str, pfx.len) == 0)
-			lt_darr_erase(ed->lines[i], 0, pfx.len);
+		if (line.len < pfx.len || memcmp(pfx.str, line.str, pfx.len) != 0) {
+			continue;
+		}
+
+		lt_darr_erase(ed->lines[i], 0, pfx.len);
+
+		if (i == ed->cursor_y) {
+			ed->cursor_x = lt_isz_clamp(ed->cursor_x - pfx.len, 0, lt_darr_count(ed->lines[ed->cursor_y]));
+			lt_texted_sync_tx(ed);
+		}
+		if (i == ed->select_y) {
+			ed->select_x = lt_isz_clamp(ed->select_x - pfx.len, 0, lt_darr_count(ed->lines[ed->select_y]));
+		}
 	}
-
-	ed->cursor_x = lt_min(ed->cursor_x, lt_darr_count(ed->lines[ed->cursor_y]));
-	ed->select_x = lt_min(ed->select_x, lt_darr_count(ed->lines[ed->select_y]));
-
-	lt_texted_sync_tx(ed);
 }
 
 void lt_texted_prefix_selection(lt_texted_t ed[static 1], lstr_t pfx) {
