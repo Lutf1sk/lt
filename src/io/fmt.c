@@ -27,7 +27,11 @@ isz buffered_write(lt_write_fn_t callb, void* usr, char** it, char* end, lstr_t 
 
 #define NUM_MAX 64
 
-isz lt_io_dummy_callb(void* usr, void* data, usz len) {
+isz lt_io_dummy_write(void* usr, const void* data, usz len) {
+	return len;
+}
+
+isz lt_io_dummy_read(void* usr, void* data, usz len) {
 	return len;
 }
 
