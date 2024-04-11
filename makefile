@@ -80,7 +80,11 @@ SRC = \
 # -----== COMPILER
 CC := cc
 CC_WARN := -Wall -Werror -Wno-strict-aliasing -Wno-error=unused-variable -Wno-unused-function -Wno-pedantic -Wno-unused-label
-CC_FLAGS := -I./include/ -std=gnu2x -fmax-errors=3 $(CC_WARN) -mavx2 -masm=intel
+CC_FLAGS := -I./include/ -std=gnu2x -fmax-errors=3 $(CC_WARN)
+
+ifndef ARM
+	CC_FLAGS += -mavx2 -masm=intel
+endif
 
 ifdef WINDOWS
 	CC = x86_64-w64-mingw32-gcc

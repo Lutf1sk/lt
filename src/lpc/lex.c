@@ -6,6 +6,10 @@
 #include <lt/mem.h>
 #include <lt/math.h>
 
+#ifdef LT_AVX2
+#	include <immintrin.h>
+#endif
+
 lt_err_t lt_lpc_unescape_str(lstr_t* out, lstr_t str) {
 	return LT_ERR_NOT_IMPLEMENTED;
 }
@@ -134,8 +138,6 @@ static u16 tkttab1[256] = {
 static u8 intab1[256];
 static b8 initialized = 0;
 
-#include <immintrin.h>
-
 static LT_INLINE
 void initialize() {
 	for (usz i = 'A'; i <= 'Z'; ++i) {
@@ -250,8 +252,10 @@ lt_err_t lt_lpc_lex(lt_lpc_lex_ctx_t* cx, void* data, usz len, lt_alloc_t* alloc
 	if (!cx->tokens)
 		return LT_ERR_OUT_OF_MEMORY;
 
+#ifdef LT_AVX2
 	__m256i ymm_newline = _mm256_set1_epi8('\n');
 	__m256i ymm_comment_end = _mm256_set1_epi16((u16)'*' | ((u16)'/' << 8));
+#endif
 
 	lt_lpc_tk_t* out = cx->tokens;
 
@@ -356,6 +360,8 @@ lt_err_t lt_lpc_lex(lt_lpc_lex_ctx_t* cx, void* data, usz len, lt_alloc_t* alloc
 		if (*it == '*') {
 			type = LT_LPCTK_COMMENT;
 			++it;
+
+#ifdef LT_AVX2
 		mlcomment:;
 			__m256i str0 = _mm256_loadu_si256((__m256i*)it);
 			__m256i str1 = _mm256_loadu_si256((__m256i*)(it - 1));
@@ -377,13 +383,16 @@ lt_err_t lt_lpc_lex(lt_lpc_lex_ctx_t* cx, void* data, usz len, lt_alloc_t* alloc
 			}
 			if (count == 30)
 				goto mlcomment;
-
 			it += 2;
+#endif
+
 			goto jend;
 		}
 		else if (*it == '/') {
 			type = LT_LPCTK_COMMENT;
 			++it;
+
+#ifdef LT_AVX2
 		slcomment:;
 			__m256i str0 = _mm256_loadu_si256((__m256i*)it);
 			__m256i mask0 = _mm256_cmpeq_epi8(str0, ymm_newline);
@@ -399,6 +408,8 @@ lt_err_t lt_lpc_lex(lt_lpc_lex_ctx_t* cx, void* data, usz len, lt_alloc_t* alloc
 			}
 
 			it += __builtin_ctz(maskb);
+#endif
+
 			goto jend;
 		}
 		if (*it == '=') {

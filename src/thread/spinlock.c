@@ -3,9 +3,13 @@
 
 static LT_INLINE
 u8 atomic_test_and_set(volatile u8* val) {
+#ifdef LT_X64
 	u8 cf;
 	__asm__ volatile ("lock bts DWORD PTR [%1], 0\n" : "=@ccc"(cf) : "r"(val));
 	return cf;
+#else
+	return 0; // !! BAAADD
+#endif
 }
 
 void lt_spinlock_lock(lt_spinlock_t slock[static 1]) {

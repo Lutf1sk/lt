@@ -2,7 +2,9 @@
 #include <lt/math.h>
 #include <lt/align.h>
 
-#include <immintrin.h>
+#ifdef LT_AVX2
+	#include <immintrin.h>
+#endif
 
 usz lt_mset16(void* dst, u16 v, usz size) {
 	u8* it = dst, *end = dst + size;
@@ -13,6 +15,7 @@ usz lt_mset16(void* dst, u16 v, usz size) {
 		v = lt_rotr16(v, 8);
 	}
 
+#ifdef LT_AVX2
 	u8* avx2_start = (u8*)lt_align_fwd((usz)it, 32);
 	u8* avx2_end = (u8*)lt_align_bwd((usz)end, 32);
 
@@ -41,6 +44,14 @@ usz lt_mset16(void* dst, u16 v, usz size) {
 			it += sizeof(u16);
 		}
 	}
+
+#else
+	while (it < end16) {
+		*(u16*)it = v;
+		it += sizeof(u16);
+	}
+#endif
+
 	// set 16-bit unaligned byte
 	if ((usz)end & 0b1)
 		*end = v;
@@ -57,6 +68,7 @@ usz lt_mset32(void* dst, u32 v, usz size) {
 	v = lt_rotr32(v, unaligned32 << 3);
 	it += unaligned32;
 
+#ifdef LT_AVX2
 	u8* avx2_start = (u8*)lt_align_fwd((usz)it, 32);
 	u8* avx2_end = (u8*)lt_align_bwd((usz)end, 32);
 
@@ -85,6 +97,13 @@ usz lt_mset32(void* dst, u32 v, usz size) {
 			it += sizeof(u32);
 		}
 	}
+
+#else
+	while (it < end32) {
+		*(u32*)it = v;
+		it += sizeof(u32);
+	}
+#endif
 
 	// set 32-bit unaligned bytes
 	memcpy(it, &v, end - end32);

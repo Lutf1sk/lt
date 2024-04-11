@@ -25,6 +25,8 @@ void* get_ip(ucontext_t* uc) {
 	return (void*)uc->uc_mcontext.gregs[16];
 #elif defined(LT_IA64)
 	return (void*)uc->uc_mcontext.sc_ip;
+#else
+	return NULL;
 #endif
 }
 

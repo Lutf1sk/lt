@@ -8,6 +8,10 @@
 #include <lt/sort.h>
 #include <lt/str.h>
 
+#ifdef LT_AVX2
+#	include <immintrin.h>
+#endif
+
 lt_err_t lt_c_unescape_str(lstr_t* out, lstr_t str) {
 	return LT_ERR_NOT_IMPLEMENTED;
 }
@@ -186,8 +190,6 @@ static u16 tkttab1[256] = {
 
 static u8 intab1[256];
 static b8 initialized = 0;
-
-#include <immintrin.h>
 
 static LT_INLINE
 void initialize(void) {
@@ -448,8 +450,10 @@ lt_err_t lt_c_lex(lt_c_lex_ctx_t* cx, void* data, usz len, u32 origin, u32 flags
 	if (!cx->tokens)
 		return LT_ERR_OUT_OF_MEMORY;
 
+#ifdef LT_AVX2
 	__m256i ymm_newline = _mm256_set1_epi8('\n');
 	__m256i ymm_comment_end = _mm256_set1_epi16((u16)'*' | ((u16)'/' << 8));
+#endif
 
 	for (;;) {
 		char c;
@@ -549,6 +553,8 @@ lt_err_t lt_c_lex(lt_c_lex_ctx_t* cx, void* data, usz len, u32 origin, u32 flags
 		if (*it == '*') {
 			type = LT_CTK_COMMENT;
 			++it;
+
+#ifdef LT_AVX2
 		mlcomment:;
 			__m256i str0 = _mm256_loadu_si256((__m256i*)it);
 			__m256i str1 = _mm256_loadu_si256((__m256i*)(it - 1));
@@ -569,6 +575,7 @@ lt_err_t lt_c_lex(lt_c_lex_ctx_t* cx, void* data, usz len, u32 origin, u32 flags
 			if (count == 30)
 				goto mlcomment;
 			it += 2;
+#endif
 
 			if (filter_comment)
 				continue;
@@ -577,6 +584,8 @@ lt_err_t lt_c_lex(lt_c_lex_ctx_t* cx, void* data, usz len, u32 origin, u32 flags
 		else if (*it == '/') {
 			type = LT_CTK_COMMENT;
 			++it;
+
+#ifdef LT_AVX2
 		slcomment:;
 			__m256i str0 = _mm256_loadu_si256((__m256i*)it);
 			__m256i mask0 = _mm256_cmpeq_epi8(str0, ymm_newline);
@@ -591,6 +600,7 @@ lt_err_t lt_c_lex(lt_c_lex_ctx_t* cx, void* data, usz len, u32 origin, u32 flags
 				goto slcomment;
 			}
 			it += __builtin_ctz(maskb);
+#endif
 
 			if (filter_comment)
 				continue;
