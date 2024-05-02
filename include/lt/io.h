@@ -121,11 +121,13 @@ lt_dirent_t* lt_dread(lt_dir_t dir[static 1]);
 
 lt_err_t lt_dcopyp(lstr_t from, lstr_t to, void* buf, usz bufsz, lt_alloc_t alloc[static 1]);
 
+lt_err_t lt_dremovep(lstr_t path, lt_alloc_t alloc[static 1]);
+
 lt_err_t lt_mkdir(lstr_t path);
 lt_err_t lt_mkpath(lstr_t path);
 
 #define lt_foreach_dirent(it_name, dir) \
-		for (lt_dirent_t* it_name; (it_name = lt_dread(dir)); )
+	for (lt_dirent_t* it_name; (it_name = lt_dread(dir)); )
 
 // stat.c
 typedef
