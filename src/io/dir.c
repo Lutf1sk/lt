@@ -20,15 +20,12 @@ lt_dir_t* lt_dopenp(lstr_t path, lt_alloc_t alloc[static 1]) {
 	memcpy(cpath, path.str, path.len);
 	cpath[path.len] = 0;
 
-	lt_printf("attempting to open '%s'\n", cpath);
-
 	lt_dir_t* dir = lt_malloc(alloc, sizeof(lt_dir_t));
 	if (dir == NULL)
 		return NULL;
 
 	dir->dp = opendir(cpath);
 	if (dir->dp == NULL) {
-		lt_printf("opendir failed for '%s': %s\n", cpath, lt_os_err_str());
 		lt_mfree(alloc, dir);
 		return NULL;
 	}
