@@ -136,8 +136,9 @@ lt_err_t lt_fremovep(lstr_t path) {
 	memcpy(cpath, path.str, path.len);
 	cpath[path.len] = 0;
 
-	if (remove(cpath) < 0)
-		return LT_ERR_UNKNOWN;
+	if (remove(cpath)) {
+		return lt_errno();
+	}
 	return LT_SUCCESS;
 }
 

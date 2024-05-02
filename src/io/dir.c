@@ -104,32 +104,28 @@ lt_err_t lt_dremovep(lstr_t path, lt_alloc_t alloc[static 1]) {
 
 	lt_dir_t* dir = lt_dopenp(path, alloc);
 	if (!dir) {
-		struct stat st;
-		LT_ASSERT(stat(lt_lstos(path, alloc), &st) >= 0);
-		lt_printf("%S: %s\n", path, lt_os_err_str());
 		return LT_ERR_UNKNOWN;
 	}
-
-	lt_dirent_t* dirent;
-	while ((dirent = lt_dread(dir))) {
+	lt_foreach_dirent(dirent, dir) {
 		if (lt_lseq(dirent->name, CLSTR(".")) || lt_lseq(dirent->name, CLSTR("..")))
 			continue;
 
 		lstr_t ent_path = lt_lsbuild(alloc, "%S/%S", path, dirent->name);
 
-		if (dirent->type == LT_DIRENT_DIR && (err = lt_dremovep(ent_path, alloc))) {
+		if (dirent->type == LT_DIRENT_DIR && (err = lt_dremovep(ent_path, alloc)) && err != LT_ERR_NOT_FOUND) {
 			ret = err;
 		}
-		else if ((err = lt_fremovep(ent_path))) {
+		else if ((err = lt_fremovep(ent_path)) && err != LT_ERR_NOT_FOUND) {
 			ret = err;
 		}
 
 		lt_mfree(alloc, ent_path.str);
 	}
-
 	lt_dclose(dir, alloc);
-	if ((err = lt_fremovep(path)))
+
+	if ((err = lt_fremovep(path)) && err != LT_ERR_NOT_FOUND) {
 		ret = err;
+	}
 	return ret;
 }
 
