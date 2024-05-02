@@ -296,7 +296,7 @@ lt_conf_t* lt_conf_find(lt_conf_t parent[static 1], lstr_t key_path) {
 	return parent;
 }
 
-lt_conf_t* lt_conf_find_int(lt_conf_t parent[static 1], lstr_t key_path, i64 out[static 1]) {
+lt_conf_t* lt_conf_find_int(lt_conf_t parent[static 1], lstr_t key_path, i64* out) {
 	lt_conf_t* cf = lt_conf_find(parent, key_path);
 	if (!cf || cf->stype != LT_CONF_INT)
 		return NULL;
@@ -305,7 +305,7 @@ lt_conf_t* lt_conf_find_int(lt_conf_t parent[static 1], lstr_t key_path, i64 out
 	return cf;
 }
 
-lt_conf_t* lt_conf_find_uint(lt_conf_t parent[static 1], lstr_t key_path, u64 out[static 1]) {
+lt_conf_t* lt_conf_find_uint(lt_conf_t parent[static 1], lstr_t key_path, u64* out) {
 	lt_conf_t* cf = lt_conf_find(parent, key_path);
 	if (!cf || cf->stype != LT_CONF_INT)
 		return NULL;
@@ -314,7 +314,7 @@ lt_conf_t* lt_conf_find_uint(lt_conf_t parent[static 1], lstr_t key_path, u64 ou
 	return cf;
 }
 
-lt_conf_t* lt_conf_find_bool(lt_conf_t parent[static 1], lstr_t key_path, b8 out[static 1]) {
+lt_conf_t* lt_conf_find_bool(lt_conf_t parent[static 1], lstr_t key_path, b8* out) {
 	lt_conf_t* cf = lt_conf_find(parent, key_path);
 	if (!cf || cf->stype != LT_CONF_BOOL)
 		return NULL;
@@ -323,7 +323,7 @@ lt_conf_t* lt_conf_find_bool(lt_conf_t parent[static 1], lstr_t key_path, b8 out
 	return cf;
 }
 
-lt_conf_t* lt_conf_find_str(lt_conf_t parent[static 1], lstr_t key_path, lstr_t out[static 1]) {
+lt_conf_t* lt_conf_find_str(lt_conf_t parent[static 1], lstr_t key_path, lstr_t* out) {
 	lt_conf_t* cf = lt_conf_find(parent, key_path);
 	if (!cf || cf->stype != LT_CONF_STRING)
 		return NULL;
@@ -332,7 +332,7 @@ lt_conf_t* lt_conf_find_str(lt_conf_t parent[static 1], lstr_t key_path, lstr_t 
 	return cf;
 }
 
-lt_conf_t* lt_conf_find_float(lt_conf_t parent[static 1], lstr_t key_path, f64 out[static 1]) {
+lt_conf_t* lt_conf_find_float(lt_conf_t parent[static 1], lstr_t key_path, f64* out) {
 	lt_conf_t* cf = lt_conf_find(parent, key_path);
 	if (!cf || cf->stype != LT_CONF_FLOAT)
 		return NULL;
@@ -341,7 +341,7 @@ lt_conf_t* lt_conf_find_float(lt_conf_t parent[static 1], lstr_t key_path, f64 o
 	return cf;
 }
 
-lt_conf_t* lt_conf_find_object(lt_conf_t parent[static 1], lstr_t key_path, lt_conf_t* out[static 1]) {
+lt_conf_t* lt_conf_find_object(lt_conf_t parent[static 1], lstr_t key_path, lt_conf_t** out) {
 	lt_conf_t* cf = lt_conf_find(parent, key_path);
 	if (!cf || cf->stype != LT_CONF_OBJECT)
 		return NULL;
@@ -349,7 +349,7 @@ lt_conf_t* lt_conf_find_object(lt_conf_t parent[static 1], lstr_t key_path, lt_c
 		*out = cf;
 	return cf;
 }
-lt_conf_t* lt_conf_find_array(lt_conf_t parent[static 1], lstr_t key_path, lt_conf_t* out[static 1]) {
+lt_conf_t* lt_conf_find_array(lt_conf_t parent[static 1], lstr_t key_path, lt_conf_t** out) {
 	lt_conf_t* cf = lt_conf_find(parent, key_path);
 	if (!cf || cf->stype != LT_CONF_ARRAY)
 		return NULL;
