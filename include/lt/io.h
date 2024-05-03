@@ -119,7 +119,10 @@ void lt_dclose(const lt_dir_t dir[static 1], lt_alloc_t alloc[static 1]);
 
 lt_dirent_t* lt_dread(lt_dir_t dir[static 1]);
 
-lt_err_t lt_dcopyp(lstr_t from, lstr_t to, void* buf, usz bufsz, lt_alloc_t alloc[static 1]);
+#define LT_DCOPY_MERGE 1
+#define LT_DCOPY_OVERWRITE_FILES 2
+
+lt_err_t lt_dcopyp(lstr_t from, lstr_t to, void* buf, usz bufsz, u32 flags, lt_alloc_t alloc[static 1]);
 
 lt_err_t lt_dremovep(lstr_t path, lt_alloc_t alloc[static 1]);
 

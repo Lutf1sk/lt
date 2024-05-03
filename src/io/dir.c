@@ -129,16 +129,17 @@ lt_err_t lt_dremovep(lstr_t path, lt_alloc_t alloc[static 1]) {
 	return ret;
 }
 
-lt_err_t lt_dcopyp(lstr_t from, lstr_t to, void* buf, usz bufsz, lt_alloc_t alloc[static 1]) {
+lt_err_t lt_dcopyp(lstr_t from, lstr_t to, void* buf, usz bufsz, u32 flags, lt_alloc_t alloc[static 1]) {
 	lt_err_t err, ret = LT_SUCCESS;
 	b8 free_buffer = 0;
 
-	if ((err = lt_mkdir(to)) && err != LT_ERR_EXISTS)
+	if ((err = lt_mkdir(to)) && !(err == LT_ERR_EXISTS && (flags & LT_DCOPY_MERGE)))
 		return err;
 
 	lt_dir_t* dir = lt_dopenp(from, alloc);
-	if (!dir)
-		return LT_ERR_UNKNOWN; // !!
+	if (!dir) {
+		return lt_errno(); // !!
+	}
 
 	if (!buf) {
 		bufsz = (bufsz ? bufsz : LT_MB(16));
@@ -160,7 +161,7 @@ lt_err_t lt_dcopyp(lstr_t from, lstr_t to, void* buf, usz bufsz, lt_alloc_t allo
 
 		switch (dirent->type) {
 		case LT_DIRENT_DIR:
-			if ((err = lt_dcopyp(from_ent, to_ent, buf, bufsz, alloc)))
+			if ((err = lt_dcopyp(from_ent, to_ent, buf, bufsz, flags, alloc)))
 				ret = err;
 			break;
 
