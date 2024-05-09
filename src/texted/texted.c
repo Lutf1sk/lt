@@ -672,7 +672,7 @@ b8 lt_texted_find_last_occurence(lt_texted_t ed[static 1], lstr_t str, usz* out_
 
 		if (!(i--))
 			break;
-		j = lt_darr_count(ed->lines[i]) - 1;
+		j = lt_darr_count(ed->lines[i]);
 	}
 
 	return 0;
