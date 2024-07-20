@@ -11,6 +11,7 @@
 #	include <sys/stat.h>
 #	include <unistd.h>
 #	include <errno.h>
+#	include <sys/mman.h>
 
 static
 int lt_mode_to_posix(lt_file_mode_t access) {
@@ -253,6 +254,48 @@ lt_err_t lt_freadallp(lstr_t path, lstr_t out[static 1], lt_alloc_t alloc[static
 		return -res;
 	}
 	*out = LSTR(data, res);
+	return LT_SUCCESS;
+}
+
+lt_err_t lt_fmapallp(lstr_t path, void* out_ptr[static 1], usz out_len[static 1]) {
+	if (path.len > LT_PATH_MAX) {
+		return LT_ERR_PATH_TOO_LONG;
+	}
+
+	char cpath[LT_PATH_MAX + 1];
+	memcpy(cpath, path.str, path.len);
+	cpath[path.len] = 0;
+
+	int fd = open(cpath, O_RDONLY);
+	if (fd < 0) {
+		return lt_errno();
+	}
+
+	lt_err_t err = LT_SUCCESS;
+
+	struct stat st;
+	if (fstat(fd, &st) < 0) {
+		err = lt_errno();
+		goto err0;
+	}
+
+	void* mapping = mmap(NULL, st.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+	if (mapping == MAP_FAILED) {
+		err = lt_errno();
+		goto err0;
+	}
+
+	*out_ptr = mapping;
+	*out_len = st.st_size;
+
+err0:		close(fd);
+		return err;
+}
+
+lt_err_t lt_unmap(void* ptr, usz len) {
+	if (munmap(ptr, len) < 0) {
+		return lt_errno();
+	}
 	return LT_SUCCESS;
 }
 
