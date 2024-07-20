@@ -53,7 +53,6 @@ struct lt_file {
 #endif
 
 #define LT_PATH_MAX 512
-#define LT_FILENAME_MAX 256
 
 typedef
 enum lt_file_mode {
