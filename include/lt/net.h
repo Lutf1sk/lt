@@ -13,8 +13,12 @@ struct lt_socket {
 
 typedef
 enum lt_socktype {
-	LT_SOCKTYPE_TCP,
-	LT_SOCKTYPE_UDP,
+	LT_SOCKTYPE_TCP = 0x00,
+	LT_SOCKTYPE_UDP = 0x01,
+	LT_SOCKTYPE_RDM = 0x02,
+	LT_SOCKTYPE_PROTOCOL_MASK = 0x03,
+
+	LT_SOCKTYPE_NONBLOCK = 0x04,
 } lt_socktype_t;
 
 typedef
@@ -31,6 +35,11 @@ void lt_socket_destroy(const lt_socket_t sock[static 1], lt_alloc_t alloc[static
 lt_err_t lt_socket_connect(const lt_socket_t sock[static 1], const lt_sockaddr_t addr[static 1]);
 lt_err_t lt_socket_server(const lt_socket_t sock[static 1], u16 port);
 lt_socket_t* lt_socket_accept(const lt_socket_t sock[static 1], lt_sockaddr_t out_addr_[static 1], lt_alloc_t alloc[static 1]);
+
+lt_err_t lt_socket_waitw(const lt_socket_t sock[static 1]);
+lt_err_t lt_socket_waitr(const lt_socket_t sock[static 1]);
+lt_err_t lt_socket_pollw(const lt_socket_t sock[static 1], u64 timeout_usec);
+lt_err_t lt_socket_pollr(const lt_socket_t sock[static 1], u64 timeout_usec);
 
 u32 lt_sockaddr_ipv4_addr(const lt_sockaddr_t addr_[static 1]);
 u16 lt_sockaddr_ipv4_port(const lt_sockaddr_t addr_[static 1]);
