@@ -41,7 +41,9 @@ static lstr_t frag_src = CLSTRI(
 	"layout(location = 2) uniform sampler2D tex;"
 	"layout(location = 3) uniform vec4 color;"
 	"void main() {"
-	"	out_color = color * texture(tex, in_uv);"
+	"	vec4 final_color = color * texture(tex, in_uv);"
+	"	if (final_color.a < 0.000001) discard;"
+	"	out_color = final_color;"
 	"}"
 );
 

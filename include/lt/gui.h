@@ -4,137 +4,221 @@
 #include <lt/fwd.h>
 #include <lt/err.h>
 
-#define LT_GUI_ICON_EXPANDED	0
-#define LT_GUI_ICON_COLLAPSED	1
-#define LT_GUI_ICON_CHECK		2
-#define LT_GUI_ICON_MAX			3
+#include <lt/linalg.h>
 
-#define LT_GUI_BORDER_OUTSET	1
-#define LT_GUI_BORDER_INSET		2
-#define LT_GUI_BORDER_TOGGLE	4
-#define LT_GUI_ALIGN_RIGHT		8
-#define LT_GUI_GROW_X			16
+// ----- rectangle
 
 typedef
-struct lt_gui_rect {
-	i32 x, y, w, h;
-} lt_gui_rect_t;
+union lt_grect {
+	struct { i32 x, y, w, h; };
+	struct { lt_vec2i_t pos, size; };
+	i32 data[4];
+} lt_grect_t;
+
+#define LT_GRECT(x, y, w, h) ((lt_grect_t){ .data = { (x), (y), (w), (h) } })
+#define LT_GRECTV(pos_, size_) ((lt_grect_t){ .pos = (pos_), .size = (size_) })
+
+// ----- default icons
 
 typedef
-struct lt_gui_cont {
-	lt_gui_rect_t r; // Initial
-	lt_gui_rect_t a; // Available
-	isz ymax;
-	usz cols;
+enum lt_gicon {
+	LT_GICON_EXPANDED  = 0,
+	LT_GICON_COLLAPSED = 1,
+	LT_GICON_CHECK     = 2,
+	LT_GICON_MAX       = 3,
+} lt_gicon_t;
+
+// ----- styles
+
+typedef
+enum lt_gstyle_flag {
+	LT_GSTYLE_OUTSET   = 0x0001,
+	LT_GSTYLE_INSET    = 0x0002,
+	LT_GSTYLE_RALIGN   = 0x0004,
+	LT_GSTYLE_FILLW    = 0x0008,
+	LT_GSTYLE_FILLH    = 0x0010,
+	LT_GSTYLE_UNERLINE = 0x0020,
+	LT_GSTYLE_FIXEDW   = 0x0800,
+	LT_GSTYLE_FIXEDH   = 0x1000,
+} lt_gstyle_flag_t;
+
+typedef
+enum lt_galign {
+	LT_GALIGN_LEFT   = 0,
+	LT_GALIGN_RIGHT  = 1,
+	LT_GALIGN_CENTER = 2,
+} lt_galign_t;
+
+typedef
+struct lt_gstyle {
+	lt_gstyle_flag_t flags;
+
+	u32 padding;
+	u32 spacing;
+
+	u32 border;
+	u32 border_color;
+
+	lt_font_t* font;
+	u32 text_color;
+	lt_galign_t text_align;
+
+	u32 bg_color;
+
+	u32 icon_color;
+
+	struct lt_gstyle* hover_style;
+} lt_gstyle_t;
+
+// ----- gui context
+
+typedef void (*lt_grect_fn_t)(void* usr, const lt_grect_t r[static 1], u32 clr, u32 depth);
+typedef void (*lt_gtext_fn_t)(void* usr, lt_font_t* font, lt_vec2i_t pos, lstr_t str, u32 clr, u32 depth);
+typedef void (*lt_gicon_fn_t)(void* usr, const lt_grect_t r[static 1], u32 clr, u32 icon, u32 depth);
+typedef void (*lt_gscissor_fn_t)(void* usr, const lt_grect_t r[static 1]);
+typedef usz (*lt_gtextw_fn_t)(void* usr, lt_font_t* font, lstr_t text);
+typedef usz (*lt_gtexth_fn_t)(void* usr, lt_font_t* font, lstr_t text);
+
+#define LT_GUI_LMB_DOWN 0x01
+#define LT_GUI_RMB_DOWN 0x02
+#define LT_GUI_LMB_PRESSED 0x04
+#define LT_GUI_RMB_PRESSED 0x08
+
+typedef
+struct lt_gcontainer {
+	const lt_gstyle_t* style;
+	lt_grect_t bounds;
+	lt_grect_t free;
+	u32 cols;
+	u32 col;
+	u32 row;
 	u32 depth;
-
-	isz padding, spacing;
-} lt_gui_cont_t;
-
-#define LT_GUI_RECT(x, y, w, h) ((lt_gui_rect_t){ (x), (y), (w), (h) })
-
-typedef void (*lt_gui_rect_callback_t)(void* usr, const lt_gui_rect_t r[static 1], u32 clr, u32 depth);
-typedef void (*lt_gui_text_callback_t)(void* usr, i32 x, i32 y, lstr_t str, u32 clr, u32 depth);
-typedef void (*lt_gui_icon_callback_t)(void* usr, const lt_gui_rect_t r[static 1], u32 clr, usz icon, u32 depth);
-typedef void (*lt_gui_scissor_callback_t)(void* usr, const lt_gui_rect_t r[static 1]);
-typedef usz (*lt_gui_text_width_callback_t)(void* usr, lstr_t text);
+	b8 full;
+} lt_gcontainer_t;
 
 typedef
-struct lt_gui_style {
-	u32 panel_bg_clr;
-	u32 panel_border_clr;
+struct lt_gcontext {
+	lt_alloc_t* alloc;
 
-	u32 text_clr;
-	u32 border_clr;
+	lt_gstyle_t* panel_style;
+	lt_gstyle_t* panel_style_dark;
+	lt_gstyle_t* panel_style_bright;
+	lt_gstyle_t* header_style;
+	lt_gstyle_t* button_style;
+	lt_gstyle_t* text_style;
+	lt_gstyle_t* label_style;
+	lt_gstyle_t* checkbox_style;
+	lt_gstyle_t* textbox_style;
+	lt_gstyle_t* slider_style;
 
-	u32 ctrl_bg_clr;
-	u32 ctrl_text_clr;
-	u32 ctrl_hover_bg_clr;
-	u32 ctrl_hover_text_clr;
+	lt_gcontainer_t* containers;
+	usz max_container_count;
+	lt_gcontainer_t* curr_container;
 
-	u32 checkbox_bg_clr;
-	u32 checkbox_hover_bg_clr;
-	u32 checkbox_icon_clr;
+	void* usr;
+	lt_grect_fn_t    draw_rect;
+	lt_gtext_fn_t    draw_text;
+	lt_gicon_fn_t    draw_icon;
+	lt_gscissor_fn_t scissor;
+	lt_gtextw_fn_t   text_width;
+	lt_gtexth_fn_t   text_height;
 
-	u16 button_hpad;
-
-	u16 padding;
-	u16 spacing;
-	u16 border;
-} lt_gui_style_t;
-
-#define LT_GUI_MB1_PRESSED 1
-
-typedef
-struct lt_gui_ctx {
-	lt_gui_style_t* style;
-
-	usz cont_max;
-	lt_gui_cont_t* conts;
-	usz cont_top;
-
-	void* user_data;
-	lt_gui_rect_callback_t draw_rect;
-	lt_gui_text_callback_t draw_text;
-	lt_gui_icon_callback_t draw_icon;
-	lt_gui_scissor_callback_t scissor;
-	lt_gui_text_width_callback_t text_width;
-
-	isz glyph_height;
+	lt_font_t* font;
 
 	int mouse_x, mouse_y;
-	u32 mouse_state, prev_mouse_state;
+	u32 mouse_state;
+} lt_gcontext_t;
 
-	b8 hovered;
-} lt_gui_ctx_t;
+lt_err_t lt_ginit(lt_gcontext_t cx[static 1]);
+void lt_gterminate(lt_gcontext_t cx[static 1]);
+
+void lt_gcontext_begin(lt_gcontext_t cx[static 1], const lt_grect_t* bounds);
+void lt_gcontext_end(lt_gcontext_t cx[static 1]);
+
+lt_gcontainer_t* lt_gpush_container(lt_gcontext_t cx[static 1], const lt_gstyle_t style[static 1], const lt_grect_t bounds[static 1]);
+void lt_gpop_container(lt_gcontext_t cx[static 1]);
+
+// ----- default controls
 
 typedef
-struct lt_gui_scroll_state {
-	u32 vscroll;
-} lt_gui_scroll_state_t;
+struct lt_gpanel {
+	lt_gstyle_t* style;
+	u32 scroll_pos;
+} lt_gpanel_t;
+
+void lt_gpanel_begin(lt_gcontext_t cx[static 1], lt_gpanel_t panel[static 1]);
+void lt_gpanel_end(lt_gcontext_t cx[static 1]);
+#define lt_gpanel(cx, panel) for (b8 __run = (lt_gpanel_begin((cx), (panel)), 1); __run; lt_gpanel_end(cx), __run = 0)
 
 typedef
-struct lt_gui_textbox_state {
-	char* buf;
-	usz maxlen;
-	u8 selected;
-} lt_gui_textbox_state_t;
+struct lt_gheader {
+	lt_gstyle_t* style;
+	b8 expanded;
+	lstr_t text;
+} lt_gheader_t;
 
-extern lt_gui_style_t* lt_gui_default_style;
+b8 lt_gheader(lt_gcontext_t cx[static 1], lt_gheader_t header[static 1]);
 
-lt_err_t lt_gui_ctx_init(lt_gui_ctx_t out_cx[static 1], lt_alloc_t alloc[static 1]);
-void lt_gui_ctx_free(const lt_gui_ctx_t cx[static 1], lt_alloc_t alloc[static 1]);
+typedef
+struct lt_gbutton {
+	lt_gstyle_t* style;
+	lstr_t text;
+} lt_gbutton_t;
 
-void lt_gui_begin(lt_gui_ctx_t cx[static 1], isz x, isz y, isz w, isz h);
-void lt_gui_end(lt_gui_ctx_t cx[static 1]);
+b8 lt_gbutton(lt_gcontext_t cx[static 1], const lt_gbutton_t button[static 1]);
 
-lt_gui_cont_t* lt_gui_get_container(const lt_gui_ctx_t cx[static 1]);
+#define LT_GBUTTONC(text_) (&(lt_gbutton_t) { .text = CLSTR(text_) })
 
-void lt_gui_draw_border(const lt_gui_ctx_t cx[static 1], const lt_gui_rect_t r[static 1], u32 clr, u32 flags);
-void lt_gui_draw_rect(const lt_gui_ctx_t cx[static 1], const lt_gui_rect_t r[static 1], u32 clr);
-void lt_gui_draw_icon(const lt_gui_ctx_t cx[static 1], const lt_gui_rect_t r[static 1], u32 clr, u32 icon);
-void lt_gui_draw_text(const lt_gui_ctx_t cx[static 1], i32 x, i32 y, lstr_t str, u32 clr);
+typedef
+struct lt_gcheckbox {
+	lt_gstyle_t* style;
+	lstr_t text;
+	b8 checked;
+} lt_gcheckbox_t;
 
-void lt_gui_panel_begin(lt_gui_ctx_t cx[static 1], isz w, isz h, u32 flags);
-void lt_gui_panel_end(lt_gui_ctx_t cx[static 1]);
+b8 lt_gcheckbox(lt_gcontext_t cx[static 1], lt_gcheckbox_t checkbox[static 1]);
 
-void lt_gui_row(lt_gui_ctx_t cx[static 1], usz cols);
+typedef
+struct lt_gslider {
+	lt_gstyle_t* style;
+	union {
+		struct { i64 mini, maxi, vali; };
+		struct { f64 minf, maxf, valf; };
+	};
+	lstr_t unit_str;
+} lt_gslider_t;
 
-void lt_gui_label(lt_gui_ctx_t cx[static 1], lstr_t text, u32 flags);
-void lt_gui_text(lt_gui_ctx_t cx[static 1], lstr_t text, u32 flags);
+i64 lt_gslideri(lt_gcontext_t cs[static 1], lt_gslider_t slider[static 1]);
+f64 lt_gsliderf(lt_gcontext_t cs[static 1], lt_gslider_t slider[static 1]);
 
-b8 lt_gui_textbox(lt_gui_ctx_t cx[static 1], isz ew, isz eh, lt_gui_textbox_state_t state[static 1], u32 flags);
+typedef
+struct lt_glabel {
+	lt_gstyle_t* style;
+	lstr_t text;
+} lt_glabel_t;
 
-b8 lt_gui_button(lt_gui_ctx_t cx[static 1], lstr_t text, u32 flags);
+void lt_glabel(lt_gcontext_t cx[static 1], const lt_glabel_t label[static 1]);
 
-b8 lt_gui_expandable(lt_gui_ctx_t cx[static 1], lstr_t text, b8 expanded[static 1], u32 flags);
+#define LT_GLABELC(text_) (&(lt_glabel_t) { .text = CLSTR(text_) })
 
-void lt_gui_vspace(lt_gui_ctx_t cx[static 1], usz space, u32 flags);
-void lt_gui_hspace(lt_gui_ctx_t cx[static 1], usz space, u32 flags);
+typedef
+struct lt_gtext {
+	lt_gstyle_t* style;
+	lstr_t text;
+} lt_gtext_t;
 
-b8 lt_gui_dropdown_begin(lt_gui_ctx_t cx[static 1], lstr_t text, isz w, isz h, u32 state[static 1], u32 flags);
-void lt_gui_dropdown_end(lt_gui_ctx_t cx[static 1]);
+void lt_gtext(lt_gcontext_t cx[static 1], const lt_gtext_t text[static 1]);
 
-b8 lt_gui_checkbox(lt_gui_ctx_t cx[static 1], lstr_t text, b8 state[static 1], u32 flags);
+#define LT_GTEXTC(text_) (&(lt_gtext_t) { .text = CLSTR(text_) })
+
+typedef
+struct lt_gtextbox {
+	lt_gstyle_t* style;
+	usz max_len;
+	char* text_buffer;
+	lstr_t placeholder;
+} lt_gtextbox_t;
+
+b8 lt_gtextbox(lt_gcontext_t cx[static 1], lt_gtextbox_t textbox[static 1]);
 
 #endif
