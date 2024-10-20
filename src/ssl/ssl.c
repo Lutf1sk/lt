@@ -73,12 +73,7 @@ err0:	SSL_free(ssl);
 		return NULL;
 }
 
-void lt_ssl_connection_shutdown(lt_ssl_connection_t* ssl) {
-	SSL_shutdown((void*)ssl);
-}
-
 void lt_ssl_connection_destroy(lt_ssl_connection_t* ssl) {
-	SSL_shutdown((void*)ssl);
 	SSL_free((void*)ssl);
 }
 
@@ -114,7 +109,6 @@ lt_ssl_connection_t* lt_ssl_accept(lt_socket_t socket[static 1]) {
 	SSL_set_fd(ssl, socket->fd);
 
 	if (SSL_accept(ssl) <= 0) {
-		SSL_shutdown(ssl);
 		SSL_free(ssl);
 		return NULL;
 	}
@@ -134,7 +128,7 @@ isz lt_ssl_send_fixed(lt_ssl_connection_t* ssl, const void* data, usz size) {
 	const u8 *it = data, *end = it + size;
 	while (it < end) {
 		isz res = lt_ssl_send(ssl, it, end - it);
-		if (res < 0)
+		if (res <= 0)
 			return res;
 		it += res;
 	}
@@ -154,7 +148,7 @@ isz lt_ssl_recv_fixed(lt_ssl_connection_t* ssl, void* data, usz size) {
 	u8 *it = data, *end = it + size;
 	while (it < end) {
 		isz res = lt_ssl_recv(ssl, it, end - it);
-		if (res < 0)
+		if (res <= 0)
 			return res;
 		it += res;
 	}

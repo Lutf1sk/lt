@@ -12,7 +12,6 @@ lt_err_t lt_ssl_init(u32 flags);
 void lt_ssl_terminate(u32 flags);
 
 lt_ssl_connection_t* lt_ssl_connect(lt_socket_t socket[static 1], lstr_t sni_host);
-void lt_ssl_connection_shutdown(lt_ssl_connection_t* ssl);
 void lt_ssl_connection_destroy(lt_ssl_connection_t* ssl);
 
 lt_err_t lt_ssl_configure_server(lstr_t cert_path, lstr_t key_path, lstr_t cert_chain_path);
