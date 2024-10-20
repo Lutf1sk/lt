@@ -62,13 +62,13 @@ void lt_conf_free_err_info(lt_conf_err_info_t err_info[static 1], lt_alloc_t all
 
 lt_conf_t* lt_conf_find(lt_conf_t parent[static 1], lstr_t key_path);
 
-lt_conf_t* lt_conf_find_int(lt_conf_t parent[static 1], lstr_t key_path, i64 out[static 1]);
-lt_conf_t* lt_conf_find_uint(lt_conf_t parent[static 1], lstr_t key_path, u64 out[static 1]);
-lt_conf_t* lt_conf_find_bool(lt_conf_t parent[static 1], lstr_t key_path, b8 out[static 1]);
-lt_conf_t* lt_conf_find_str(lt_conf_t parent[static 1], lstr_t key_path, lstr_t out[static 1]);
-lt_conf_t* lt_conf_find_float(lt_conf_t parent[static 1], lstr_t key_path, f64 out[static 1]);
-lt_conf_t* lt_conf_find_object(lt_conf_t parent[static 1], lstr_t key_path, lt_conf_t* out[static 1]);
-lt_conf_t* lt_conf_find_array(lt_conf_t parent[static 1], lstr_t key_path, lt_conf_t* out[static 1]);
+lt_conf_t* lt_conf_find_int(lt_conf_t parent[static 1], lstr_t key_path, i64* out);
+lt_conf_t* lt_conf_find_uint(lt_conf_t parent[static 1], lstr_t key_path, u64* out);
+lt_conf_t* lt_conf_find_bool(lt_conf_t parent[static 1], lstr_t key_path, b8* out);
+lt_conf_t* lt_conf_find_str(lt_conf_t parent[static 1], lstr_t key_path, lstr_t* out);
+lt_conf_t* lt_conf_find_float(lt_conf_t parent[static 1], lstr_t key_path, f64* out);
+lt_conf_t* lt_conf_find_object(lt_conf_t parent[static 1], lstr_t key_path, lt_conf_t** out);
+lt_conf_t* lt_conf_find_array(lt_conf_t parent[static 1], lstr_t key_path, lt_conf_t** out);
 
 i64 lt_conf_int(lt_conf_t parent[static 1], lstr_t key_path);
 u64 lt_conf_uint(lt_conf_t parent[static 1], lstr_t key_path);

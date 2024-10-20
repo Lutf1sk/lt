@@ -85,6 +85,8 @@ lt_err_t lt_fsymlinkp(lstr_t link, lstr_t target);
 lt_err_t lt_freadallp(lstr_t path, lstr_t out[static 1], lt_alloc_t alloc[static 1]);
 lt_err_t lt_freadallp_utf8(lstr_t path, lstr_t out[static 1], lt_alloc_t alloc[static 1]);
 
+lt_err_t lt_fmapallp(lstr_t path, void* out_ptr[static 1], usz out_len[static 1]);
+
 isz lt_fread(lt_file_t file[static 1], void* data, usz size);
 isz lt_fwrite(lt_file_t file[static 1], const void* data, usz size);
 
@@ -119,13 +121,18 @@ void lt_dclose(const lt_dir_t dir[static 1], lt_alloc_t alloc[static 1]);
 
 lt_dirent_t* lt_dread(lt_dir_t dir[static 1]);
 
-lt_err_t lt_dcopyp(lstr_t from, lstr_t to, void* buf, usz bufsz, lt_alloc_t alloc[static 1]);
+#define LT_DCOPY_MERGE 1
+#define LT_DCOPY_OVERWRITE_FILES 2
+
+lt_err_t lt_dcopyp(lstr_t from, lstr_t to, void* buf, usz bufsz, u32 flags, lt_alloc_t alloc[static 1]);
+
+lt_err_t lt_dremovep(lstr_t path, lt_alloc_t alloc[static 1]);
 
 lt_err_t lt_mkdir(lstr_t path);
 lt_err_t lt_mkpath(lstr_t path);
 
 #define lt_foreach_dirent(it_name, dir) \
-		for (lt_dirent_t* it_name; (it_name = lt_dread(dir)); )
+	for (lt_dirent_t* it_name; (it_name = lt_dread(dir)); )
 
 // stat.c
 typedef

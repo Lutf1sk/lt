@@ -92,8 +92,24 @@ lstr_t lt_strdup(lt_alloc_t alloc[static 1], lstr_t str) {
 	return LSTR(lt_memdup(alloc, str.str, str.len), str.len);
 }
 
+
 // heap.c
 extern lt_alloc_t* lt_libc_heap;
+
+static LT_INLINE
+void* lt_hmalloc(usz size) {
+	return malloc(size);
+}
+
+static LT_INLINE
+void lt_hmfree(const void* ptr) {
+	return free((void*)ptr);
+}
+
+static LT_INLINE
+void* lt_hmrealloc(void* ptr, usz new_size) {
+	return realloc(ptr, new_size);
+}
 
 
 // arena.c

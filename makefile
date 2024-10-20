@@ -56,6 +56,7 @@ SRC = \
 	src/mem/vmem.c \
 	src/net/socket.c \
 	src/net/sockstream.c \
+	src/rle/rle.c \
 	src/shell/shell.c \
 	src/ssl/ssl.c \
 	src/str/str.c \

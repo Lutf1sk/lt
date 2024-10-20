@@ -68,6 +68,8 @@
 #	define LT_NORETURN ATTRIB(noreturn)
 #	define LT_NODISCARD ATTRIB(warn_unused_result)
 #	define LT_NONNULL ATTRIB(nonnull)
+#	define LT_LIKELY(x) (__builtin_expect(!!(x), 1))
+#	define LT_UNLIKELY(x) (__builtin_expect(!!(x), 0))
 #elif defined(LT_MSVC)
 #	define LT_ALIGN(n) __declspec(align(n))
 #	define LT_INLINE inline __forceinline
@@ -77,6 +79,8 @@
 #	define LT_NORETURN __declspec(noreturn)
 #	define LT_NODISCARD _Check_return_
 #	define LT_NONNULL
+#	define LT_LIKELY(x) (x)
+#	define LT_UNLIKELY(x) (x)
 #elif defined(LT_LTCC)
 #	define LT_ALIGN(n)
 #	define LT_INLINE inline
@@ -86,6 +90,8 @@
 #	define LT_NORETURN
 #	define LT_NODISCARD
 #	define LT_NONNULL
+#	define LT_LIKELY(x) (x)
+#	define LT_UNLIKELY(x) (x)
 #endif
 
 #include <lt/primitives.h>

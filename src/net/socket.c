@@ -8,6 +8,7 @@
 #	include <sys/socket.h>
 #	include <netdb.h>
 #	include <unistd.h>
+#	include <poll.h>
 
 #	define SOCKET int
 #	define INIT_IF_NECESSARY(x)
@@ -43,9 +44,14 @@ struct lt_sockaddr_impl {
 
 static
 int lt_socktype_to_native(lt_socktype_t type) {
-	switch (type) {
-	case LT_SOCKTYPE_TCP: return SOCK_STREAM;
-	case LT_SOCKTYPE_UDP: return SOCK_DGRAM;
+	int flags = 0;
+
+	if (type & LT_SOCKTYPE_NONBLOCK) flags |= SOCK_NONBLOCK;
+
+	switch (type & LT_SOCKTYPE_PROTOCOL_MASK) {
+	case LT_SOCKTYPE_TCP: return flags | SOCK_STREAM;
+	case LT_SOCKTYPE_UDP: return flags | SOCK_DGRAM;
+	case LT_SOCKTYPE_RDM: return flags | SOCK_RDM;
 	default: return -1;
 	}
 }
@@ -140,15 +146,47 @@ lt_socket_t* lt_socket_accept(const lt_socket_t sock[static 1], lt_sockaddr_t ou
 	}
 
 	SOCKET new_fd = accept(sock->fd, (struct sockaddr*)new_addr_p, (socklen_t*)new_size_p);
-	if (new_fd < 0)
-		return NULL;
+	if (new_fd < 0) return NULL;
 
 	lt_socket_t* new_sock = lt_malloc(alloc, sizeof(lt_socket_t));
-	if (!new_sock)
-		return NULL;
+	if (!new_sock) return NULL;
 
 	new_sock->fd = new_fd;
 	return new_sock;
+}
+
+lt_err_t lt_socket_pollw(const lt_socket_t sock[static 1], u64 timeout_usec) {
+	struct pollfd pfd = { .fd = sock->fd, .events = POLLOUT | POLLERR };
+
+	if (poll(&pfd, 1, timeout_usec / 1000) < 0) return lt_errno();
+
+	if (pfd.revents) {
+		int so_err = 1;
+		socklen_t optlen = sizeof(so_err);
+		if (getsockopt(sock->fd, SOL_SOCKET, SO_ERROR, &so_err, &optlen) < 0) return lt_errno();
+		if (so_err) return lt_errno_to_err(so_err);
+	}
+
+	if (pfd.revents & POLLOUT) return LT_SUCCESS;
+
+	return LT_ERR_TIMED_OUT;
+}
+
+lt_err_t lt_socket_pollr(const lt_socket_t sock[static 1], u64 timeout_usec) {
+	struct pollfd pfd = { .fd = sock->fd, .events = POLLIN | POLLERR };
+
+	if (poll(&pfd, 1, timeout_usec / 1000) < 0) return lt_errno();
+
+	if (pfd.revents) {
+		int so_err = 1;
+		socklen_t optlen = sizeof(so_err);
+		if (getsockopt(sock->fd, SOL_SOCKET, SO_ERROR, &so_err, &optlen) < 0) return lt_errno();
+		if (so_err) return lt_errno_to_err(so_err);
+	}
+
+	if (pfd.revents & POLLIN) return LT_SUCCESS;
+
+	return LT_ERR_TIMED_OUT;
 }
 
 u32 lt_sockaddr_ipv4_addr(const lt_sockaddr_t addr_[static 1]) {

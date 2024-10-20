@@ -99,15 +99,57 @@ lt_dirent_t* lt_dread(lt_dir_t dir[static 1]) {
 	return &dir->ent;
 }
 
-lt_err_t lt_dcopyp(lstr_t from, lstr_t to, void* buf, usz bufsz, lt_alloc_t alloc[static 1]) {
+lt_err_t lt_dremovep(lstr_t path, lt_alloc_t alloc[static 1]) {
 	lt_err_t err, ret = LT_SUCCESS;
 
-	if ((err = lt_mkdir(to)) && err != LT_ERR_EXISTS)
+	lt_dir_t* dir = lt_dopenp(path, alloc);
+	if (!dir) {
+		return LT_ERR_UNKNOWN;
+	}
+	lt_foreach_dirent(dirent, dir) {
+		if (lt_lseq(dirent->name, CLSTR(".")) || lt_lseq(dirent->name, CLSTR("..")))
+			continue;
+
+		lstr_t ent_path = lt_lsbuild(alloc, "%S/%S", path, dirent->name);
+
+		if (dirent->type == LT_DIRENT_DIR && (err = lt_dremovep(ent_path, alloc)) && err != LT_ERR_NOT_FOUND) {
+			ret = err;
+		}
+		else if ((err = lt_fremovep(ent_path)) && err != LT_ERR_NOT_FOUND) {
+			ret = err;
+		}
+
+		lt_mfree(alloc, ent_path.str);
+	}
+	lt_dclose(dir, alloc);
+
+	if ((err = lt_fremovep(path)) && err != LT_ERR_NOT_FOUND) {
+		ret = err;
+	}
+	return ret;
+}
+
+lt_err_t lt_dcopyp(lstr_t from, lstr_t to, void* buf, usz bufsz, u32 flags, lt_alloc_t alloc[static 1]) {
+	lt_err_t err, ret = LT_SUCCESS;
+	b8 free_buffer = 0;
+
+	if ((err = lt_mkdir(to)) && !(err == LT_ERR_EXISTS && (flags & LT_DCOPY_MERGE)))
 		return err;
 
 	lt_dir_t* dir = lt_dopenp(from, alloc);
-	if (!dir)
-		return LT_ERR_UNKNOWN; // !!
+	if (!dir) {
+		return lt_errno(); // !!
+	}
+
+	if (!buf) {
+		bufsz = (bufsz ? bufsz : LT_MB(16));
+		buf = lt_malloc(alloc, bufsz);
+		if (!buf) {
+			err = LT_ERR_OUT_OF_MEMORY;
+			goto err0;
+		}
+		free_buffer = 1;
+	}
 
 	lt_dirent_t* dirent;
 	while ((dirent = lt_dread(dir))) {
@@ -119,7 +161,7 @@ lt_err_t lt_dcopyp(lstr_t from, lstr_t to, void* buf, usz bufsz, lt_alloc_t allo
 
 		switch (dirent->type) {
 		case LT_DIRENT_DIR:
-			if ((err = lt_dcopyp(from_ent, to_ent, buf, bufsz, alloc)))
+			if ((err = lt_dcopyp(from_ent, to_ent, buf, bufsz, flags, alloc)))
 				ret = err;
 			break;
 
@@ -137,6 +179,9 @@ lt_err_t lt_dcopyp(lstr_t from, lstr_t to, void* buf, usz bufsz, lt_alloc_t allo
 	}
 
 err0:	lt_dclose(dir, alloc);
+		if (free_buffer) {
+			lt_mfree(alloc, buf);
+		}
 		return ret;
 }
 

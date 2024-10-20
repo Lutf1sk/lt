@@ -68,6 +68,16 @@ lstr_t lt_lsfrom_range(const char* start, const char* end) {
 	return LSTR((char*)start, end - start);
 }
 
+static LT_INLINE
+lstr_t lt_lstake(lstr_t str, usz bytes) {
+	return LSTR(str.str, bytes);
+}
+
+static LT_INLINE
+lstr_t lt_lsdrop(lstr_t str, usz bytes) {
+	return LSTR(str.str + bytes, str.len - bytes);
+}
+
 lstr_t lt_lstrim_left(lstr_t str);
 lstr_t lt_lstrim_right(lstr_t str);
 lstr_t lt_lstrim(lstr_t str);
