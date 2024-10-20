@@ -111,10 +111,16 @@ lt_arena_t* lt_amcreatem(lt_alloc_t* parent, void* mem, usz size, usz flags);
 lt_arena_t* lt_amcreate(lt_alloc_t* parent, usz size, usz flags);
 void lt_amdestroy(const lt_arena_t arena[static 1]);
 
-void* lt_amsave(const lt_arena_t arena[static 1]);
-void lt_amrestore(lt_arena_t arena[static 1], void* restore_point);
 
 #include <lt/align.h>
+
+static LT_INLINE
+void lt_amreset(lt_arena_t arena[static 1]) {
+	arena->top = arena->base + lt_align_fwd(sizeof(lt_arena_t), LT_ALLOC_DEFAULT_ALIGN);
+}
+
+void* lt_amsave(const lt_arena_t arena[static 1]);
+void lt_amrestore(lt_arena_t arena[static 1], void* restore_point);
 
 static LT_INLINE
 void* lt_amalloc_lean(lt_arena_t arena[static 1], usz size) {
