@@ -32,9 +32,15 @@ enum lt_http_method {
 #undef LT_HTTP_METHOD_OP
 } lt_http_method_t;
 
-#define LT_HTTP_ENC_NONE 0
+#define LT_HTTP_ENC_NONE    0
 #define LT_HTTP_ENC_UNKNOWN 1
 #define LT_HTTP_ENC_CHUNKED 2
+
+#define LT_HTTP_BODY_LEAVE      0x00
+#define LT_HTTP_BODY_FREE       0x01
+#define LT_HTTP_BODY_UNMAP      0x02
+#define LT_HTTP_BODY_OWNER_MASK 0x03
+#define LT_HTTP_BODY_FSPATH     0x04
 
 typedef
 struct lt_http_msg {
@@ -42,6 +48,8 @@ struct lt_http_msg {
 
 	u16 version;
 	u16 transfer_enc;
+
+	u32 body_flags;
 
 	u64 response_status_code;
 	lstr_t response_status_msg;

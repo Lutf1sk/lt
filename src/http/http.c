@@ -34,7 +34,11 @@ lt_err_t lt_http_msg_create(lt_http_msg_t msg[static 1], lt_alloc_t alloc[static
 void lt_http_msg_destroy(const lt_http_msg_t msg[static 1], lt_alloc_t alloc[static 1]) {
 	lt_darr_destroy(msg->headers);
 	if (msg->body.str) {
-		lt_mfree(alloc, msg->body.str);
+		switch (msg->body_flags & LT_HTTP_BODY_OWNER_MASK) {
+		case LT_HTTP_BODY_LEAVE: break;
+		case LT_HTTP_BODY_FREE:  lt_mfree(alloc, msg->body.str); break;
+		case LT_HTTP_BODY_UNMAP: lt_vmfree(msg->body.str, msg->body.len); break;
+		}
 	}
 	if (msg->str.str) {
 		lt_mfree(alloc, msg->str.str);
@@ -253,6 +257,7 @@ lt_err_t read_content(lt_http_msg_t msg[static 1], lt_read_fn_t callb, void* usr
 					return err;
 	}
 
+	msg->body_flags = LT_HTTP_BODY_FREE;
 	msg->body = body_stream.str;
 	return LT_SUCCESS;
 }
@@ -428,6 +433,9 @@ err0:	lt_mfree(alloc, header_data.str);
 
 static
 lt_err_t write_common(const lt_http_msg_t msg[static 1], lt_write_fn_t callb, void* usr) {
+	isz res;
+	lt_err_t err;
+
 	for (usz i = 0; i < msg->header_count; ++i) {
 		isz res = lt_io_printf(callb, usr, "%S: %S\r\n", msg->headers[i], msg->header_vals[i]);
 		if LT_UNLIKELY (res < 0) {
@@ -440,10 +448,21 @@ lt_err_t write_common(const lt_http_msg_t msg[static 1], lt_write_fn_t callb, vo
 		return LT_SUCCESS;
 	}
 
-	isz res = lt_io_printf(callb, usr, "Content-Length: %uz\r\n\r\n%S", msg->body.len, msg->body);
-	if LT_UNLIKELY (res < 0) {
+	if (!(msg->body_flags & LT_HTTP_BODY_FSPATH)) {
+		if LT_UNLIKELY ((res = lt_io_printf(callb, usr, "Content-Length: %uz\r\n\r\n%S", msg->body.len, msg->body)) < 0) {
+			return -res;
+		}
+		return LT_SUCCESS;
+	}
+
+	lstr_t body;
+	if LT_UNLIKELY ((err = lt_fmapallp(msg->body, (void**)&body.str, &body.len))) {
+		return err;
+	}
+	if LT_UNLIKELY ((res = lt_io_printf(callb, usr, "Content-Length: %uz\r\n\r\n%S", body.len, body)) < 0) {
 		return -res;
 	}
+	lt_vmfree(body.str, body.len);
 	return LT_SUCCESS;
 }
 
