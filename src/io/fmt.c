@@ -31,13 +31,17 @@ isz buffered_write(lt_write_fn_t callb, void* usr, char** it, char* end, lstr_t 
 #define MAX_PAD_W 256
 static char padding_chars[MAX_PAD_W] = { REP256(' ',) };
 
-static LT_INLINE
+static
 isz pad_to(lt_write_fn_t callb, void* usr, char** it, char* end, usz col_w, usz content_w) {
+	if (content_w >= col_w) {
+		return 0;
+	}
+	// does not handle >256
 	usz padding_w = col_w - content_w;
 	return buffered_write(callb, usr, it, end, LSTR(padding_chars, padding_w));
 }
 
-#define NUM_MAX 64
+#define NUM_MAX 32
 
 isz lt_io_dummy_write(void* usr, const void* data, usz len) {
 	return len;
@@ -60,7 +64,7 @@ isz lt_io_printuq(lt_write_fn_t callb, void* usr, char** buf_it, char* buf_end, 
 
 	usz len = end - it;
 	isz written = pad_to(callb, usr, buf_it, buf_end, leftpad, len);
-	return written + buffered_write(callb, usr, buf_it, buf_end, LSTR(buf, len));
+	return written + buffered_write(callb, usr, buf_it, buf_end, LSTR(it, len));
 }
 
 static LT_FLATTEN LT_INLINE
@@ -87,7 +91,7 @@ isz lt_io_printiq(lt_write_fn_t callb, void* usr, char** buf_it, char* buf_end, 
 
 	usz len = end - it;
 	isz written = pad_to(callb, usr, buf_it, buf_end, leftpad, len);
-	return written + buffered_write(callb, usr, buf_it, buf_end, LSTR(buf, len));
+	return written + buffered_write(callb, usr, buf_it, buf_end, LSTR(it, len));
 }
 
 static char io_hex_char[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
@@ -105,7 +109,7 @@ isz lt_io_printhq(lt_write_fn_t callb, void* usr, char** buf_it, char* buf_end, 
 
 	usz len = end - it;
 	isz written = pad_to(callb, usr, buf_it, buf_end, leftpad, len);
-	return written + buffered_write(callb, usr, buf_it, buf_end, LSTR(buf, len));
+	return written + buffered_write(callb, usr, buf_it, buf_end, LSTR(it, len));
 }
 
 static LT_FLATTEN LT_INLINE
@@ -237,6 +241,7 @@ isz lt_io_vprintf(lt_write_fn_t callb, void* usr, const char* fmt, va_list argl)
 			case 'z': val = va_arg(argl, usz); break;
 			default: val = 0; break;
 			}
+
 			written += lt_io_printuq(callb, usr, &buf_it, buf_end, val, leftpad);
 		}	break;
 
