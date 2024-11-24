@@ -126,7 +126,7 @@ isz lt_io_printbq(lt_write_fn_t callb, void* usr, char** buf_it, char* buf_end, 
 
 	usz len = end - it;
 	isz written = pad_to(callb, usr, buf_it, buf_end, leftpad, len);
-	return buffered_write(callb, usr, buf_it, buf_end, LSTR(buf, len));
+	return written + buffered_write(callb, usr, buf_it, buf_end, LSTR(buf, len));
 }
 
 static LT_FLATTEN LT_INLINE
