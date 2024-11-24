@@ -6,6 +6,8 @@
 
 #define BUFSZ 1024
 
+// !! all of this needs proper error handling
+
 static LT_FLATTEN
 isz buffered_write(lt_write_fn_t callb, void* usr, char** it, char* end, lstr_t data) {
 	isz written = 0;
@@ -22,7 +24,7 @@ isz buffered_write(lt_write_fn_t callb, void* usr, char** it, char* end, lstr_t 
 	else {
 		*it += lt_mcopy(*it, data.str, data.len);
 	}
-	return written;
+	return data.len; // !!
 }
 
 #define REP16(a...) a a a a a a a a a a a a a a a a
@@ -195,10 +197,18 @@ isz lt_io_vprintf(lt_write_fn_t callb, void* usr, const char* fmt, va_list argl)
 		}
 
 		int leftpad = 0;
-		while (lt_is_digit(c = *++fmt)) {
-			leftpad *= 10;
-			leftpad += c - '0';
+		int rightpad = 0;
+		int* ppad = &leftpad;
+		if (fmt[1] == '_') {
+			ppad = &rightpad;
+			++fmt;
 		}
+		while (lt_is_digit(c = *++fmt)) {
+			*ppad *= 10;
+			*ppad += c - '0';
+		}
+
+		isz written_pre_specifier = written;
 
 		switch (c) {
 		case 0: --fmt; break;
@@ -241,7 +251,6 @@ isz lt_io_vprintf(lt_write_fn_t callb, void* usr, const char* fmt, va_list argl)
 			case 'z': val = va_arg(argl, usz); break;
 			default: val = 0; break;
 			}
-
 			written += lt_io_printuq(callb, usr, &buf_it, buf_end, val, leftpad);
 		}	break;
 
@@ -337,6 +346,9 @@ isz lt_io_vprintf(lt_write_fn_t callb, void* usr, const char* fmt, va_list argl)
 			written += buffered_write(callb, usr, &buf_it, buf_end, LSTR((char*)substr_start, fmt - substr_start));
 		}	break;
 		}
+
+		written += pad_to(callb, usr, &buf_it, buf_end, rightpad, written - written_pre_specifier);
+
 		++fmt;
 	}
 
