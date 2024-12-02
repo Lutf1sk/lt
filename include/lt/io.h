@@ -44,7 +44,7 @@ struct lt_file {
 	usz block_size;
 } lt_file_t;
 
-#elifdef LT_WINDOWS
+#elif defined(LT_WINDOWS)
 typedef
 struct lt_file {
 	void* hnd;
@@ -104,7 +104,7 @@ struct lt_dir {
 	lt_dirent_t ent;
 } lt_dir_t;
 
-#elifdef LT_WINDOWS
+#elif defined(LT_WINDOWS)
 #	define WIN32_LEAN_AND_MEAN 1
 #	include <windows.h>
 typedef
