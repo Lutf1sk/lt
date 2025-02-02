@@ -267,6 +267,8 @@ lt_err_t lt_conf_parse(lt_conf_t cf[static 1], void* data, usz len, lt_conf_err_
 	cx.end = LT_ADDPTR(data, len);
 	cx.it = data;
 
+	cf->key = CLSTR("<root>");
+
 	skip_whitespace(&cx);
 	return parse_obj_body(&cx, cf);
 }

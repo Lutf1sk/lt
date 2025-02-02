@@ -25,7 +25,7 @@ lt_http_method_t lt_http_method(lstr_t str) {
 
 lt_err_t lt_http_msg_create(lt_http_msg_t msg[static 1], lt_alloc_t alloc[static 1]) {
 	*msg = (lt_http_msg_t){ .headers = lt_darr_create(lstr_t, 32, alloc) };
-	if (!msg->headers) {
+	if LT_UNLIKELY (!msg->headers) {
 		return LT_ERR_OUT_OF_MEMORY;
 	}
 	return LT_SUCCESS;
@@ -34,7 +34,11 @@ lt_err_t lt_http_msg_create(lt_http_msg_t msg[static 1], lt_alloc_t alloc[static
 void lt_http_msg_destroy(const lt_http_msg_t msg[static 1], lt_alloc_t alloc[static 1]) {
 	lt_darr_destroy(msg->headers);
 	if (msg->body.str) {
-		lt_mfree(alloc, msg->body.str);
+		switch (msg->body_flags & LT_HTTP_BODY_OWNER_MASK) {
+		case LT_HTTP_BODY_LEAVE: break;
+		case LT_HTTP_BODY_FREE:  lt_mfree(alloc, msg->body.str); break;
+		case LT_HTTP_BODY_UNMAP: lt_vmfree(msg->body.str, msg->body.len); break;
+		}
 	}
 	if (msg->str.str) {
 		lt_mfree(alloc, msg->str.str);
@@ -67,7 +71,7 @@ lt_err_t read_headers(lstr_t out_headers[static 1], lt_read_fn_t callb, void* us
 	lt_err_t err;
 
 	lt_strstream_t stream;
-	if ((err = lt_strstream_create(&stream, alloc))) {
+	if LT_UNLIKELY ((err = lt_strstream_create(&stream, alloc))) {
 		return err;
 	}
 
@@ -75,11 +79,11 @@ lt_err_t read_headers(lstr_t out_headers[static 1], lt_read_fn_t callb, void* us
 	u32 history = 0;
 	for (;;) {
 		isz res;
-		if ((res = callb(usr, &history, 1)) < 0) {
+		if LT_UNLIKELY ((res = callb(usr, &history, 1)) < 0) {
 			lt_strstream_destroy(&stream);
 			return -res;
 		}
-		if ((res = lt_strstream_writec(&stream, history & 0xFF)) < 0) {
+		if LT_UNLIKELY ((res = lt_strstream_writec(&stream, history & 0xFF)) < 0) {
 			lt_strstream_destroy(&stream);
 			return -res;
 		}
@@ -87,7 +91,7 @@ lt_err_t read_headers(lstr_t out_headers[static 1], lt_read_fn_t callb, void* us
 			break;
 		}
 
-		if (stream.str.len >= HEADER_MAX_SIZE) {
+		if LT_UNLIKELY (stream.str.len >= HEADER_MAX_SIZE) {
 			lt_strstream_destroy(&stream);
 			return LT_ERR_LIMIT_EXCEEDED;
 		}
@@ -101,6 +105,8 @@ lt_err_t read_headers(lstr_t out_headers[static 1], lt_read_fn_t callb, void* us
 
 static
 lt_err_t parse_headers(lt_http_msg_t msg[static 1], lstr_t header_data) {
+	lt_err_t err;
+
 	for (char* it = header_data.str, *end = it + header_data.len; it < end; it += 2) {
 		char* line_start = it;
 		for (;;) {
@@ -118,13 +124,15 @@ lt_err_t parse_headers(lt_http_msg_t msg[static 1], lstr_t header_data) {
 		}
 
 		lstr_t key = lt_lssplit(line, ':');
-		if (key.len == line.len) {
+		if LT_UNLIKELY (key.len == line.len) {
 			return LT_ERR_INVALID_SYNTAX;
 		}
 
 		char* val_start = line.str + key.len + 1;
 		lstr_t val = lt_lstrim(lt_lsfrom_range(val_start, it));
-		lt_http_add_header(msg, key, val);
+		if LT_UNLIKELY ((err = lt_http_add_header(msg, key, val))) {
+			return err;
+		}
 	}
 
 	return LT_SUCCESS;
@@ -160,12 +168,12 @@ lt_err_t read_content(lt_http_msg_t msg[static 1], lt_read_fn_t callb, void* usr
 		}
 
 		char* content = lt_malloc(alloc, content_length);
-		if (!content) {
+		if LT_UNLIKELY (!content) {
 			return LT_ERR_OUT_OF_MEMORY;
 		}
 
 		isz res = callb(usr, content, content_length);
-		if (res < 0) {
+		if LT_UNLIKELY (res < 0) {
 			lt_mfree(alloc, content);
 			return -res;
 		}
@@ -179,7 +187,7 @@ lt_err_t read_content(lt_http_msg_t msg[static 1], lt_read_fn_t callb, void* usr
 	}
 
 	lt_strstream_t body_stream;
-	if ((err = lt_strstream_create(&body_stream, alloc))) {
+	if LT_UNLIKELY ((err = lt_strstream_create(&body_stream, alloc))) {
 		return err;
 	}
 
@@ -192,7 +200,7 @@ lt_err_t read_content(lt_http_msg_t msg[static 1], lt_read_fn_t callb, void* usr
 		char size_buf[MAX_SIZE_LEN], *size_it = size_buf, *size_end = size_buf + MAX_SIZE_LEN;
 		for (;;) {
 			char c;
-			if ((res = callb(usr, &c, 1)) < 0) {
+			if LT_UNLIKELY ((res = callb(usr, &c, 1)) < 0) {
 				fail_to(err = -res, chunked_err0);
 			}
 			*size_it++ = c;
@@ -200,46 +208,46 @@ lt_err_t read_content(lt_http_msg_t msg[static 1], lt_read_fn_t callb, void* usr
 				break;
 			}
 
-			if (size_it >= size_end) {
+			if LT_UNLIKELY (size_it >= size_end) {
 				fail_to(err = LT_ERR_LIMIT_EXCEEDED, chunked_err0);
 			}
 		}
 		usz size;
-		if ((err = lt_lshextou(lt_lsfrom_range(size_buf, size_it - 2), &size))) {
+		if LT_UNLIKELY ((err = lt_lshextou(lt_lsfrom_range(size_buf, size_it - 2), &size))) {
 			goto chunked_err0;
 		}
 
 		char crlf_buf[2];
 		if (size == 0) {
-			if ((res = callb(usr, crlf_buf, 2)) < 0) {
+			if LT_UNLIKELY ((res = callb(usr, crlf_buf, 2)) < 0) {
 				fail_to(err = -res, chunked_err0);
 			}
-			if (memcmp(crlf_buf, "\r\n", 2) != 0) {
+			if LT_UNLIKELY (memcmp(crlf_buf, "\r\n", 2) != 0) {
 				fail_to(err = LT_ERR_INVALID_SYNTAX, chunked_err0);
 			}
 			break;
 		}
 
-		if (body_stream.str.len + size > MAX_BODY_SIZE) {
+		if LT_UNLIKELY (body_stream.str.len + size > MAX_BODY_SIZE) {
 			fail_to(err = LT_ERR_LIMIT_EXCEEDED, chunked_err0);
 		}
 
 		void* chunk = lt_malloc(alloc, size);
-		if (!chunk) {
+		if LT_UNLIKELY (!chunk) {
 			fail_to(err = LT_ERR_OUT_OF_MEMORY, chunked_err0);
 		}
-		if ((res = callb(usr, chunk, size)) < 0) {
+		if LT_UNLIKELY ((res = callb(usr, chunk, size)) < 0) {
 			fail_to(err = -res, chunked_err1);
 		}
-		if ((res = lt_strstream_write(&body_stream, chunk, size)) < 0) {
+		if LT_UNLIKELY ((res = lt_strstream_write(&body_stream, chunk, size)) < 0) {
 			fail_to(err = -res, chunked_err1);
 		}
 		lt_mfree(alloc, chunk);
 
-		if ((res = callb(usr, crlf_buf, 2)) < 0) {
+		if LT_UNLIKELY ((res = callb(usr, crlf_buf, 2)) < 0) {
 			fail_to(err = -res, chunked_err0);
 		}
-		if (memcmp(crlf_buf, "\r\n", 2) != 0) {
+		if LT_UNLIKELY (memcmp(crlf_buf, "\r\n", 2) != 0) {
 			fail_to(err = LT_ERR_INVALID_SYNTAX, chunked_err0);
 		}
 
@@ -249,6 +257,7 @@ lt_err_t read_content(lt_http_msg_t msg[static 1], lt_read_fn_t callb, void* usr
 					return err;
 	}
 
+	msg->body_flags = LT_HTTP_BODY_FREE;
 	msg->body = body_stream.str;
 	return LT_SUCCESS;
 }
@@ -256,7 +265,7 @@ lt_err_t read_content(lt_http_msg_t msg[static 1], lt_read_fn_t callb, void* usr
 static
 lt_err_t parse_nonspace(char** it, char* end, lstr_t out_str[static 1]) {
 	char* start = *it;
-	if (*it >= end || **it == ' ') {
+	if LT_UNLIKELY (*it >= end || **it == ' ') {
 		return LT_ERR_INVALID_SYNTAX;
 	}
 	while (*it < end && **it != ' ') {
@@ -268,7 +277,7 @@ lt_err_t parse_nonspace(char** it, char* end, lstr_t out_str[static 1]) {
 
 static
 lt_err_t skip_space(char** it, char* end) {
-	if (*it >= end || **it != ' ') {
+	if LT_UNLIKELY (*it >= end || **it != ' ') {
 		return LT_ERR_INVALID_SYNTAX;
 	}
 	while (*it < end && **it == ' ') {
@@ -280,20 +289,20 @@ lt_err_t skip_space(char** it, char* end) {
 static
 lt_err_t parse_version(char** it, char* end, u16* out_ver) {
 	lstr_t http = CLSTR("HTTP/");
-	if (!lt_lsprefix(lt_lsfrom_range(*it, end), http)) {
+	if LT_UNLIKELY (!lt_lsprefix(lt_lsfrom_range(*it, end), http)) {
 		return LT_ERR_INVALID_SYNTAX;
 	}
 	*it += http.len;
 
 	// Parse version number
 	u8 vmajor = 0, vminor = 0;
-	if (*it >= end || !lt_is_digit(**it)) {
+	if LT_UNLIKELY (*it >= end || !lt_is_digit(**it)) {
 		return LT_ERR_INVALID_SYNTAX;
 	}
 	vmajor = *(*it)++ - '0';
 	if (*it < end && **it == '.') {
 		++*it;
-		if (*it == end || !lt_is_digit(**it)) {
+		if LT_UNLIKELY (*it == end || !lt_is_digit(**it)) {
 			return LT_ERR_INVALID_SYNTAX;
 		}
 		vminor = *(*it)++ - '0';
@@ -306,34 +315,34 @@ lt_err_t lt_http_parse_request(lt_http_msg_t out_request[static 1], lt_read_fn_t
 	lt_err_t err;
 
 	lstr_t header_data;
-	if ((err = read_headers(&header_data, callb, usr, alloc))) {
+	if LT_UNLIKELY ((err = read_headers(&header_data, callb, usr, alloc))) {
 		return err;
 	}
 
 	char *it = header_data.str, *end = it + header_data.len;
 
 	lstr_t method;
-	if ((err = parse_nonspace(&it, end, &method)) || (err = skip_space(&it, end))) {
+	if LT_UNLIKELY ((err = parse_nonspace(&it, end, &method)) || (err = skip_space(&it, end))) {
 		goto err0;
 	}
 
 	lstr_t file;
-	if ((err = parse_nonspace(&it, end, &file)) || (err = skip_space(&it, end))) {
+	if LT_UNLIKELY ((err = parse_nonspace(&it, end, &file)) || (err = skip_space(&it, end))) {
 		goto err0;
 	}
 
 	u16 version;
-	if ((err = parse_version(&it, end, &version))) {
+	if LT_UNLIKELY ((err = parse_version(&it, end, &version))) {
 		goto err0;
 	}
 
 	it += 2;
-	if (it >= end) {
+	if LT_UNLIKELY (it >= end) {
 		fail_to(err = LT_ERR_INVALID_SYNTAX, err0);
 	}
 
 	lt_http_msg_t msg;
-	if ((err = lt_http_msg_create(&msg, alloc))) {
+	if LT_UNLIKELY ((err = lt_http_msg_create(&msg, alloc))) {
 		goto err0;
 	}
 
@@ -342,11 +351,11 @@ lt_err_t lt_http_parse_request(lt_http_msg_t out_request[static 1], lt_read_fn_t
 	msg.request_method = lt_http_method(method);
 	msg.request_file = file;
 
-	if ((err = parse_headers(&msg, lt_lsfrom_range(it, end)))) {
+	if LT_UNLIKELY ((err = parse_headers(&msg, lt_lsfrom_range(it, end)))) {
 		goto err1;
 	}
 
-	if ((err = read_content(&msg, callb, usr, alloc))) {
+	if LT_UNLIKELY ((err = read_content(&msg, callb, usr, alloc))) {
 		goto err1;
 	}
 
@@ -363,29 +372,29 @@ lt_err_t lt_http_parse_response(lt_http_msg_t out_response[static 1], lt_read_fn
 	lt_err_t err;
 
 	lstr_t header_data;
-	if ((err = read_headers(&header_data, callb, usr, alloc))) {
+	if LT_UNLIKELY ((err = read_headers(&header_data, callb, usr, alloc))) {
 		return err;
 	}
 
 	char* it = header_data.str, *end = it + header_data.len;
 
 	u16 version;
-	if ((err = parse_version(&it, end, &version)) || (err = skip_space(&it, end))) {
+	if LT_UNLIKELY ((err = parse_version(&it, end, &version)) || (err = skip_space(&it, end))) {
 		goto err0;
 	}
 
 	lstr_t status_code_str;
-	if ((err = parse_nonspace(&it, end, &status_code_str))) {
+	if LT_UNLIKELY ((err = parse_nonspace(&it, end, &status_code_str))) {
 		goto err0;
 	}
 	u64 status_code;
-	if ((err = lt_lstou(status_code_str, &status_code)) || (err = skip_space(&it, end))) {
+	if LT_UNLIKELY ((err = lt_lstou(status_code_str, &status_code)) || (err = skip_space(&it, end))) {
 		goto err0;
 	}
 
 	char* status_msg_start = it;
 	for (;;) {
-		if (it + 1 >= end) {
+		if LT_UNLIKELY (it + 1 >= end) {
 			fail_to(err = LT_ERR_INVALID_FORMAT, err0);
 		}
 		if (it[0] == '\r' && it[1] == '\n') {
@@ -397,7 +406,7 @@ lt_err_t lt_http_parse_response(lt_http_msg_t out_response[static 1], lt_read_fn
 	it += 2;
 
 	lt_http_msg_t msg;
-	if ((err = lt_http_msg_create(&msg, alloc))) {
+	if LT_UNLIKELY ((err = lt_http_msg_create(&msg, alloc))) {
 		goto err0;
 	}
 	msg.str = header_data;
@@ -405,11 +414,11 @@ lt_err_t lt_http_parse_response(lt_http_msg_t out_response[static 1], lt_read_fn
 	msg.response_status_code = status_code;
 	msg.response_status_msg = status_msg;
 
-	if ((err = parse_headers(&msg, lt_lsfrom_range(it, end)))) {
+	if LT_UNLIKELY ((err = parse_headers(&msg, lt_lsfrom_range(it, end)))) {
 		goto err1;
 	}
 
-	if ((err = read_content(&msg, callb, usr, alloc))) {
+	if LT_UNLIKELY ((err = read_content(&msg, callb, usr, alloc))) {
 		goto err1;
 	}
 
@@ -424,9 +433,12 @@ err0:	lt_mfree(alloc, header_data.str);
 
 static
 lt_err_t write_common(const lt_http_msg_t msg[static 1], lt_write_fn_t callb, void* usr) {
+	isz res;
+	lt_err_t err;
+
 	for (usz i = 0; i < msg->header_count; ++i) {
 		isz res = lt_io_printf(callb, usr, "%S: %S\r\n", msg->headers[i], msg->header_vals[i]);
-		if (res < 0) {
+		if LT_UNLIKELY (res < 0) {
 			return -res;
 		}
 	}
@@ -436,10 +448,21 @@ lt_err_t write_common(const lt_http_msg_t msg[static 1], lt_write_fn_t callb, vo
 		return LT_SUCCESS;
 	}
 
-	isz res = lt_io_printf(callb, usr, "Content-Length: %uz\r\n\r\n%S", msg->body.len, msg->body);
-	if (res < 0) {
+	if (!(msg->body_flags & LT_HTTP_BODY_FSPATH)) {
+		if LT_UNLIKELY ((res = lt_io_printf(callb, usr, "Content-Length: %uz\r\n\r\n%S", msg->body.len, msg->body)) < 0) {
+			return -res;
+		}
+		return LT_SUCCESS;
+	}
+
+	lstr_t body;
+	if LT_UNLIKELY ((err = lt_fmapallp(msg->body, (void**)&body.str, &body.len))) {
+		return err;
+	}
+	if LT_UNLIKELY ((res = lt_io_printf(callb, usr, "Content-Length: %uz\r\n\r\n%S", body.len, body)) < 0) {
 		return -res;
 	}
+	lt_vmfree(body.str, body.len);
 	return LT_SUCCESS;
 }
 
@@ -447,7 +470,7 @@ lt_err_t lt_http_write_request(const lt_http_msg_t request[static 1], lt_write_f
 	u8 vmajor = LT_HTTP_VERSION_MAJOR(request->version);
 	u8 vminor = LT_HTTP_VERSION_MINOR(request->version);
 	isz res = lt_io_printf(callb, usr, "%S %S HTTP/%uw.%uw\r\n", lt_http_method_str(request->request_method), request->request_file, vmajor, vminor);
-	if (res < 0) {
+	if LT_UNLIKELY (res < 0) {
 		return -res;
 	}
 
@@ -458,7 +481,7 @@ lt_err_t lt_http_write_response(const lt_http_msg_t response[static 1], lt_write
 	u8 vmajor = LT_HTTP_VERSION_MAJOR(response->version);
 	u8 vminor = LT_HTTP_VERSION_MINOR(response->version);
 	isz res = lt_io_printf(callb, usr, "HTTP/%uw.%uw %uq %S\r\n", vmajor, vminor, response->response_status_code, response->response_status_msg);
-	if (res < 0) {
+	if LT_UNLIKELY (res < 0) {
 		return -res;
 	}
 

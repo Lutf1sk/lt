@@ -20,6 +20,7 @@ lstr_t lt_err_str(lt_err_t err) {
 
 lt_err_t lt_errno_to_err(int e) {
 	switch (e) {
+	case 0:             return LT_SUCCESS;
 	case EACCES:		return LT_ERR_PERMISSION_DENIED;
 	case EBADF:			return LT_ERR_INVALID_HANDLE;
 	case ECONNABORTED:	return LT_ERR_ABORTED;
@@ -39,6 +40,10 @@ lt_err_t lt_errno_to_err(int e) {
 	case EPERM:			return LT_ERR_PERMISSION_DENIED;
 	case EPIPE:			return LT_ERR_BROKEN_PIPE;
 	case ETIMEDOUT:		return LT_ERR_TIMED_OUT;
+	case EINPROGRESS:   return LT_ERR_IN_PROGRESS;
+	case EAGAIN:        return LT_ERR_IN_PROGRESS;
+	case ENETUNREACH:   return LT_ERR_UNREACHABLE;
+	case EHOSTUNREACH:  return LT_ERR_UNREACHABLE;
 	default:			return LT_ERR_UNKNOWN;
 	}
 }
