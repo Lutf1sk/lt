@@ -3,6 +3,7 @@
 
 #include <lt/lt.h>
 #include <lt/debug.h>
+#include <lt/err.h>
 
 #define LT_ALLOC_DEFAULT_ALIGN 16
 
@@ -44,6 +45,38 @@ extern usz (*lt_get_pagesize)(void);
 
 
 // vmem.c
+#define LT_PAGE_SIZE  4096
+#define LT_PAGE_SHIFT 12
+#define LT_PAGE_MASK  4095
+
+static LT_INLINE
+usz lt_size_to_page_count(usz size) {
+	return (size >> LT_PAGE_SHIFT) + !!(size & LT_PAGE_MASK);
+}
+
+#define LT_VMEM_R   0x01
+#define LT_VMEM_W   0x02
+#define LT_VMEM_RW  0x03
+#define LT_VMEM_X   0x04
+#define LT_VMEM_RX  0x05
+#define LT_VMEM_WX  0x06
+#define LT_VMEM_RWX 0x07
+#define LT_VMEM_ACCESS_MASK 0x0F
+
+#define LT_VMEM_COMMIT   0x0010
+#define LT_VMEM_NOCACHE  0x0020
+#define LT_VMEM_NOSWAP   0x0040
+#define LT_VMEM_ZERO     0x0080
+#define LT_VMEM_NONBLOCK 0x0100
+
+lt_err_t lt_vmem_init(void);
+
+void* lt_vmmap(void* addr, usz page_count, u32 flags);
+void lt_vmunmap(void* addr, usz page_count);
+
+void* lt_vmalloc_guarded(usz size, u32 flags);
+void lt_vmfree_guarded(void* addr, usz size);
+
 void* lt_vmalloc(usz size);
 void lt_vmfree(void* addr, usz size);
 
