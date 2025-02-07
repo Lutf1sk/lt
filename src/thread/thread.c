@@ -5,6 +5,7 @@
 #if defined(LT_UNIX)
 #	include <pthread.h>
 #	include <signal.h>
+#	include <sched.h>
 
 typedef
 struct lt_thread {
@@ -66,6 +67,12 @@ lt_err_t lt_thread_continue(const lt_thread_t* thread) {
 
 lt_err_t lt_thread_cancel(const lt_thread_t* thread) {
 	if (pthread_cancel(thread->pthread))
+		return LT_ERR_UNKNOWN;
+	return LT_SUCCESS;
+}
+
+lt_err_t lt_thread_yield(void) {
+	if (sched_yield())
 		return LT_ERR_UNKNOWN;
 	return LT_SUCCESS;
 }

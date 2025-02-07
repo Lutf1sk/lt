@@ -19,6 +19,8 @@ lt_err_t lt_thread_continue(const lt_thread_t* thread);
 
 lt_err_t lt_thread_cancel(const lt_thread_t* thread);
 
+lt_err_t lt_thread_yield(void);
+
 // spinlock.c
 typedef
 struct lt_spinlock {
