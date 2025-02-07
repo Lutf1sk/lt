@@ -354,7 +354,7 @@ isz lt_io_vprintf(lt_write_fn_t callb, void* usr, const char* fmt, va_list argl)
 
 	usz buf_rem = buf_it - buf;
 	if (buf_rem > 0) {
-		written += callb(usr, buf, buf_rem);
+		callb(usr, buf, buf_rem);
 	}
 	return written;
 }
