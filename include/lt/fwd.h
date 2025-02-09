@@ -23,6 +23,7 @@ typedef struct lt_window lt_window_t;
 // thread.h
 typedef struct lt_thread lt_thread_t;
 typedef struct lt_mutex lt_mutex_t;
+typedef struct lt_semaphore lt_semaphore_t;
 
 // arg.h
 typedef struct lt_arg_iterator lt_arg_iterator_t;
