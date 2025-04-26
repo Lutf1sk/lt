@@ -75,8 +75,7 @@ lt_err_t consume_key(parse_ctx_t cx[static 1], lstr_t out[static 1]) {
 		RETURN_ERROR(LT_ERR_INVALID_FORMAT, err_str);
 	}
 
-	if (out)
-		*out = LSTR(begin, cx->it - begin);
+	*out = LSTR(begin, cx->it - begin);
 	return LT_SUCCESS;
 }
 
@@ -521,7 +520,7 @@ void lt_conf_free_children(lt_conf_t cf[static 1], lt_alloc_t alloc[static 1]) {
 }
 
 void lt_conf_free(lt_conf_t cf[static 1], lt_alloc_t alloc[static 1]) {
-	if (!cf || !(cf->stype == LT_CONF_OBJECT || cf->stype == LT_CONF_ARRAY))
+	if (cf->stype != LT_CONF_OBJECT && cf->stype != LT_CONF_ARRAY)
 		return;
 	lt_conf_free_children(cf, alloc);
 }
