@@ -56,6 +56,8 @@
 #define LT_CONTAINER_OF(type, member, ptr) ((type*)((u8*)(ptr) - offsetof((type), (member))))
 #define LT_ARRAY_COUNT(array) (sizeof(array) / sizeof(*array))
 
+#undef ATTRIB
+
 // Attributes
 #if defined(LT_CLANG) || defined(LT_GCC)
 #	define ATTRIB(a) __attribute__((a))

@@ -9,7 +9,6 @@ b8 lt_elf_verify_magic(void* fh) {
 }
 
 lstr_t lt_elf64_str(const lt_elf64_t e[static 1], const lt_elf64_sh_t strtab_sh[static 1], usz offs) {
-	LT_ASSERT(strtab_sh);
 	LT_ASSERT(offs < strtab_sh->size);
 
 	char* strtab = lt_elf64_offs(e, strtab_sh->offset);

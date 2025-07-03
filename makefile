@@ -92,7 +92,7 @@ ifdef WINDOWS
 endif
 
 ifdef DEBUG
-	CC_FLAGS += -fsanitize=undefined -fsanitize=address -fno-omit-frame-pointer -O0 -g -DLT_DEBUG=1
+	CC_FLAGS += -fno-omit-frame-pointer -O0 -g -DLT_DEBUG=1
 else
 	CC_FLAGS += -O2
 endif

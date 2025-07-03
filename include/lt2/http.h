@@ -1,0 +1,48 @@
+#pragma once
+
+#include <lt2/common.h>
+#include <lt2/net.h>
+
+typedef struct http_request_state {
+	socket_handle socket;
+	tls_handle* tls;
+
+	ls path;
+	ls method;
+
+	u8 version_major;
+	u8 version_minor;
+	u8 transfer_encoding;
+	u8 pad[1];
+
+	u16 header_count;
+	u16 max_header_count;
+	ls* header_keys;
+	ls* header_values;
+
+	usz status_code;
+	ls status_msg;
+
+	u64 timeout_at_ms;
+
+	u8* buffer_start;
+	u8* buffer_end;
+	u8* buffer_it;
+	u8* processed_it;
+
+	u8* headers_start;
+
+	u8* content_start;
+	u8* content_end;
+	usz content_length;
+	usz chunk_size;
+
+	ls host;
+
+	task subtask;
+	b8   subtask_response;
+} http_request_state;
+
+b8 receive_http_response_async(async, http_request_state* state, err* error);
+b8 receive_http_request_async(async, http_request_state* state, err* error);
+
