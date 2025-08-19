@@ -39,10 +39,12 @@ typedef struct http_request_state {
 
 	ls host;
 
-	task subtask;
-	b8   subtask_response;
+	b8 subtask_response;
 } http_request_state;
 
-b8 receive_http_response_async(async, http_request_state* state, err* error);
-b8 receive_http_request_async(async, http_request_state* state, err* error);
+ls  get_http_header (http_request_state* state, ls key, err* error);
+ls* find_http_header(http_request_state* state, ls key);
+
+b8 receive_http_response_async($async, http_request_state* state, err* error);
+b8 receive_http_request_async($async, http_request_state* state, err* error);
 

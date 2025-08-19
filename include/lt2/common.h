@@ -82,6 +82,9 @@ typedef struct ls {
 #define PATH_MAX_SIZE 1024
 #define PATH_BUF_SIZE PATH_MAX_SIZE
 
+#define FILENAME_MAX_SIZE 256
+#define FILENAME_BUF_SIZE FILENAME_MAX_SIZE
+
 extern thread_local u8 path_buf[PATH_BUF_SIZE];
 
 // ----- utility macros
@@ -175,21 +178,48 @@ void throw(err* err, u8 code, const char* fmt, ...);
 typedef isz(*write_fn)(void*, const void*, usz);
 typedef isz(*read_fn) (void*, void*, usz);
 
-void lprintf(const char* fmt, ...);
+usz lprintf(const char* fmt, ...);
 usz vlprintf(write_fn fn, void* usr, const char* fmt, va_list args);
 
-// ----- filesystem
+// ----- files
 
 ls fmapall(ls path, u8 mode, err* err);
 void funmap(ls mapping, err* err);
 
-#define file_handle int
+typedef int file_handle;
 
 file_handle lfopen(ls path, u8 mode, err* err);
 void lfclose(file_handle file, err* err);
 
 usz lfwrite(file_handle file, const void* data, usz size, err* err);
 usz lfread(file_handle file, void* data, usz size, err* err);
+
+typedef struct file_stat {
+	u8 type;
+	u64 size;
+} file_stat;
+
+b8 lfstat(ls path, file_stat out_stat[static 1], err* err);
+
+// ----- directories
+
+typedef struct dir_handle* dir_handle;
+
+#define FS_ANY  0
+#define FS_FILE 1
+#define FS_DIR  2
+#define FS_LINK 3
+
+typedef struct dir_entry {
+	u8  type;
+	u32 name_size;
+	u8  name[FILENAME_BUF_SIZE];
+} dir_entry;
+
+dir_handle ldopen(ls path, err* err);
+void ldclose(dir_handle dir, err* err);
+
+b8 ldnext(dir_handle dir, dir_entry ent[static 1], err* err);
 
 // ----- memory
 
@@ -243,7 +273,6 @@ typedef struct task {
 		void* reenter_at;
 		size_t running;
 	};
+	struct task* stack_end;
 } task;
-
-#define task() (struct task){0}
 

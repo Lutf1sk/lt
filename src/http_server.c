@@ -1,0 +1,275 @@
+#include <lt2/http_server.h>
+#include <lt2/time.h>
+#include <lt2/str.h>
+#include <ctype.h>
+#include <signal.h>
+
+usz send_raw(client_state* state, void* data, usz size, err* error) {
+	if (state->is_https)
+		return socket_send_tls(state->tls, data, size, error);
+	else
+		return socket_send(state->socket, data, size, error);
+}
+
+void send_page($async, server_info* server, client_state* state, void (*page)($template)) {
+	html_template template = {
+		.it  = state->page_buf,
+		.end = state->page_buf + sizeof(state->page_buf)
+	};
+	page(&template, state);
+	usz template_size = template.it - state->page_buf;
+
+	$await($subtask, server->write_default_headers($subtask, server, state, template_size, ls("text/html")));
+	send_raw(state, state->page_buf, template_size, err_warn);
+}
+
+void send_file($async, server_info* server, client_state* state, ls real_path) {
+	ls file = fmapall(real_path, R, err_warn);
+	if (file.size == 0) {
+		$await($subtask, server->on_unmapped_request($subtask, server, state));
+		return;
+	}
+	$await($subtask, server->write_default_headers($subtask, server, state, file.size, mime_type_from_ext(real_path)));
+	send_raw(state, file.ptr, file.size, err_warn);
+	funmap(file, err_warn);
+}
+
+ls normalize_path(ls path) {
+	u8* start = path.ptr, *end = start + path.size;
+
+	u8 up = 0;
+	for (u8* it = end - 1, *tail = end; it >= start; --it) {
+		usz offs = 1;
+		if (it == start)
+			offs = 0;
+		else if (*it != '/')
+			continue;
+
+		u8* name = it + offs;
+		usz len = tail - name;
+		if (len == 1 && name[0] == '.') {
+			memmove(it, tail, end - tail);
+			end -= len + offs;
+		}
+		else if (len == 2 && name[0] == '.' && name[1] == '.') {
+			memmove(it, tail, end - tail);
+			end -= len + offs;
+			++up;
+		}
+		else if (up) {
+			memmove(it, tail, end - tail);
+			end -= len + offs;
+			--up;
+		}
+		tail = it;
+	}
+
+	return lsrange(path.ptr, end);
+}
+
+static
+void handle_request($async, server_info* server, client_state* state) {
+	$enter_task();
+
+	if (state->is_https)
+		state->tls = socket_accept_tls(state->socket, server->tls_cx, err_warn);
+	state->accepted_at_us = time_us();
+
+	state->http = (struct http_request_state) {
+		.socket = state->socket,
+		.tls    = state->tls,
+
+		.buffer_start = state->recv_buf,
+		.buffer_end   = state->recv_buf + sizeof(state->recv_buf),
+
+		.max_header_count = COUNT_OF(state->header_values),
+		.header_keys      = state->header_keys,
+		.header_values    = state->header_values,
+
+		.timeout_at_ms = time_ms() + S_TO_MS(16),
+	};
+
+	b8 request_valid;
+	$awaitv(request_valid, $subtask, receive_http_request_async($subtask, &state->http, err_warn));
+
+	lprintf("{u8}.{u8}.{u8}.{u8} - {ls} {ls}{ls}\n", state->address.ip_addr[0], state->address.ip_addr[1], state->address.ip_addr[2], state->address.ip_addr[3], state->http.method, state->http.host, state->http.path);
+	if UNLIKELY (!request_valid) {
+		$await($subtask, server->on_invalid_request($subtask, server, state));
+		goto end;
+	}
+
+	ls path = lssplit(state->http.path, '?');
+	path = normalize_path(path);
+
+	ls query = lsdrop(state->http.path, path.size);
+
+	for (usz i = 0; i < server->mapping_count; ++i) {
+		path_mapping* mapping = &server->mappings[i];
+		if (!lseq(mapping->method, state->http.method) || (mapping->host.size && !lseq(mapping->host, state->http.host)))
+			continue;
+
+		if (mapping->path.size && lseq(mapping->path, path))
+			state->mapped_path = mapping->real_path;
+		else if (mapping->base_path.size && lsprefix(path, mapping->base_path))
+			state->mapped_path = lsprintf(ls(state->mapped_path_buf), "{ls}{ls}", mapping->real_path, lsdrop(path, mapping->base_path.size));
+		else
+			continue;
+
+		state->mapping = mapping;
+		if (mapping->page)
+			$await($subtask, send_page($subtask, server, state, state->mapping->page));
+		else if (mapping->func)
+			$await($subtask, state->mapping->func($subtask, server, state));
+		else {
+			state->real_path = state->mapped_path;
+			$await($subtask, send_file($subtask, server, state, state->mapped_path));
+		}
+		goto end;
+	}
+	$await($subtask, server->on_unmapped_request($subtask, server, state));
+
+end:
+	if (state->is_https)
+		socket_close_tls(state->tls);
+	socket_close(state->socket, err_warn);
+	state->active = 0;
+	lprintf("{u8}.{u8}.{u8}.{u8} - {ls} {ls}{ls} DONE! after {u64}us\n", state->address.ip_addr[0], state->address.ip_addr[1], state->address.ip_addr[2], state->address.ip_addr[3], state->http.method, state->http.host, state->http.path, time_us() - state->accepted_at_us);
+}
+
+static
+void task_thread(server_info* server) {
+	while (!server->cancel) {
+		for (usz i = 0; i < server->max_client_count; ++i) {
+			client_state* client = &server->clients[i];
+			if (client->active)
+				handle_request(client->task_stack, server, client);
+		}
+		sleep_us(250);
+	}
+}
+
+static
+void on_unmapped_request($async, server_info* server, client_state* state) {
+	ls res = ls(
+		"HTTP/1.1 404 Not Found\r\n"
+		"Connection: close\r\n"
+		"Content-Length: 10\r\n"
+		"Content-Type: text/plain\r\n"
+		"\r\n"
+		"Not Found\n");
+	send_raw(state, res.ptr, res.size, err_warn);
+}
+
+static
+void on_invalid_request($async, server_info* server, client_state* state) {
+	ls res = ls(
+		"HTTP/1.1 400 Bad Request\r\n"
+		"Connection: close\r\n"
+		"Content-Length: 12\r\n"
+		"Content-Type: text/plain\r\n"
+		"\r\n"
+		"Bad Request\n");
+	send_raw(state, res.ptr, res.size, err_warn);
+}
+
+static
+void write_default_headers($async, server_info* server, client_state* state, usz size, ls mime_type) {
+	u8 send_header_buf[1024];
+	ls res = lsprintf(ls(send_header_buf),
+		"HTTP/1.1 200 OK\r\n"
+		"Connection: close\r\n"
+		"Content-Length: {usz}\r\n"
+		"Content-Type: {ls}\r\n"
+		"\r\n",
+		size, mime_type);
+	send_raw(state, res.ptr, res.size, err_warn);
+}
+
+void serve_http(server_info* server) {
+	signal(SIGPIPE, SIG_IGN);
+
+	server->clients = malloc(sizeof(client_state) * server->max_client_count);
+	if UNLIKELY (!server->clients) {
+		lprintf("failed to allocate client states\n");
+		return;
+	}
+
+	if (!server->on_invalid_request)
+		server->on_invalid_request = on_invalid_request;
+	if (!server->on_unmapped_request)
+		server->on_unmapped_request = on_unmapped_request;
+	if (!server->write_default_headers)
+		server->write_default_headers = write_default_headers;
+
+	server->tls_cx = tls_load_certificates(server->cert_path, server->key_path, server->cert_chain_path, err_warn);
+
+	server->https_socket = socket_open(SOCKET_TCP, err_warn);
+	socket_bind(server->https_socket, server->https_port, err_warn);
+
+	if (server->http_port) {
+		server->http_socket = socket_open(SOCKET_TCP, err_warn);	
+		socket_bind(server->http_socket, server->http_port, err_warn);
+	}
+
+	thread_spawn(&server->task_thread, (thread_fn)task_thread, server, err_warn);
+
+	while (!server->cancel) {
+		socket_addr addr;
+		socket_handle client_socket;
+		b8 is_https;
+
+		if (socket_readable(server->https_socket, 0)) {
+			client_socket = socket_accept(server->https_socket, &addr, err_warn);
+			if (client_socket < 0) {
+				lprintf("failed to accept https connection\n");
+				continue;
+			}
+			is_https = 1;
+		}
+		else if (socket_readable(server->http_socket, 0)) {
+			client_socket = socket_accept(server->http_socket, &addr, err_warn);
+			if (client_socket < 0) {
+				lprintf("failed to accept http connection\n");
+				continue;
+			}
+			is_https = 0;
+		}
+		else {
+			sleep_us(250);
+			continue;
+		}
+
+		for (usz i = 0; i < server->max_client_count; ++i) {
+			client_state* client = &server->clients[i];
+			if (client->active)
+				continue;
+
+			task* end = client->task_stack + COUNT_OF(client->task_stack);
+			for (task* it = client->task_stack; it < end; ++it)
+				*it = (struct task) { { 0 }, end };
+
+			client->address     = addr;
+			client->socket      = client_socket;
+			client->tls         = NULL;
+			client->real_path   = ls("");
+			client->mapped_path = ls("");
+			client->mapping     = NULL;
+			client->is_https    = is_https;
+			client->active      = 1;
+			goto next;
+		}
+
+		lprintf("client pool is full, rejecting connection...\n");
+		socket_close(client_socket, err_warn);
+	next:
+	}
+
+	if (server->http_port)
+		socket_close(server->http_socket, err_warn);
+	socket_close(server->https_socket, err_warn);
+	thread_join(&server->task_thread, err_warn);
+
+	free(server->clients);
+}
+
+
