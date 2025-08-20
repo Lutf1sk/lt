@@ -16,7 +16,8 @@ SRC = \
 	src/time.c \
 	src/tls_socket.c \
 	src/uri.c \
-	src/vmap.c
+	src/vmap.c \
+	src/mime.c
 
 # -----== COMPILER
 CC := cc
