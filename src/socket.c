@@ -5,6 +5,7 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <netdb.h>
+#include <errno.h>
 
 socket_addr resolve_host(ls host, err* err) {
 	char cstr[512];
@@ -160,12 +161,18 @@ b8 socket_bind(socket_handle sock, u16 port, err* err) {
 	return 1;
 }
 
-socket_handle socket_accept(socket_handle sock, socket_addr* out_addr, err* err) {
+socket_handle socket_accept(socket_handle sock, socket_addr* out_addr, socket_type flags, err* err) {
 	struct sockaddr posix_addr;
 	socklen_t addrsize = sizeof(posix_addr);
 
-	socket_handle new_fd = accept(sock, (struct sockaddr*)&posix_addr, (socklen_t*)&addrsize);
+	int posix_flags = 0;
+	if (flags & SOCKET_ASYNC)
+		posix_flags |= SOCK_NONBLOCK;
+
+	socket_handle new_fd = accept4(sock, (struct sockaddr*)&posix_addr, (socklen_t*)&addrsize, posix_flags);
 	if (new_fd < 0) {
+		if (errno == EINTR)
+			lprintf("asdf\n");
 		throw(err, ERR_ANY, "accept() failed");
 		return -1;
 	}

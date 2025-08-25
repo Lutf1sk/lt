@@ -29,6 +29,7 @@ typedef struct client_state {
 	socket_handle socket;
 	tls_handle* tls;
 
+	tls_handshake_state tls_handshake;
 	http_request_state http;
 	task task_stack[8];
 

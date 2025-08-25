@@ -41,8 +41,17 @@ b8 socket_readable(socket_handle sock, u64 timeout_ms);
 
 b8 socket_bind(socket_handle sock, u16 port, err* err);
 
-socket_handle socket_accept(socket_handle sock, socket_addr *out_addr, err* err);
+typedef struct tls_handshake_state {
+	socket_handle socket;
+	tls_context* context;
+	u64 timeout_at_ms;
+
+	tls_handle* handle;
+} tls_handshake_state;
+
+socket_handle socket_accept(socket_handle sock, socket_addr* out_addr, socket_type flags, err* err);
 tls_handle* socket_accept_tls(socket_handle sock, tls_context* cx, err* err);
+tls_handle* socket_accept_tls_async($async, tls_handshake_state* state, err* err);
 
 usz socket_send(socket_handle sock, const void* data, usz size, err* err);
 usz socket_receive(socket_handle sock, void* data, usz size, err* err);

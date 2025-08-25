@@ -71,8 +71,14 @@ static
 void handle_request($async, server_info* server, client_state* state) {
 	$enter_task();
 
+	state->tls_handshake = (struct tls_handshake_state) {
+		.context = server->tls_cx,
+		.socket  = state->socket,
+		.timeout_at_ms = time_ms() + S_TO_MS(8)
+	};
+
 	if (state->is_https)
-		state->tls = socket_accept_tls(state->socket, server->tls_cx, err_warn);
+		$awaitv(state->tls, $subtask, socket_accept_tls_async($subtask, &state->tls_handshake, err_warn));
 	state->accepted_at_us = time_us();
 
 	state->http = (struct http_request_state) {
@@ -203,11 +209,11 @@ void serve_http(server_info* server) {
 
 	server->tls_cx = tls_load_certificates(server->cert_path, server->key_path, server->cert_chain_path, err_warn);
 
-	server->https_socket = socket_open(SOCKET_TCP, err_warn);
+	server->https_socket = socket_open(SOCKET_TCP | SOCKET_ASYNC, err_warn);
 	socket_bind(server->https_socket, server->https_port, err_warn);
 
 	if (server->http_port) {
-		server->http_socket = socket_open(SOCKET_TCP, err_warn);	
+		server->http_socket = socket_open(SOCKET_TCP | SOCKET_ASYNC, err_warn);	
 		socket_bind(server->http_socket, server->http_port, err_warn);
 	}
 
@@ -219,7 +225,7 @@ void serve_http(server_info* server) {
 		b8 is_https;
 
 		if (socket_readable(server->https_socket, 0)) {
-			client_socket = socket_accept(server->https_socket, &addr, err_warn);
+			client_socket = socket_accept(server->https_socket, &addr, SOCKET_ASYNC, err_warn);
 			if (client_socket < 0) {
 				lprintf("failed to accept https connection\n");
 				continue;
@@ -227,7 +233,7 @@ void serve_http(server_info* server) {
 			is_https = 1;
 		}
 		else if (socket_readable(server->http_socket, 0)) {
-			client_socket = socket_accept(server->http_socket, &addr, err_warn);
+			client_socket = socket_accept(server->http_socket, &addr, SOCKET_ASYNC, err_warn);
 			if (client_socket < 0) {
 				lprintf("failed to accept http connection\n");
 				continue;

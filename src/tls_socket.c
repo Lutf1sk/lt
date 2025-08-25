@@ -2,6 +2,7 @@
 #ifdef OPENSSL
 
 #include <lt2/net.h>
+#include <lt2/time.h>
 
 #include <openssl/ssl.h>
 #include <openssl/err.h>
@@ -122,12 +123,41 @@ tls_handle* socket_accept_tls(socket_handle sock, tls_context* cx, err* err) {
 	SSL* ssl = SSL_new((void*)cx);
 	SSL_set_fd(ssl, sock);
 
-	if (SSL_accept(ssl) <= 0) {
-		throw(err, ERR_ANY, "failed to accept tls connection");
-		SSL_free(ssl);
-		return NULL;
+	int ret = SSL_accept(ssl);
+	if (ret >= 0)
+		return (void*)ssl;
+	throw(err, ERR_ANY, "failed to accept tls connection");
+	SSL_free(ssl);
+	return NULL;
+}
+
+tls_handle* socket_accept_tls_async($async, tls_handshake_state* state, err* err) {
+	$enter_task();
+
+	if (!state->timeout_at_ms)
+		state->timeout_at_ms = time_ms() + S_TO_MS(60);
+
+	state->handle = (void*)SSL_new((void*)state->context);
+	SSL_set_fd((void*)state->handle, state->socket);
+
+	for (;;) {
+		int ret = SSL_accept((void*)state->handle);
+		if (ret >= 0)
+			return state->handle;
+
+		int ssl_error = SSL_get_error((void*)state->handle, ret);
+		if (ssl_error != SSL_ERROR_WANT_READ && ssl_error != SSL_ERROR_WANT_WRITE) {
+			throw(err, ERR_ANY, "failed to accept tls connection");
+			SSL_free((void*)state->handle);
+			return NULL;
+		}
+		if (time_ms() >= state->timeout_at_ms) {
+			throw(err, ERR_TIMED_OUT, "tls handshake timed out");
+			SSL_free((void*)state->handle);
+			return NULL;
+		}
+		$yield NULL;
 	}
-	return (void*)ssl;
 }
 
 usz socket_send_tls(tls_handle* ssl, const void* data, usz size, err* err) {

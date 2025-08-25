@@ -274,5 +274,6 @@ typedef struct task {
 		size_t running;
 	};
 	struct task* stack_end;
+	void* userdata;
 } task;
 

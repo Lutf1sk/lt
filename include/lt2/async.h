@@ -18,6 +18,7 @@
 __body: 
 
 #define $async task* __async
+#define $task  __async
 
 #define $subtask (__async >= __async->stack_end ? NULL : __async + 1)
 
