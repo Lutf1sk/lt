@@ -12,7 +12,7 @@ typedef struct path_mapping path_mapping;
 
 typedef struct client_state {
 	u8 recv_buf[MB(1)];
-	u8 page_buf[KB(64)];
+	u8 page_buf[KB(128)];
 	u8 mapped_path_buf[1024];
 	u8 real_path_buf[1024];
 

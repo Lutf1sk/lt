@@ -38,8 +38,8 @@ else
 	CC_FLAGS += -O2
 endif
 
-ifdef SSL
-	CC_FLAGS += -DLT_SSL=1
+ifdef OPENSSL
+	CC_FLAGS += -DLT_OPENSSL=1
 endif
 ifdef ASOUND
 	CC_FLAGS += -DLT_ASOUND=1

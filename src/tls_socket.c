@@ -1,5 +1,4 @@
-#define OPENSSL
-#ifdef OPENSSL
+#ifdef LT_OPENSSL
 
 #include <lt2/net.h>
 #include <lt2/time.h>
