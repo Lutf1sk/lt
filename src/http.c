@@ -31,10 +31,15 @@ ls* find_http_header(http_request_state* state, ls key) {
 		$yield 0; \
 	}
 
-#define read_socket(state, buf, size, error) \
-	((state)->tls \
-		? socket_receive_tls((state)->tls, buf, size, error) \
-		: socket_receive((state)->socket,  buf, size, error))
+#ifdef LT_OPENSSL
+#	define read_socket(state, buf, size, error) \
+		((state)->tls \
+			? socket_receive_tls((state)->tls, buf, size, error) \
+			: socket_receive((state)->socket,  buf, size, error))
+#else
+#	define read_socket(state, buf, size, error) \
+	socket_receive((state)->socket, buf, size, error)
+#endif
 
 b8 receive_http_header_data($async, http_request_state* state, err* error) {
 	$enter_task();

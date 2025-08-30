@@ -5,9 +5,11 @@
 #include <signal.h>
 
 usz send_raw(client_state* state, void* data, usz size, err* error) {
+#ifdef LT_OPENSSL
 	if (state->is_https)
 		return socket_send_tls(state->tls, data, size, error);
 	else
+#endif
 		return socket_send(state->socket, data, size, error);
 }
 
@@ -71,14 +73,16 @@ static
 void handle_request($async, server_info* server, client_state* state) {
 	$enter_task();
 
-	state->tls_handshake = (struct tls_handshake_state) {
-		.context = server->tls_cx,
-		.socket  = state->socket,
-		.timeout_at_ms = time_ms() + S_TO_MS(8)
-	};
-
-	if (state->is_https)
+#ifdef LT_OPENSSL
+	if (state->is_https) {
+		state->tls_handshake = (struct tls_handshake_state) {
+			.context = server->tls_cx,
+			.socket  = state->socket,
+			.timeout_at_ms = time_ms() + S_TO_MS(8)
+		};
 		$awaitv(state->tls, $subtask, socket_accept_tls_async($subtask, &state->tls_handshake, err_warn));
+	}
+#endif
 	state->accepted_at_us = time_us();
 
 	state->http = (struct http_request_state) {
@@ -135,8 +139,10 @@ void handle_request($async, server_info* server, client_state* state) {
 	$await($subtask, server->on_unmapped_request($subtask, server, state));
 
 end:
+#ifdef LT_OPENSSL
 	if (state->is_https)
 		socket_close_tls(state->tls);
+#endif
 	socket_close(state->socket, err_warn);
 	state->active = 0;
 	lprintf("{u8}.{u8}.{u8}.{u8} - {ls} {ls}{ls} DONE! after {u64}us\n", state->address.ip_addr[0], state->address.ip_addr[1], state->address.ip_addr[2], state->address.ip_addr[3], state->http.method, state->http.host, state->http.path, time_us() - state->accepted_at_us);
@@ -207,10 +213,12 @@ void serve_http(server_info* server) {
 	if (!server->write_default_headers)
 		server->write_default_headers = write_default_headers;
 
+#ifdef LT_OPENSSL
 	server->tls_cx = tls_load_certificates(server->cert_path, server->key_path, server->cert_chain_path, err_warn);
 
 	server->https_socket = socket_open(SOCKET_TCP | SOCKET_ASYNC, err_warn);
 	socket_bind(server->https_socket, server->https_port, err_warn);
+#endif
 
 	if (server->http_port) {
 		server->http_socket = socket_open(SOCKET_TCP | SOCKET_ASYNC, err_warn);	
@@ -224,6 +232,7 @@ void serve_http(server_info* server) {
 		socket_handle client_socket;
 		b8 is_https;
 
+#ifdef LT_OPENSSL
 		if (socket_readable(server->https_socket, 0)) {
 			client_socket = socket_accept(server->https_socket, &addr, SOCKET_ASYNC, err_warn);
 			if (client_socket < 0) {
@@ -232,7 +241,9 @@ void serve_http(server_info* server) {
 			}
 			is_https = 1;
 		}
-		else if (socket_readable(server->http_socket, 0)) {
+		else
+#endif
+		if (socket_readable(server->http_socket, 0)) {
 			client_socket = socket_accept(server->http_socket, &addr, SOCKET_ASYNC, err_warn);
 			if (client_socket < 0) {
 				lprintf("failed to accept http connection\n");
