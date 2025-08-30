@@ -17,7 +17,8 @@ SRC = \
 	src/tls_socket.c \
 	src/uri.c \
 	src/vmap.c \
-	src/mime.c
+	src/mime.c \
+	src/log.c
 
 # -----== COMPILER
 CC := cc
