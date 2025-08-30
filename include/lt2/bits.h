@@ -8,6 +8,13 @@ b8 is_pow2(usz n) {
 }
 
 INLINE
+b8 is_nzpow2(usz n) {
+	if (!n)
+		return 0;
+	return !(n & (n - 1));
+}
+
+INLINE
 usz pad(usz size, usz align) {
 	usz align_mask = (align - 1);
 	usz n = size & align_mask;
