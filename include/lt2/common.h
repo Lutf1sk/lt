@@ -178,8 +178,10 @@ void throw(err* err, u8 code, const char* fmt, ...);
 typedef isz(*write_fn)(void*, const void*, usz);
 typedef isz(*read_fn) (void*, void*, usz);
 
-usz lprintf(const char* fmt, ...);
-usz vlprintf(write_fn fn, void* usr, const char* fmt, va_list args);
+isz lprintf(const char* fmt, ...);
+isz llenf(const char* fmt, ...);
+isz lvlenf(const char* fmt, va_list args);
+isz vlprintf(write_fn fn, void* usr, const char* fmt, va_list args);
 
 // ----- files
 
@@ -188,8 +190,11 @@ void funmap(ls mapping, err* err);
 
 typedef int file_handle;
 
+file_handle fcreate(ls path, u8 prot, err* err);
 file_handle lfopen(ls path, u8 mode, err* err);
 void lfclose(file_handle file, err* err);
+
+b8 fsetsize(file_handle fd, usz size, err* err);
 
 usz lfwrite(file_handle file, const void* data, usz size, err* err);
 usz lfread(file_handle file, void* data, usz size, err* err);

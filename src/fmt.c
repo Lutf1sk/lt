@@ -43,7 +43,16 @@ usz printi64(write_fn fn, void* usr, i64 n) {
 	return fn(usr, it, len);
 }
 
-usz vlprintf(write_fn fn, void* usr, const char* fmt, va_list args) {
+#include <time.h>
+
+usz printdt64(write_fn fn, void* usr, time_t n) {
+	struct tm* plocal = localtime(&n);
+	u8 buf[128];
+	strftime(buf, sizeof(buf), "%x %X", plocal);
+	return fn(usr, buf, strlen(buf));
+}
+
+isz vlprintf(write_fn fn, void* usr, const char* fmt, va_list args) {
 	usz size;
 	usz written = 0;
 	const char* start;
@@ -87,6 +96,8 @@ usz vlprintf(write_fn fn, void* usr, const char* fmt, va_list args) {
 
 		else if (lseq(spec, ls("b8"))) written += printi64(fn, usr, va_arg(args, u32));
 
+		else if (lseq(spec, ls("dt64"))) written += printdt64(fn, usr, va_arg(args, time_t));
+
 		else if (lseq(spec, ls("char"))) {
 			char cval = va_arg(args, int);
 			written += fn(usr, &cval, 1);
@@ -110,6 +121,25 @@ end:;
 	size = fmt - start;
 	if (size)
 		written += fn(usr, start, size);
-	return 0;
+	return written;
+}
+
+static
+isz return_size(void* usr, const void* data, usz size) {
+	return size;
+}
+
+FLATTEN
+isz llenf(const char* fmt, ...) {
+	va_list arg_list;
+	va_start(arg_list, fmt);
+	usz res = vlprintf(return_size, NULL, fmt, arg_list);
+	va_end(arg_list);
+	return res;
+}
+
+FLATTEN
+isz lvlenf(const char* fmt, va_list args) {
+	return vlprintf(return_size, NULL, fmt, args);
 }
 

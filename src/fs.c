@@ -30,7 +30,7 @@ ls fmapall(ls path, u8 mode, err* err) {
 	struct stat st;
 	fstat(file, &st);
 
-	int posix_flags = MAP_PRIVATE;
+	int posix_flags = MAP_SHARED;
 	int posix_prot  = posix_prot_tab[mode];
 	void* block = mmap(NULL, st.st_size, posix_prot, posix_flags, file, 0);
 	close(file);
@@ -47,10 +47,24 @@ void funmap(ls mapping, err* err) {
 		throw(err, ERR_ANY, "munmap() failed");
 }
 
+file_handle fcreate(ls path, u8 prot, err* err) {
+	if (convert_path(path, err))
+		return -1;
+	int posix_mode = posix_file_mode_tab[W];
+	int posix_prot = posix_file_prot_tab[prot & 0b111];
+	int fd = open(path_buf, O_WRONLY | O_CREAT, posix_prot);
+	if (fd < 0) {
+		throw(err, ERR_ANY, "open() failed");
+		return -1;
+	}
+	return fd;
+}
+
 file_handle lfopen(ls path, u8 mode, err* err) {
 	if (convert_path(path, err))
 		return -1;
-	int fd = open(path_buf, posix_file_mode_tab[mode & 3]);
+	int posix_mode = posix_file_mode_tab[mode & 0b111];
+	int fd = open(path_buf, posix_mode, 0);
 	if (fd < 0)
 		throw(err, ERR_ANY, "open() failed");
 	return fd;
@@ -59,6 +73,14 @@ file_handle lfopen(ls path, u8 mode, err* err) {
 void lfclose(file_handle file, err* err) {
 	if (close(file) < 0)
 		throw(err, ERR_ANY, "close() failed");
+}
+
+b8 fsetsize(file_handle fd, usz size, err* err) {
+	if (ftruncate(fd, size) < 0) {
+		throw(err, ERR_ANY, "ftruncate() failed");
+		return 0;
+	}
+	return 1;
 }
 
 usz lfwrite(file_handle file, const void* data, usz size, err* err) {

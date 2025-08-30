@@ -26,6 +26,17 @@ int posix_file_mode_tab[8] = {
 	[RWX] = O_RDWR,
 };
 
+int posix_file_prot_tab[8] = {
+	[0]   = 0,
+	[R]   = S_IRUSR | S_IRGRP | S_IROTH,
+	[W]   = S_IWUSR,
+	[X]   = S_IXUSR | S_IXGRP | S_IXOTH,
+	[RW]  = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH,
+	[RX]  = S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH,
+	[WX]  = S_IWUSR | S_IXUSR | S_IXGRP | S_IXOTH,
+	[RWX] = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH,
+};
+
 u8 posix_file_type(int mode) {
 	switch (mode & S_IFMT) {
 	case S_IFDIR: return FS_DIR;
