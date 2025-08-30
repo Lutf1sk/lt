@@ -26,7 +26,7 @@ b8 vmap(vmap_t* mappings, usz count, u32 flags, err* err) {
 
 	void* block = mmap(NULL, total_size, 0, posix_flags, -1, 0);
 	if (block == MAP_FAILED) {
-		throw(err, ERR_ANY, "mmap() failed");
+		throw_errno(err);
 		return 1;
 	}
 
@@ -34,7 +34,7 @@ b8 vmap(vmap_t* mappings, usz count, u32 flags, err* err) {
 	for (vmap_t* vm = mappings; vm < end; ++vm) {
 		// !! if all mappings have the same permissions, this should really not need mprotect, it should be done in the mmap call
 		if (mprotect(it, vm->size, posix_prot_tab[vm->permit & 3]) < 0) {
-			throw(err, ERR_ANY, "mprotect() failed");
+			throw_errno(err);
 			munmap(block, total_size);
 			return 1;
 		}
@@ -58,6 +58,6 @@ void vunmap(vmap_t* mappings, usz count, err* err) {
 	if (!total_size)
 		return;
 	if (munmap(mappings[0].base, total_size) < 0)
-		throw(err, ERR_ANY, "munmap() failed");
+		throw_errno(err);
 }
 

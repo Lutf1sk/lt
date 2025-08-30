@@ -26,7 +26,7 @@ static parsed_uri parse_uri_pass1(ls uri, err* error) {
 	}
 
 	if (end - it < 2 || it[1] != '/' || it[2] != '/') {
-		throw(error, ERR_ANY, "expected '://' after url scheme");
+		throw(error, ERR_BAD_SYNTAX, "expected '://' after url scheme");
 		return parsed;
 	}
 	parsed.scheme = lsrange(start, it);

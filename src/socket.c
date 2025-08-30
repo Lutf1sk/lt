@@ -57,7 +57,7 @@ socket_handle socket_open(socket_type type, err* err) {
 
 	int sock = socket(AF_INET, type, 0);
 	if (sock < 0) {
-		throw(err, ERR_ANY, "socket() failed"); // !!
+		throw_errno(err);
 		return -1;
 	}
 	return sock;
@@ -65,7 +65,7 @@ socket_handle socket_open(socket_type type, err* err) {
 
 void socket_close(socket_handle sock, err* err) {
 	if (close(sock) < 0)
-		throw(err, ERR_ANY, "close() failed"); // !!
+		throw_errno(err);
 }
 
 b8 socket_connect_tcp(socket_handle sock, socket_addr* addr, u16 port, err* err) {
@@ -91,12 +91,12 @@ b8 socket_connect_tcp(socket_handle sock, socket_addr* addr, u16 port, err* err)
 		socklen = sizeof(ipv6);
 	}
 	else {
-		throw(err, ERR_ANY, "invalid socket type"); // !!
+		throw(err, ERR_BAD_ARGUMENT, "invalid socket type");
 		return 0;
 	}
 
 	if (connect(sock, posix_addr, socklen) < 0) {
-		throw(err, ERR_ANY, "connect() failed"); // !!
+		throw_errno(err);
 		return 0;
 	}
 	return 1;
@@ -141,7 +141,7 @@ b8 socket_readable(socket_handle sock, u64 timeout_ms) {
 b8 socket_bind(socket_handle sock, u16 port, err* err) {
 	int reuse_addr = 1;
 	if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (void*)&reuse_addr, sizeof(int)) < 0) {
-		throw(err, ERR_ANY, "setsockopt() failed to set SO_REUSEADDR");
+		throw_errno(err);
 		return 0;
 	}
 
@@ -151,11 +151,11 @@ b8 socket_bind(socket_handle sock, u16 port, err* err) {
 	server_addr.sin_port = htons(port);
 
 	if (bind(sock, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
-		throw(err, ERR_ANY, "bind() failed");
+		throw_errno(err);
 		return 0;
 	}
 	if (listen(sock, 16) < 0) {
-		throw(err, ERR_ANY, "listen() failed");
+		throw_errno(err);
 		return 0;
 	}
 	return 1;
@@ -171,9 +171,7 @@ socket_handle socket_accept(socket_handle sock, socket_addr* out_addr, socket_ty
 
 	socket_handle new_fd = accept4(sock, (struct sockaddr*)&posix_addr, (socklen_t*)&addrsize, posix_flags);
 	if (new_fd < 0) {
-		if (errno == EINTR)
-			lprintf("asdf\n");
-		throw(err, ERR_ANY, "accept() failed");
+		throw_errno(err);
 		return -1;
 	}
 
@@ -196,7 +194,7 @@ socket_handle socket_accept(socket_handle sock, socket_addr* out_addr, socket_ty
 usz socket_send(socket_handle sock, const void* data, usz size, err* err) {
 	isz res = send(sock, data, size, 0);
 	if (res < 0) {
-		throw(err, ERR_ANY, "send() failed"); // !!
+		throw_errno(err);
 		return 0;
 	}
 	if (!res && size)
@@ -207,7 +205,7 @@ usz socket_send(socket_handle sock, const void* data, usz size, err* err) {
 usz socket_receive(socket_handle sock, void* data, usz size, err* err) {
 	isz res = recv(sock, data, size, 0);
 	if (res < 0) {
-		throw(err, ERR_ANY, "recv() failed"); // !!
+		throw_errno(err);
 		return 0;
 	}
 	if (!res && size)

@@ -151,7 +151,7 @@ b8 receive_http_content($async, http_request_state* state, err* error) {
 		}
 
 		if UNLIKELY (!size_end) {
-			throw(error, ERR_ANY, "invalid chunk size");
+			throw(error, ERR_PROTOCOL, "invalid chunk size");
 			return 0;
 		}
 

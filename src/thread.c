@@ -13,67 +13,74 @@ void* thread_start_wrapper(void* args) {
 	return NULL;
 }
 
-b8 thread_spawn(thread_handle thread[static 1], thread_fn proc, void* args, err* error) {
+b8 thread_spawn(thread_handle thread[static 1], thread_fn proc, void* args, err* err) {
 	thread->proc = proc;
 	thread->args = args;
-	if (pthread_create((pthread_t*)&thread->pthread, NULL, thread_start_wrapper, thread)) {
-		throw(error, ERR_ANY, "pthread_create() failed");
+	int res = pthread_create((pthread_t*)&thread->pthread, NULL, thread_start_wrapper, thread);
+	if (res) {
+		throw_errno_val(err, res);
 		return 0;
 	}
 	return 1;
 }
 
-b8 thread_join(const thread_handle thread[static 1], err* error) {
-	if (pthread_join(thread->pthread, NULL) != 0) {
-		throw(error, ERR_ANY, "pthread_join() failed");
+b8 thread_join(const thread_handle thread[static 1], err* err) {
+	int res = pthread_join(thread->pthread, NULL);
+	if (res) {
+		throw_errno_val(err, res);
 		return 0;
 	}
 	return 1;
 }
 
-b8 thread_terminate(const thread_handle thread[static 1], err* error) {
-	if (pthread_kill(thread->pthread, SIGTERM)) {
-		throw(error, ERR_ANY, "pthread_kill() failed");
+b8 thread_terminate(const thread_handle thread[static 1], err* err) {
+	int res = pthread_kill(thread->pthread, SIGTERM);
+	if (res) {
+		throw_errno_val(err, res);
 		return 0;
 	}
 	return 1;
 }
 
-b8 thread_kill(const thread_handle thread[static 1], err* error) {
-	if (pthread_kill(thread->pthread, SIGKILL)) {
-		throw(error, ERR_ANY, "pthread_kill() failed");
+b8 thread_kill(const thread_handle thread[static 1], err* err) {
+	int res = pthread_kill(thread->pthread, SIGKILL);
+	if (res) {
+		throw_errno_val(err, res);
 		return 0;
 	}
 	return 1;
 }
 
-b8 thread_stop(const thread_handle thread[static 1], err* error) {
-	if (pthread_kill(thread->pthread, SIGSTOP)) {
-		throw(error, ERR_ANY, "pthread_kill() failed");
+b8 thread_stop(const thread_handle thread[static 1], err* err) {
+	int res = pthread_kill(thread->pthread, SIGSTOP);
+	if (res) {
+		throw_errno_val(err, res);
 		return 0;
 	}
 	return 1;
 }
 
-b8 thread_continue(const thread_handle thread[static 1], err* error) {
-	if (pthread_kill(thread->pthread, SIGCONT)) {
-		throw(error, ERR_ANY, "pthread_kill() failed");
+b8 thread_continue(const thread_handle thread[static 1], err* err) {
+	int res = pthread_kill(thread->pthread, SIGCONT);
+	if (res) {
+		throw_errno_val(err, res);
 		return 0;
 	}
 	return 1;
 }
 
-b8 thread_cancel(const thread_handle thread[static 1], err* error) {
-	if (pthread_cancel(thread->pthread)) {
-		throw(error, ERR_ANY, "pthread_cancel() failed");
+b8 thread_cancel(const thread_handle thread[static 1], err* err) {
+	int res = pthread_cancel(thread->pthread);
+	if (res) {
+		throw_errno_val(err, res);
 		return 0;
 	}
 	return 1;
 }
 
-b8 thread_yield(err* error) {
-	if (sched_yield()) {
-		throw(error, ERR_ANY, "sched_yield() failed");
+b8 thread_yield(err* err) {
+	if (sched_yield() < 0) {
+		throw_errno(err);
 		return 0;
 	}
 	return 1;

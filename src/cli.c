@@ -18,7 +18,7 @@ isz lprintf(const char* fmt, ...) {
 
 b8 parse_cli_args(int argc, char** argv, cli_options cli[static 1], err* err) {
 	if (!cli->callback) {
-		throw(err, ERR_ANY, "cli argument callback is null");
+		throw(err, ERR_BAD_ARGUMENT, "cli argument callback is null");
 		return 0;
 	}
 

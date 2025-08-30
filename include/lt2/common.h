@@ -139,6 +139,7 @@ typedef enum err_code {
 	ERR_RUNNING,
 	ERR_UNREACHABLE,
 	ERR_FEATURE_DISABLED,
+	ERR_PROTOCOL,
 
 	ERR_COUNT
 } err_code;
@@ -158,8 +159,10 @@ typedef struct err {
 
 extern ls errcode_strtab[ERR_COUNT];
 
-void fail(const err err[static 1]);
-void warn(const err err[static 1]);
+#ifdef ON_LINUX
+void throw_errno(err* err);
+void throw_errno_val(err* err, int code);
+#endif
 
 void throw(err* err, u8 code, const char* fmt, ...);
 
