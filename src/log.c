@@ -42,14 +42,20 @@ b8 log_create(ls path, u32 max_entries, u32 strtab_size, err* err) {
 }
 
 b8 log_open(ls path, u8 mode, err* err) {
-	ls mapping = fmapall(path, mode, err_ignore);
-	if (!mapping.size) {
-		if (!log_create(path, MB(1), MB(32), err))
-			return 0;
-		mapping = fmapall(path, mode, err);
-		if (!mapping.size)
-			return 0;
+	ls mapping;
+	if (mode & W) {
+		mapping = fmapall(path, mode, err_ignore);
+		if (!mapping.size) {
+			if (!log_create(path, MB(1), MB(32), err))
+				return 0;
+			mapping = fmapall(path, mode, err);
+		}
 	}
+	else {
+		mapping = fmapall(path, mode, err);
+	}
+	if (!mapping.size)
+		return 0;
 
 	if (mapping.size < sizeof(log_header)) {
 		throw(err, ERR_CORRUPT, "log file does not contain a valid header");
