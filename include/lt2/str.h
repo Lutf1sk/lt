@@ -82,6 +82,7 @@ u64 hexlstou(ls str, err* err);
 
 u8* lssubstr(ls str, ls substr);
 
+ls vlsprintf(ls buf, const char* fmt, va_list args);
 ls lsprintf(ls buf, const char* fmt, ...);
 
 ls lsdirname(ls path);

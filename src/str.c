@@ -181,12 +181,19 @@ u8* lssubstr(ls str, ls substr) {
 	return NULL;
 }
 
-static void fill_ls(ls* buf, void* data, usz size) {
+static
+void fill_ls(ls* buf, void* data, usz size) {
 	if (size > buf->size)
 		size = buf->size;
 	memcpy(buf->ptr, data, size);
 	buf->ptr += size;
 	buf->size -= size;
+}
+
+ls vlsprintf(ls buf, const char* fmt, va_list args) {
+	u8* start = buf.ptr;
+	vlprintf((write_fn)fill_ls, &buf, fmt, args);
+	return lsrange(start, buf.ptr);
 }
 
 ls lsprintf(ls buf, const char* fmt, ...) {
