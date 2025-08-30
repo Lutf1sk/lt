@@ -71,6 +71,14 @@ ls lsdrop(ls str, usz bytes) {
 	return lls(str.ptr + bytes, str.size - bytes);
 }
 
+INLINE
+usz lsfirst(ls str, u8 c) {
+	for (u8* it = str.ptr, *end = it + str.size; it < end; ++it)
+		if (*it == c)
+			return it - str.ptr;
+	return str.size;
+}
+
 ls lstrim_left(ls str);
 ls lstrim_right(ls str);
 ls lstrim(ls str);
