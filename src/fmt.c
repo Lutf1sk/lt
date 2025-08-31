@@ -129,17 +129,15 @@ isz return_size(void* usr, const void* data, usz size) {
 	return size;
 }
 
-FLATTEN
 isz llenf(const char* fmt, ...) {
-	va_list arg_list;
-	va_start(arg_list, fmt);
-	usz res = vlprintf(return_size, NULL, fmt, arg_list);
-	va_end(arg_list);
+	va_list args;
+	va_start(args, fmt);
+	usz res = vlprintf(return_size, NULL, fmt, args);
+	va_end(args);
 	return res;
 }
 
-FLATTEN
-isz lvlenf(const char* fmt, va_list args) {
+isz vllenf(const char* fmt, va_list args) {
 	return vlprintf(return_size, NULL, fmt, args);
 }
 
