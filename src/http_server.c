@@ -15,27 +15,59 @@ usz send_raw(client_state* state, void* data, usz size, err* error) {
 		return socket_send(state->socket, data, size, error);
 }
 
+static
+void send_response_async($async, client_state* state, u64 timeout_in_us, err* err) {
+	$enter_task();
+
+	state->timeout_at_us = time_us() + timeout_in_us;
+	while (state->response_it < state->response_end) {
+		usz res;
+#ifdef LT_OPENSSL
+		if (state->is_https)
+			res = socket_send_tls(state->tls, state->response_it, state->response_end - state->response_it, err);
+		else
+#endif
+			res = socket_send(state->socket, state->response_it, state->response_end - state->response_it, err);
+		state->response_it += res;
+		if (res)
+			state->timeout_at_us = time_us() + timeout_in_us;
+		else if (time_us() >= state->timeout_at_us) {
+			throw(err, ERR_TIMED_OUT, "response timed out");
+			return;
+		}
+	}
+}
+
 void send_page($async, server_info* server, client_state* state, void (*page)($template)) {
+	$enter_task();
+
 	html_template template = {
 		.it  = state->page_buf,
 		.end = state->page_buf + sizeof(state->page_buf)
 	};
 	page(&template, state);
-	usz template_size = template.it - state->page_buf;
+	state->response_it  = state->response = state->page_buf;
+	state->response_end = state->response + (template.it - state->page_buf);
 
-	$await($subtask, server->write_default_headers($subtask, server, state, template_size, ls("text/html")));
-	send_raw(state, state->page_buf, template_size, err_warn);
+	$await($subtask, server->write_default_headers($subtask, server, state, state->response_end - state->response, ls("text/html")));
+	$await($subtask, send_response_async($subtask, state, S_TO_US(5), err_warn));
 }
 
 void send_file($async, server_info* server, client_state* state, ls real_path) {
+	$enter_task();
+
 	ls file = fmapall(real_path, R, err_warn);
-	if (file.size == 0) {
+	if (!file.size) {
 		$await($subtask, server->on_unmapped_request($subtask, server, state));
 		return;
 	}
-	$await($subtask, server->write_default_headers($subtask, server, state, file.size, mime_type_from_ext(real_path)));
-	send_raw(state, file.ptr, file.size, err_warn);
-	funmap(file, err_warn);
+	state->response_it  = state->response = file.ptr;
+	state->response_end = file.ptr + file.size;
+
+	$await($subtask, server->write_default_headers($subtask, server, state, state->response_end - state->response, mime_type_from_ext(real_path)));
+	$await($subtask, send_response_async($subtask, state, S_TO_US(5), err_warn));
+
+	funmap(lsrange(state->response, state->response_end), err_warn);
 }
 
 ls normalize_path(ls path) {
@@ -145,7 +177,7 @@ void handle_request($async, server_info* server, client_state* state) {
 			$await($subtask, state->mapping->func($subtask, server, state));
 		else {
 			state->real_path = state->mapped_path;
-			$await($subtask, send_file($subtask, server, state, state->mapped_path));
+			$await($subtask, send_file($subtask, server, state, state->real_path));
 		}
 		goto end;
 	}

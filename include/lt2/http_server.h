@@ -23,6 +23,7 @@ typedef struct client_state {
 	ls header_values[256];
 
 	u64 accepted_at_us;
+	u64 timeout_at_us;
 
 	socket_addr address;
 
@@ -34,6 +35,10 @@ typedef struct client_state {
 	task task_stack[8];
 
 	path_mapping* mapping;
+
+	u8* response;
+	u8* response_it;
+	u8* response_end;
 
 	b8 is_https;
 	_Atomic volatile b8 active;
