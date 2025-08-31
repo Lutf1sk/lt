@@ -75,6 +75,8 @@ static
 void handle_request($async, server_info* server, client_state* state) {
 	$enter_task();
 
+	state->accepted_at_us = time_us();
+
 #ifdef LT_OPENSSL
 	if (state->is_https) {
 		state->tls_handshake = (struct tls_handshake_state) {
@@ -89,7 +91,6 @@ void handle_request($async, server_info* server, client_state* state) {
 		}
 	}
 #endif
-	state->accepted_at_us = time_us();
 
 	state->http = (struct http_request_state) {
 		.socket = state->socket,
@@ -107,11 +108,17 @@ void handle_request($async, server_info* server, client_state* state) {
 
 	b8 request_valid;
 	$awaitv(request_valid, $subtask, receive_http_request_async($subtask, &state->http, err_warn));
-
-	llogf(LOG_INFO, "{u8}.{u8}.{u8}.{u8} - {ls} {ls}{ls}", state->address.ip_addr[0], state->address.ip_addr[1], state->address.ip_addr[2], state->address.ip_addr[3], state->http.method, state->http.host, state->http.path);
 	if UNLIKELY (!request_valid) {
 		$await($subtask, server->on_invalid_request($subtask, server, state));
 		goto end;
+	}
+
+	llogf(LOG_INFO, "{u8}.{u8}.{u8}.{u8} - {ls} {ls}{ls}", state->address.ip_addr[0], state->address.ip_addr[1], state->address.ip_addr[2], state->address.ip_addr[3], state->http.method, state->http.host, state->http.path);
+	for (usz i = 0; i < state->http.header_count; ++i) {
+		if (lseq(state->http.header_keys[i], ls("User-Agent"))) {
+			llogf(LOG_INFO, "User-Agent: {ls}", state->http.header_values[i]);
+			break;
+		}
 	}
 
 	ls path = lssplit(state->http.path, '?');
