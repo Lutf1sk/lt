@@ -160,10 +160,14 @@ i32 vlogf(u8 info, const char* fmt, va_list args) {
 	if (!log_file_header)
 		return -1;
 
+	va_list args2;
+	va_copy(args2, args);
+
 	usz fields_size = log_field_count * sizeof(*log_fields);
-	usz msglen = fields_size + llenf(fmt, args) + 1;
+	usz msglen = fields_size + vllenf(fmt, args) + 1;
 	if (msglen > log_file_header->strtab_size) {
 		throw(err_warn, ERR_LIMIT_EXCEEDED, "log entry exceeds maximum size");
+		va_end(args2);
 		return -1;
 	}
 
@@ -181,19 +185,20 @@ i32 vlogf(u8 info, const char* fmt, va_list args) {
 		usz index = (log_file_header->enttab_first + advance) & log_enttab_mask;
 		usz offs = log_enttab[index].offset;
 		usz size = log_enttab[index].size;
-		if (log_file_header->strtab_top + msglen <= offs || log_file_header->strtab_top > offs + size)
+		if (log_file_header->strtab_top + msglen <= offs || log_file_header->strtab_top >= offs + size)
 			break;
 	}
 
 	memcpy(log_strtab + log_file_header->strtab_top, log_fields, fields_size);
 	u8* str_start = log_strtab + log_file_header->strtab_top + fields_size;
-	ls msg = vlsprintf(lls(str_start, msglen), fmt, args);
+	ls msg = vlsprintf(lls(str_start, msglen), fmt, args2);
+	va_end(args2);
 	str_start[msg.size] = 0;
 
 	u32 ent_index = (log_file_header->enttab_first + log_file_header->entry_count) & log_enttab_mask;
 	if (!advance && log_file_header->entry_count >= log_file_header->max_entries)
 		++advance;
-	log_file_header->entry_count -= advance - 1;
+	log_file_header->entry_count += 1 - advance;
 	log_file_header->enttab_first = (log_file_header->enttab_first + advance) & log_enttab_mask;
 
 	log_enttab[ent_index] = (log_entry) {
@@ -208,10 +213,10 @@ i32 vlogf(u8 info, const char* fmt, va_list args) {
 }
 
 i32 llogf(u8 info, const char* fmt, ...) {
-	va_list arg_list;
-	va_start(arg_list, fmt);
-	u32 res = vlogf(info, fmt, arg_list);
-	va_end(arg_list);
+	va_list args;
+	va_start(args, fmt);
+	i32 res = vlogf(info, fmt, args);
+	va_end(args);
 	return res;
 }
 
