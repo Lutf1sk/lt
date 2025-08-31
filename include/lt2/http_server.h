@@ -86,5 +86,5 @@ void send_file($async, server_info* server, client_state* state, ls real_path);
 
 ls normalize_path(ls path);
 
-void serve_http(server_info* server);
+void serve_http(server_info* server, err* err);
 

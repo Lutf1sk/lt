@@ -1,6 +1,8 @@
 #include <lt2/http_server.h>
 #include <lt2/time.h>
 #include <lt2/str.h>
+#include <lt2/log.h>
+
 #include <ctype.h>
 #include <signal.h>
 
@@ -81,6 +83,10 @@ void handle_request($async, server_info* server, client_state* state) {
 			.timeout_at_ms = time_ms() + S_TO_MS(8)
 		};
 		$awaitv(state->tls, $subtask, socket_accept_tls_async($subtask, &state->tls_handshake, err_warn));
+		if (!state->tls) {
+			llogf(LOG_NOTICE, "failed to accept tls connection");
+			goto end;
+		}
 	}
 #endif
 	state->accepted_at_us = time_us();
@@ -102,7 +108,7 @@ void handle_request($async, server_info* server, client_state* state) {
 	b8 request_valid;
 	$awaitv(request_valid, $subtask, receive_http_request_async($subtask, &state->http, err_warn));
 
-	lprintf("{u8}.{u8}.{u8}.{u8} - {ls} {ls}{ls}\n", state->address.ip_addr[0], state->address.ip_addr[1], state->address.ip_addr[2], state->address.ip_addr[3], state->http.method, state->http.host, state->http.path);
+	llogf(LOG_INFO, "{u8}.{u8}.{u8}.{u8} - {ls} {ls}{ls}", state->address.ip_addr[0], state->address.ip_addr[1], state->address.ip_addr[2], state->address.ip_addr[3], state->http.method, state->http.host, state->http.path);
 	if UNLIKELY (!request_valid) {
 		$await($subtask, server->on_invalid_request($subtask, server, state));
 		goto end;
@@ -145,7 +151,7 @@ end:
 #endif
 	socket_close(state->socket, err_warn);
 	state->active = 0;
-	lprintf("{u8}.{u8}.{u8}.{u8} - {ls} {ls}{ls} DONE! after {u64}us\n", state->address.ip_addr[0], state->address.ip_addr[1], state->address.ip_addr[2], state->address.ip_addr[3], state->http.method, state->http.host, state->http.path, time_us() - state->accepted_at_us);
+	llogf(LOG_INFO, "response finished after {u64}us", time_us() - state->accepted_at_us);
 }
 
 static
@@ -162,6 +168,7 @@ void task_thread(server_info* server) {
 
 static
 void on_unmapped_request($async, server_info* server, client_state* state) {
+	llogf(LOG_NOTICE, "page not found");
 	ls res = ls(
 		"HTTP/1.1 404 Not Found\r\n"
 		"Connection: close\r\n"
@@ -174,6 +181,7 @@ void on_unmapped_request($async, server_info* server, client_state* state) {
 
 static
 void on_invalid_request($async, server_info* server, client_state* state) {
+	llogf(LOG_NOTICE, "invalid request");
 	ls res = ls(
 		"HTTP/1.1 400 Bad Request\r\n"
 		"Connection: close\r\n"
@@ -197,12 +205,12 @@ void write_default_headers($async, server_info* server, client_state* state, usz
 	send_raw(state, res.ptr, res.size, err_warn);
 }
 
-void serve_http(server_info* server) {
+void serve_http(server_info* server, err* err) {
 	signal(SIGPIPE, SIG_IGN);
 
 	server->clients = malloc(sizeof(client_state) * server->max_client_count);
 	if UNLIKELY (!server->clients) {
-		lprintf("failed to allocate client states\n");
+		throw(err, ERR_NO_MEMORY, "failed to allocate client states");
 		return;
 	}
 
@@ -236,7 +244,7 @@ void serve_http(server_info* server) {
 		if (socket_readable(server->https_socket, 0)) {
 			client_socket = socket_accept(server->https_socket, &addr, SOCKET_ASYNC, err_warn);
 			if (client_socket < 0) {
-				lprintf("failed to accept https connection\n");
+				llogf(LOG_NOTICE, "failed to accept https connection");
 				continue;
 			}
 			is_https = 1;
@@ -246,7 +254,7 @@ void serve_http(server_info* server) {
 		if (socket_readable(server->http_socket, 0)) {
 			client_socket = socket_accept(server->http_socket, &addr, SOCKET_ASYNC, err_warn);
 			if (client_socket < 0) {
-				lprintf("failed to accept http connection\n");
+				llogf(LOG_NOTICE, "failed to accept http connection");
 				continue;
 			}
 			is_https = 0;
@@ -276,7 +284,7 @@ void serve_http(server_info* server) {
 			goto next;
 		}
 
-		lprintf("client pool is full, rejecting connection...\n");
+		llogf(LOG_WARN, "client pool is full, rejecting connection...");
 		socket_close(client_socket, err_warn);
 	next:
 	}
