@@ -59,11 +59,20 @@ usz echo_attributes(html_template* t, char* fmt, ...);
 #define $i(a...)      $elem("i",  a)
 #define $b(a...)      $elem("b",  a)
 #define $strong(a...) $elem("strong", a)
-#define $code(a...)   $elem("code",  a)
-#define $span(a...)   $elem("span",  a)
+#define $code(a...)   $elem("code",   a)
+#define $span(a...)   $elem("span",   a)
 
-#define $nav(a...) $elem("nav",  a)
-#define $div(a...) $elem("div",  a)
+#define $header(a...)  $elem("header",  a)
+#define $main(a...)    $elem("main",    a)
+#define $footer(a...)  $elem("footer",  a)
+#define $nav(a...)     $elem("nav",     a)
+#define $div(a...)     $elem("div",     a)
+#define $article(a...) $elem("article", a)
+
+#define $form(a...)     $elem("form", a)
+#define $textarea(a...) $elem("textarea", a)
+#define $select(a...)   $elem("select", a)
+#define $option(a...)   $elem("option", a)
 
 #define $table(a...) $elem("table", a)
 #define $thead(a...) $elem("thead", a)
@@ -80,9 +89,19 @@ usz echo_attributes(html_template* t, char* fmt, ...);
 #define $dt(a...)    $elem("dt",    a)
 #define $dd(a...)    $elem("dd",    a)
 
-#define $header(a...) $elem("header", a)
-#define $main(a...)   $elem("main",   a)
-#define $footer(a...) $elem("footer", a)
+#define $svg(a...)      $elem("svg",      a)
+#define $rect(a...)     $elem("rect",     a)
+#define $circle(a...)   $elem("circle",   a)
+#define $ellipse(a...)  $elem("elllipse", a)
+#define $stop(a...)     $elem("stop",     a)
+#define $line(a...)     $elem("line",     a)
+#define $polygon(a...)  $elem("polygon",  a)
+#define $text(a...)     $elem("text",     a)
+#define $textPath(a...) $elem("textPath", a)
+#define $tspan(a...)    $elem("tspan",    a)
+#define $view(a...)     $elem("view",     a)
+#define $symbol(a...)   $elem("symbol",   a)
+#define $switch(a...)   $elem("switch",   a)
 
 #define $template html_template* __template, void* __userdata
 #define $forward __template, __userdata
