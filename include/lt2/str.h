@@ -18,6 +18,7 @@ i32 lscmp(ls s1, ls s2) {
 }
 
 b8 lseq_nocase(ls s1, ls s2);
+b8 lseq_upper(ls str, ls upper);
 
 INLINE
 b8 lsprefix(ls str, ls substr) {

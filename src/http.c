@@ -105,12 +105,13 @@ b8 parse_http_headers(http_request_state* state, err* error) {
 		ls value = lstrim(lsrange(val_start, it));
 		state->header_values[header_index] = value;
 
-		// !! these comparisons should be case-insensitive
-		if (lseq(key, ls("Content-Length")))
+		if (lseq_upper(key, ls("CONTENT-LENGTH")))
 			state->content_length = lstou(value, error);
-		else if (lseq(key, ls("Transfer-Encoding")) && lseq(value, ls("chunked")))
-			state->transfer_encoding = 1;
-		else if (lseq(key, ls("Host")))
+		else if (lseq_upper(key, ls("CONNECTION")) && lseq_upper(value, ls("KEEP-ALIVE")))
+			state->flags |= HTTP_KEEP_ALIVE;
+		else if (lseq_upper(key, ls("TRANSFER-ENCODING")) && lseq_upper(value, ls("CHUNKED")))
+			state->flags |= HTTP_CHUNKED;
+		else if (lseq_upper(key, ls("HOST")))
 			state->host = value;
 	}
 }
@@ -119,7 +120,7 @@ b8 receive_http_content($async, http_request_state* state, err* error) {
 	$enter_task();
 
 	// ----- read raw content
-	if (!state->transfer_encoding) {
+	if (!(state->flags & HTTP_CHUNKED)) {
 		state->content_end = state->content_start + state->content_length;
 		if UNLIKELY (state->content_end > state->buffer_end) {
 			throw(error, ERR_LIMIT_EXCEEDED, "http content exceeds maximum size");

@@ -3,6 +3,9 @@
 #include <lt2/common.h>
 #include <lt2/net.h>
 
+#define HTTP_KEEP_ALIVE 1
+#define HTTP_CHUNKED    2
+
 typedef struct http_request_state {
 	socket_handle socket;
 	tls_handle* tls;
@@ -12,7 +15,7 @@ typedef struct http_request_state {
 
 	u8 version_major;
 	u8 version_minor;
-	u8 transfer_encoding;
+	u8 flags;
 	u8 pad[1];
 
 	u16 header_count;

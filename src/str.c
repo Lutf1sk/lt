@@ -2,6 +2,26 @@
 
 #include <ctype.h>
 
+b8 lseq_nocase(ls s1, ls s2) {
+	if (s1.size != s2.size)
+		return 0;
+	for (u8* it = s1.ptr, *it2 = s2.ptr, *end = it + s1.size; it < end; ++it, ++it2) {
+		if (toupper(*it) != toupper(*it2))
+			return 0;
+	}
+	return 1;
+}
+
+b8 lseq_upper(ls str, ls upper) {
+	if (str.size != upper.size)
+		return 0;
+	for (u8* it = str.ptr, *upper_it = upper.ptr, *end = it + str.size; it < end; ++it, ++upper_it) {
+		if (toupper(*it) != *upper_it)
+			return 0;
+	}
+	return 1;
+}
+
 ls lstrim_left(ls str) {
 	u8* it, *end;
 	for (it = str.ptr, end = it + str.size; it < end && isspace(*it); ++it)

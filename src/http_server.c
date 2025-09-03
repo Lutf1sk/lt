@@ -147,7 +147,7 @@ void handle_request($async, server_info* server, client_state* state) {
 
 	llogf(LOG_INFO, "{u8}.{u8}.{u8}.{u8} - {ls} {ls}{ls}", state->address.ip_addr[0], state->address.ip_addr[1], state->address.ip_addr[2], state->address.ip_addr[3], state->http.method, state->http.host, state->http.path);
 	for (usz i = 0; i < state->http.header_count; ++i) {
-		if (lseq(state->http.header_keys[i], ls("User-Agent"))) {
+		if (lseq_upper(state->http.header_keys[i], ls("USER-AGENT"))) {
 			llogf(LOG_INFO, "User-Agent: {ls}", state->http.header_values[i]);
 			break;
 		}
