@@ -92,9 +92,9 @@ extern thread_local u8 path_buf[PATH_BUF_SIZE];
 #define CONTAINER_OF(type, member, ptr) ((type*)(ptr) - offsetof(type, member))
 #define COUNT_OF(arr) (sizeof(arr) / sizeof(*arr))
 
-#define KB(n) (n * 1024L)
-#define MB(n) (n * 1048576L)
-#define GB(n) (n * 1073741824L)
+#define KB(n) ((n) * 1024L)
+#define MB(n) ((n) * 1048576L)
+#define GB(n) ((n) * 1073741824L)
 
 #define DEFAULT_ALIGN 16
 
