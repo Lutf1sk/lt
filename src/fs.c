@@ -2,7 +2,6 @@
 
 #include "posix.h"
 
-#define _DEFAULT_SOURCE
 #include <unistd.h>
 
 #include <fcntl.h>

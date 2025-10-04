@@ -23,7 +23,7 @@ SRC = \
 # -----== COMPILER
 CC := cc
 CC_WARN := -Wall -Werror -Wno-strict-aliasing -Wno-error=unused-variable -Wno-unused-function -Wno-pedantic -Wno-unused-label
-CC_FLAGS := -I./include/ -std=c2x -fmax-errors=3 $(CC_WARN)
+CC_FLAGS := -I./include/ -std=gnu2x -fmax-errors=3 $(CC_WARN)
 
 ifndef ARM
 	CC_FLAGS += -mavx2 -masm=intel

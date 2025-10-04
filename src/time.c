@@ -1,7 +1,9 @@
 #include <lt2/time.h>
 
 #if defined(ON_UNIX)
-#	define _POSIX_C_SOURCE 199309L
+#	ifndef _POSIX_C_SOURCE
+#		define _POSIX_C_SOURCE 199309L
+#	endif
 #	include <sys/time.h>
 #	include <time.h>
 

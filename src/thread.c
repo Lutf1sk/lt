@@ -2,8 +2,6 @@
 
 #include <pthread.h>
 #include <sched.h>
-
-#define _XOPEN_SOURCE 500
 #include <signal.h>
 
 static
@@ -25,7 +23,7 @@ b8 thread_spawn(thread_handle thread[static 1], thread_fn proc, void* args, err*
 }
 
 b8 thread_join(const thread_handle thread[static 1], err* err) {
-	int res = pthread_join(thread->pthread, NULL);
+	int res = pthread_join((pthread_t)thread->pthread, NULL);
 	if (res) {
 		throw_errno_val(err, res);
 		return 0;
@@ -34,7 +32,7 @@ b8 thread_join(const thread_handle thread[static 1], err* err) {
 }
 
 b8 thread_terminate(const thread_handle thread[static 1], err* err) {
-	int res = pthread_kill(thread->pthread, SIGTERM);
+	int res = pthread_kill((pthread_t)thread->pthread, SIGTERM);
 	if (res) {
 		throw_errno_val(err, res);
 		return 0;
@@ -43,7 +41,7 @@ b8 thread_terminate(const thread_handle thread[static 1], err* err) {
 }
 
 b8 thread_kill(const thread_handle thread[static 1], err* err) {
-	int res = pthread_kill(thread->pthread, SIGKILL);
+	int res = pthread_kill((pthread_t)thread->pthread, SIGKILL);
 	if (res) {
 		throw_errno_val(err, res);
 		return 0;
@@ -52,7 +50,7 @@ b8 thread_kill(const thread_handle thread[static 1], err* err) {
 }
 
 b8 thread_stop(const thread_handle thread[static 1], err* err) {
-	int res = pthread_kill(thread->pthread, SIGSTOP);
+	int res = pthread_kill((pthread_t)thread->pthread, SIGSTOP);
 	if (res) {
 		throw_errno_val(err, res);
 		return 0;
@@ -61,7 +59,7 @@ b8 thread_stop(const thread_handle thread[static 1], err* err) {
 }
 
 b8 thread_continue(const thread_handle thread[static 1], err* err) {
-	int res = pthread_kill(thread->pthread, SIGCONT);
+	int res = pthread_kill((pthread_t)thread->pthread, SIGCONT);
 	if (res) {
 		throw_errno_val(err, res);
 		return 0;
@@ -70,7 +68,7 @@ b8 thread_continue(const thread_handle thread[static 1], err* err) {
 }
 
 b8 thread_cancel(const thread_handle thread[static 1], err* err) {
-	int res = pthread_cancel(thread->pthread);
+	int res = pthread_cancel((pthread_t)thread->pthread);
 	if (res) {
 		throw_errno_val(err, res);
 		return 0;

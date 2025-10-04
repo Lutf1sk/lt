@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <netdb.h>
 #include <errno.h>
+#include <fcntl.h>
 
 socket_addr resolve_host(ls host, err* err) {
 	char cstr[512];
@@ -47,7 +48,7 @@ socket_handle socket_open(socket_type type, err* err) {
 	}
 
 	if (type == SOCKET_TCP)
-		posix_type |= SOCK_STREAM; 
+		posix_type |= SOCK_STREAM;
 	else if (type == SOCKET_UDP)
 		posix_type |= SOCK_DGRAM;
 	else {
@@ -165,14 +166,18 @@ socket_handle socket_accept(socket_handle sock, socket_addr* out_addr, socket_ty
 	struct sockaddr posix_addr;
 	socklen_t addrsize = sizeof(posix_addr);
 
-	int posix_flags = 0;
-	if (flags & SOCKET_ASYNC)
-		posix_flags |= SOCK_NONBLOCK;
-
-	socket_handle new_fd = accept4(sock, (struct sockaddr*)&posix_addr, (socklen_t*)&addrsize, posix_flags);
+	socket_handle new_fd = accept(sock, (struct sockaddr*)&posix_addr, (socklen_t*)&addrsize);
 	if (new_fd < 0) {
 		throw_errno(err);
 		return -1;
+	}
+
+	if (flags & SOCKET_ASYNC) {
+		int posix_flags = fcntl(new_fd, F_GETFL, 0);
+		if (posix_flags < 0 || fcntl(new_fd, F_SETFL, posix_flags | O_NONBLOCK)) {
+			throw_errno(err);
+			goto err0;
+		}
 	}
 
 	if (!out_addr)
@@ -189,6 +194,8 @@ socket_handle socket_accept(socket_handle sock, socket_addr* out_addr, socket_ty
 	}
 	return new_fd;
 
+err0:	close(new_fd);
+	return -1;
 }
 
 usz socket_send(socket_handle sock, const void* data, usz size, err* err) {
