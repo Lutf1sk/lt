@@ -118,7 +118,7 @@ void handle_request($async, server_info* server, client_state* state) {
 		};
 		$awaitv(state->tls, $subtask, socket_accept_tls_async($subtask, &state->tls_handshake, err_warn));
 		if (!state->tls) {
-			llogf(LOG_NOTICE, "failed to accept tls connection");
+			llogf(server->logger, LOG_NOTICE, "failed to accept tls connection");
 			goto end;
 		}
 	}
@@ -145,10 +145,10 @@ void handle_request($async, server_info* server, client_state* state) {
 		goto end;
 	}
 
-	llogf(LOG_INFO, "{u8}.{u8}.{u8}.{u8} - {ls} {ls}{ls}", state->address.ip_addr[0], state->address.ip_addr[1], state->address.ip_addr[2], state->address.ip_addr[3], state->http.method, state->http.host, state->http.path);
+	llogf(server->logger, LOG_INFO, "{u8}.{u8}.{u8}.{u8} - {ls} {ls}{ls}", state->address.ip_addr[0], state->address.ip_addr[1], state->address.ip_addr[2], state->address.ip_addr[3], state->http.method, state->http.host, state->http.path);
 	for (usz i = 0; i < state->http.header_count; ++i) {
 		if (lseq_upper(state->http.header_keys[i], ls("USER-AGENT"))) {
-			llogf(LOG_INFO, "User-Agent: {ls}", state->http.header_values[i]);
+			llogf(server->logger, LOG_INFO, "User-Agent: {ls}", state->http.header_values[i]);
 			break;
 		}
 	}
@@ -190,7 +190,7 @@ end:
 #endif
 	socket_close(state->socket, err_warn);
 	state->active = 0;
-	llogf(LOG_INFO, "response finished after {u64}us", time_us() - state->accepted_at_us);
+	llogf(server->logger, LOG_INFO, "response finished after {u64}us", time_us() - state->accepted_at_us);
 }
 
 static
@@ -207,7 +207,7 @@ void task_thread(server_info* server) {
 
 static
 void on_unmapped_request($async, server_info* server, client_state* state) {
-	llogf(LOG_NOTICE, "page not found");
+	llogf(server->logger, LOG_NOTICE, "page not found");
 	ls res = ls(
 		"HTTP/1.1 404 Not Found\r\n"
 		"Connection: close\r\n"
@@ -220,7 +220,7 @@ void on_unmapped_request($async, server_info* server, client_state* state) {
 
 static
 void on_invalid_request($async, server_info* server, client_state* state) {
-	llogf(LOG_NOTICE, "invalid request");
+	llogf(server->logger, LOG_NOTICE, "invalid request");
 	ls res = ls(
 		"HTTP/1.1 400 Bad Request\r\n"
 		"Connection: close\r\n"
@@ -283,7 +283,7 @@ void serve_http(server_info* server, err* err) {
 		if (socket_readable(server->https_socket, 0)) {
 			client_socket = socket_accept(server->https_socket, &addr, SOCKET_ASYNC, err_warn);
 			if (client_socket < 0) {
-				llogf(LOG_NOTICE, "failed to accept https connection");
+				llogf(server->logger, LOG_NOTICE, "failed to accept https connection");
 				continue;
 			}
 			is_https = 1;
@@ -293,7 +293,7 @@ void serve_http(server_info* server, err* err) {
 		if (socket_readable(server->http_socket, 0)) {
 			client_socket = socket_accept(server->http_socket, &addr, SOCKET_ASYNC, err_warn);
 			if (client_socket < 0) {
-				llogf(LOG_NOTICE, "failed to accept http connection");
+				llogf(server->logger, LOG_NOTICE, "failed to accept http connection");
 				continue;
 			}
 			is_https = 0;
@@ -323,7 +323,7 @@ void serve_http(server_info* server, err* err) {
 			goto next;
 		}
 
-		llogf(LOG_WARN, "client pool is full, rejecting connection...");
+		llogf(server->logger, LOG_WARN, "client pool is full, rejecting connection...");
 		socket_close(client_socket, err_warn);
 	next:
 	}

@@ -32,7 +32,7 @@ b8 lssuffix(ls str, ls substr) {
 	if (str.size < substr.size)
 		return 0;
 
-	char* end = str.ptr + str.size;
+	u8* end = str.ptr + str.size;
 	return memcmp(end - substr.size, substr.ptr, substr.size) == 0;
 }
 
@@ -98,5 +98,4 @@ ls lsdirname(ls path);
 ls lsbasename(ls path);
 
 ls lstrim_trailing_slash(ls path);
-
 

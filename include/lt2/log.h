@@ -90,5 +90,5 @@ void log_clear(void) {
 }
 
 i32 vlogf(log_sink* sink, u8 info, const char* fmt, va_list args);
-i32 logf(log_sink* sink, u8 info, const char* fmt, ...);
+i32 llogf(log_sink* sink, u8 info, const char* fmt, ...);
 

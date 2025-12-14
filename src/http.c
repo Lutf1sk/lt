@@ -101,7 +101,7 @@ b8 parse_http_headers(http_request_state* state, err* error) {
 			return 0;
 		}
 		state->header_keys[header_index] = key;
-		char* val_start = line.ptr + key.size + 1;
+		u8* val_start = line.ptr + key.size + 1;
 		ls value = lstrim(lsrange(val_start, it));
 		state->header_values[header_index] = value;
 

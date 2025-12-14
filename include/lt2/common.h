@@ -85,7 +85,7 @@ typedef struct ls {
 #define FILENAME_MAX_SIZE 256
 #define FILENAME_BUF_SIZE FILENAME_MAX_SIZE
 
-extern thread_local u8 path_buf[PATH_BUF_SIZE];
+extern thread_local char path_buf[PATH_BUF_SIZE];
 
 // ----- utility macros
 
@@ -185,6 +185,11 @@ isz lprintf(const char* fmt, ...);
 isz vlprintf(write_fn fn, void* usr, const char* fmt, va_list args);
 isz llenf(const char* fmt, ...);
 isz vllenf(const char* fmt, va_list args);
+
+// ----- logging
+
+typedef struct logfile_header logfile_header;
+typedef struct log_sink log_sink;
 
 // ----- files
 

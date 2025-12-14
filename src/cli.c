@@ -101,7 +101,7 @@ void print_cli_help(cli_options cli[static 1]) {
 	if (!cmdline_size)
 		self = ls("<?>");
 	else
-		self = lls(cmdline_buf, strnlen(cmdline_buf, cmdline_size));
+		self = lls(cmdline_buf, strnlen((char*)cmdline_buf, cmdline_size));
 
 	if (!cli->param_count)
 		lprintf("usage: {ls} ARGS...\n", self);

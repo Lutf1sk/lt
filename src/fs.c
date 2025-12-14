@@ -3,13 +3,12 @@
 #include "posix.h"
 
 #include <unistd.h>
-
 #include <fcntl.h>
 #include <dirent.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 
-thread_local u8 path_buf[PATH_BUF_SIZE];
+thread_local char path_buf[PATH_BUF_SIZE];
 
 b8 convert_path(ls path, err* err) {
 	if (path.size >= PATH_BUF_SIZE) {
@@ -127,7 +126,7 @@ b8 ldnext(dir_handle dir, dir_entry ent[static 1], err* err) {
 	struct dirent* de = readdir((DIR*)dir);
 	if (!de)
 		return 0;
-	
+
 	switch (de->d_type) {
 	case DT_REG: ent->type = FS_FILE; break;
 	case DT_DIR: ent->type = FS_DIR;  break;

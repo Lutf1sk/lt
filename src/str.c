@@ -122,9 +122,9 @@ u64 lstou(ls str, err* err) {
 
 	u64 val = 0;
 
-	char* it = str.ptr, *end = it + str.size;
+	u8* it = str.ptr, *end = it + str.size;
 	while (it < end) {
-		char c = *it++;
+		u8 c = *it++;
 
 		if UNLIKELY (!isdigit(c)) {
 			throw(err, ERR_BAD_SYNTAX, "invalid character in unsigned integer");

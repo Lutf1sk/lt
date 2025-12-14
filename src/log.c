@@ -28,11 +28,18 @@ static ls severity_prefixes[] = {
 
 
 log_sink log_map_ringbuf(ls path, u8 mode) {
-	
+	return (log_sink) {};
 }
 
 log_sink log_alloc_ringbuf(usz max_entry_count, usz max_strtab_size) {
-	
+	return (log_sink) {};
 }
 
+i32 vlogf(log_sink* sink, u8 info, const char* fmt, va_list args) {
+	return 0;
+}
+
+i32 llogf(log_sink* sink, u8 info, const char* fmt, ...) {
+	return 0;
+}
 

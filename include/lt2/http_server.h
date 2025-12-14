@@ -77,6 +77,8 @@ typedef struct server_info {
 	path_mapping* mappings;
 	usz mapping_count;
 
+	log_sink* logger;
+
 	void (*on_invalid_request)($async, server_info* server, client_state* client);
 	void (*on_unmapped_request)($async, server_info* server, client_state* client);
 	void (*write_default_headers)($async, server_info* server, client_state* client, usz size, ls mime_type);
