@@ -1,6 +1,5 @@
 #include <lt2/common.h>
-
-#include "posix.h"
+#include <lt2/posix.h>
 
 #include <unistd.h>
 #include <fcntl.h>
