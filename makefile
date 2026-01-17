@@ -7,7 +7,7 @@ CC = cc
 CFLAGS = \
 	-I./include \
 	-O2 -std=gnu2x \
-	-Werror
+	-Wall -Werror
 
 all: bin/lt2.a
 

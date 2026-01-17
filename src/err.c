@@ -61,7 +61,7 @@ void throw(err* err, u8 code, const char* fmt, ...) {
 
 		va_list arg_list;
 		va_start(arg_list, fmt);
-		usz res = vlprintf(write_out, (void*)STDERR_FILENO, fmt, arg_list);
+		vlprintf(write_out, (void*)STDERR_FILENO, fmt, arg_list);
 		va_end(arg_list);
 
 		lfwrite(STDERR_FILENO, "\n", 1, err_ignore);
@@ -72,7 +72,7 @@ void throw(err* err, u8 code, const char* fmt, ...) {
 
 		va_list arg_list;
 		va_start(arg_list, fmt);
-		usz res = vlprintf(write_out, (void*)STDERR_FILENO, fmt, arg_list);
+		vlprintf(write_out, (void*)STDERR_FILENO, fmt, arg_list);
 		va_end(arg_list);
 
 		lfwrite(STDERR_FILENO, "\n", 1, err_ignore);

@@ -157,6 +157,7 @@ void handle_request($async, server_info* server, client_state* state) {
 	path = normalize_path(path);
 
 	ls query = lsdrop(state->http.path, path.size);
+	(void)query;
 
 	for (usz i = 0; i < server->mapping_count; ++i) {
 		path_mapping* mapping = &server->mappings[i];

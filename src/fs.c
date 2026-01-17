@@ -47,7 +47,6 @@ void funmap(ls mapping, err* err) {
 file_handle fcreate(ls path, u8 prot, err* err) {
 	if (convert_path(path, err))
 		return -1;
-	int posix_mode = posix_file_mode_tab[W];
 	int posix_prot = posix_file_prot_tab[prot & 0b111];
 	int fd = open(path_buf, O_WRONLY | O_CREAT, posix_prot);
 	if (fd < 0) {

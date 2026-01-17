@@ -28,6 +28,8 @@ static ls severity_prefixes[] = {
 
 
 log_sink log_map_ringbuf(ls path, u8 mode) {
+	(void)severity_names;
+	(void)severity_prefixes;
 	return (log_sink) {};
 }
 

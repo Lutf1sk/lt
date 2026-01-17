@@ -15,7 +15,7 @@
 	void* __jump_addr = __async->reenter_at; \
 	__async->reenter_at = NULL; \
 	GOTO_ADDR(__jump_addr); \
-__body: 
+__body:
 
 #define $async task* __async
 #define $task  __async
