@@ -247,7 +247,7 @@ struct vmap {
 	u8 permit;
 
 	b8 active;
-	u8 pad[0];
+	u8 pad[5];
 
 	usz size;
 	usz guard_size;
