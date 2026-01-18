@@ -28,7 +28,7 @@ ls* find_http_header(http_request_state* state, ls key) {
 			throw(error, ERR_TIMED_OUT, "http connection timed out"); \
 			return 0; \
 		} \
-		$yield 0; \
+		co_yield(0); \
 	}
 
 #ifdef LT_OPENSSL
@@ -41,8 +41,8 @@ ls* find_http_header(http_request_state* state, ls key) {
 	socket_receive((state)->socket, buf, size, error)
 #endif
 
-b8 receive_http_header_data($async, http_request_state* state, err* error) {
-	$enter_task();
+b8 receive_http_header_data(task* t, http_request_state* state, err* error) {
+	co_reenter(t);
 
 	for (;;) {
 		if UNLIKELY (state->buffer_it >= state->buffer_end) {
@@ -116,8 +116,8 @@ b8 parse_http_headers(http_request_state* state, err* error) {
 	}
 }
 
-b8 receive_http_content($async, http_request_state* state, err* error) {
-	$enter_task();
+b8 receive_http_content(task* t, http_request_state* state, err* error) {
+	co_reenter(t);
 
 	// ----- read raw content
 	if (!(state->flags & HTTP_CHUNKED)) {
@@ -188,14 +188,14 @@ b8 receive_http_content($async, http_request_state* state, err* error) {
 	return 0;
 }
 
-b8 receive_http_request_async($async, http_request_state* state, err* error) {
-	$enter_task();
+b8 receive_http_request_async(task* t, http_request_state* state, err* error) {
+	co_reenter(t);
 
 	if (!state->timeout_at_ms)
 		state->timeout_at_ms = time_ms() + S_TO_MS(60);
 	state->buffer_it = state->buffer_start;
 
-	$awaitv(state->subtask_response, $subtask, receive_http_header_data($subtask, state, error)) 0;
+	co_await(state->subtask_response = receive_http_header_data(co_subtask, state, error), 0);
 	if UNLIKELY (!state->subtask_response)
 		return 0;
 
@@ -229,18 +229,18 @@ b8 receive_http_request_async($async, http_request_state* state, err* error) {
 	if UNLIKELY (!parse_http_headers(state, error))
 		return 0;
 
-	$awaitv(state->subtask_response, $subtask, receive_http_content($subtask, state, error)) 0;
+	co_await(state->subtask_response = receive_http_content(co_subtask, state, error), 0);
 	return state->subtask_response;
 }
 
-b8 receive_http_response_async($async, http_request_state* state, err* error) {
-	$enter_task();
+b8 receive_http_response_async(task* t, http_request_state* state, err* error) {
+	co_reenter(t);
 
 	if (!state->timeout_at_ms)
 		state->timeout_at_ms = time_ms() + S_TO_MS(60);
 	state->buffer_it = state->buffer_start;
 
-	$awaitv(state->subtask_response, $subtask, receive_http_header_data($subtask, state, error)) 0;
+	co_await(state->subtask_response = receive_http_header_data(co_subtask, state, error), 0);
 	if UNLIKELY (!state->subtask_response)
 		return 0;
 
@@ -271,7 +271,7 @@ b8 receive_http_response_async($async, http_request_state* state, err* error) {
 	if UNLIKELY (!parse_http_headers(state, error))
 		return 0;
 
-	$awaitv(state->subtask_response, $subtask, receive_http_content($subtask, state, error)) 0;
+	co_await(state->subtask_response = receive_http_content(co_subtask, state, error), 0);
 	return state->subtask_response;
 }
 

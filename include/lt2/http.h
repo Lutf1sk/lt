@@ -48,6 +48,6 @@ typedef struct http_request_state {
 ls  get_http_header (http_request_state* state, ls key, err* error);
 ls* find_http_header(http_request_state* state, ls key);
 
-b8 receive_http_response_async($async, http_request_state* state, err* error);
-b8 receive_http_request_async($async, http_request_state* state, err* error);
+b8 receive_http_response_async(task* t, http_request_state* state, err* error);
+b8 receive_http_request_async(task* t, http_request_state* state, err* error);
 

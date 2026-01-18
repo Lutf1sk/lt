@@ -2,42 +2,48 @@
 
 #include <lt2/common.h>
 
-#define LABEL_ADDR(label) (&&label)
-#define GOTO_ADDR(addr) goto *(addr)
+#define CO_UNIQUE_LABEL EXCAT(__co_label_, __LINE__)
 
-#define CAT2(a, b) a ## b
-#define CAT(a, b) CAT2(a, b)
-#define UNIQUE(n) CAT(CAT(__lt_unique_, __LINE__), _##n)
+task* co_next(task* t) {
+	if (t >= t->stack_end) {
+		throw(err_fail, ERR_LIMIT_EXCEEDED, "no subtasks available");
+		return NULL; // unreachable
+	}
 
-#define $enter_task() \
-	if (!__async->reenter_at)\
-		__async->reenter_at = LABEL_ADDR(__body); \
-	void* __jump_addr = __async->reenter_at; \
-	__async->reenter_at = NULL; \
-	GOTO_ADDR(__jump_addr); \
-__body:
+	task* next = t + 1;
+	*next = (task) {
+		.stack_end = t->stack_end
+	};
+	return next;
+}
 
-#define $async task* __async
-#define $task  __async
-
-#define $subtask (__async >= __async->stack_end ? NULL : __async + 1)
-
-#define $yield \
-	for (__async->reenter_at = LABEL_ADDR(UNIQUE(0)); __async->reenter_at;) \
-	UNIQUE(0): for (; __async->reenter_at;) \
-			return
-
-#define $await(t, func) \
-	UNIQUE(0): for (; ((func), (t)->running && (__async->reenter_at = LABEL_ADDR(UNIQUE(0))));) \
-		return
-
-#define $awaitv(out, t, func) \
-	UNIQUE(0): for (; (((out) = (func)), (t)->running && (__async->reenter_at = LABEL_ADDR(UNIQUE(0))));) \
-		return
-
-// !! this really should have a short sleep instead of immediately rerunning
-#define $invoke(t, func) \
+#define co_reenter(t) \
+	task* __task = (t); \
+	task* co_subtask; \
+	(void)co_subtask; \
 	do { \
-		func; \
-	} while ((t)->running)
+		if (!__task->reenter_at) \
+			__task->reenter_at = LABEL_ADDR(CO_UNIQUE_LABEL); \
+		void* __jump_addr = __task->reenter_at; \
+		__task->reenter_at = NULL; \
+		GOTO_ADDR(__jump_addr); \
+	CO_UNIQUE_LABEL:; \
+	} while (0)
+
+#define co_yield(...) \
+	do { \
+		__task->reenter_at = LABEL_ADDR(CO_UNIQUE_LABEL); \
+		return __VA_ARGS__; \
+		CO_UNIQUE_LABEL:; \
+	} while (0)
+
+#define co_await(call, ...) \
+		co_subtask = co_next(__task); \
+	CO_UNIQUE_LABEL:; \
+		co_subtask = __task + 1; \
+		call; \
+		if (co_subtask->running) { \
+			__task->reenter_at = LABEL_ADDR(CO_UNIQUE_LABEL); \
+			return __VA_ARGS__; \
+		}
 

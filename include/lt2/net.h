@@ -1,7 +1,6 @@
 #pragma once
 
 #include <lt2/common.h>
-#include <lt2/async.h>
 
 typedef enum socket_addr_type {
 	SOCKADDR_IPV4,
@@ -51,7 +50,7 @@ typedef struct tls_handshake_state {
 
 socket_handle socket_accept(socket_handle sock, socket_addr* out_addr, socket_type flags, err* err);
 tls_handle* socket_accept_tls(socket_handle sock, tls_context* cx, err* err);
-tls_handle* socket_accept_tls_async($async, tls_handshake_state* state, err* err);
+tls_handle* socket_accept_tls_async(task* t, tls_handshake_state* state, err* err);
 
 usz socket_send(socket_handle sock, const void* data, usz size, err* err);
 usz socket_receive(socket_handle sock, void* data, usz size, err* err);

@@ -44,6 +44,12 @@
 #	define UNLIKELY(x)  (__builtin_expect(!!(x), 0))
 #endif
 
+#define CAT(a, b) a ## b
+#define EXCAT(a, b) CAT(a, b)
+
+#define LABEL_ADDR(label) (&&label)
+#define GOTO_ADDR(addr) goto *(addr)
+
 #include <stdarg.h>
 
 // ----- primitives
