@@ -44,7 +44,7 @@ static ls severities[] = {
 	[LOG_DEBUG]  = ls(" DEBUG"),
 };
 
-static ls colored_suffix = ls("\x1b[0m\n");
+static ls colored_suffix = ls("\x1b[0m");
 
 static
 isz write_out(void* usr, const void* data, usz size) {
@@ -64,7 +64,7 @@ i32 vlogf(log_sink* sink, u8 info, const char* fmt, va_list args) {
 	do {
 		if (sink->type == LOGSINK_FILE) {
 			if (sink->file.color)
-				lprintf_fn(write_out, &sink->file.fd, "{ls}{dt64} {ls} {ls}{ls}", colored_prefixes[severity], unix_time, colored_severities[severity], msg, colored_suffix);
+				lprintf_fn(write_out, &sink->file.fd, "{ls}{dt64} {ls} {ls}{ls}\n", colored_prefixes[severity], unix_time, colored_severities[severity], msg, colored_suffix);
 			else
 				lprintf_fn(write_out, &sink->file.fd, "{dt64} {ls} {ls}\n", unix_time, severities[severity], msg);
 		}
