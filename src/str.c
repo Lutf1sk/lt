@@ -212,7 +212,7 @@ void fill_ls(ls* buf, void* data, usz size) {
 
 ls vlsprintf(ls buf, const char* fmt, va_list args) {
 	u8* start = buf.ptr;
-	vlprintf((write_fn)fill_ls, &buf, fmt, args);
+	vlprintf_fn((write_fn)fill_ls, &buf, fmt, args);
 	return lsrange(start, buf.ptr);
 }
 
@@ -220,7 +220,7 @@ ls lsprintf(ls buf, const char* fmt, ...) {
 	u8* start = buf.ptr;
 	va_list args;
 	va_start(args, fmt);
-	vlprintf((write_fn)fill_ls, &buf, fmt, args);
+	vlprintf_fn((write_fn)fill_ls, &buf, fmt, args);
 	va_end(args);
 	return lsrange(start, buf.ptr);
 }

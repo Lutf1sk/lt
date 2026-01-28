@@ -52,7 +52,7 @@ usz printdt64(write_fn fn, void* usr, time_t n) {
 	return fn(usr, buf, strnlen((char*)buf, sizeof(buf)));
 }
 
-isz vlprintf(write_fn fn, void* usr, const char* fmt, va_list args) {
+isz vlprintf_fn(write_fn fn, void* usr, const char* fmt, va_list args) {
 	usz size;
 	usz written = 0;
 	const char* start;
@@ -127,7 +127,7 @@ end:;
 isz lprintf_fn(write_fn fn, void* usr, const char* fmt, ...) {
 	va_list arg_list;
 	va_start(arg_list, fmt);
-	usz res = vlprintf(fn, usr, fmt, arg_list);
+	usz res = vlprintf_fn(fn, usr, fmt, arg_list);
 	va_end(arg_list);
 	return res;
 }
@@ -140,12 +140,12 @@ isz return_size(void* usr, const void* data, usz size) {
 isz llenf(const char* fmt, ...) {
 	va_list args;
 	va_start(args, fmt);
-	usz res = vlprintf(return_size, NULL, fmt, args);
+	usz res = vlprintf_fn(return_size, NULL, fmt, args);
 	va_end(args);
 	return res;
 }
 
 isz vllenf(const char* fmt, va_list args) {
-	return vlprintf(return_size, NULL, fmt, args);
+	return vlprintf_fn(return_size, NULL, fmt, args);
 }
 

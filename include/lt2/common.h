@@ -188,7 +188,7 @@ typedef isz(*write_fn)(void*, const void*, usz);
 typedef isz(*read_fn) (void*, void*, usz);
 
 isz lprintf(const char* fmt, ...);
-isz vlprintf(write_fn fn, void* usr, const char* fmt, va_list args);
+isz vlprintf_fn(write_fn fn, void* usr, const char* fmt, va_list args);
 isz lprintf_fn(write_fn, void* usr, const char* fmt, ...);
 
 isz llenf(const char* fmt, ...);

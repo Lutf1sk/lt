@@ -11,7 +11,7 @@ isz write_out(void* usr, const void* data, usz size) {
 isz lprintf(const char* fmt, ...) {
 	va_list arg_list;
 	va_start(arg_list, fmt);
-	usz res = vlprintf(write_out, (void*)STDOUT_FILENO, fmt, arg_list);
+	usz res = vlprintf_fn(write_out, (void*)STDOUT_FILENO, fmt, arg_list);
 	va_end(arg_list);
 	return res;
 }
