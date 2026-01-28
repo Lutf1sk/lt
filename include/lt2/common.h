@@ -235,6 +235,8 @@ typedef struct dir_entry {
 	u8  name[FILENAME_BUF_SIZE];
 } dir_entry;
 
+b8 convert_path(ls path, err* err);
+
 dir_handle ldopen(ls path, err* err);
 void ldclose(dir_handle dir, err* err);
 
