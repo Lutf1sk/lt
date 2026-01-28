@@ -124,6 +124,14 @@ end:;
 	return written;
 }
 
+isz lprintf_fn(write_fn fn, void* usr, const char* fmt, ...) {
+	va_list arg_list;
+	va_start(arg_list, fmt);
+	usz res = vlprintf(fn, usr, fmt, arg_list);
+	va_end(arg_list);
+	return res;
+}
+
 static
 isz return_size(void* usr, const void* data, usz size) {
 	return size;
