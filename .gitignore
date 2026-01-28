@@ -2,3 +2,5 @@
 /**/*.o
 /bin/
 /result
+/src/wayland
+/include/lt2/wayland
