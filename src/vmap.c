@@ -3,12 +3,11 @@
 
 #include <sys/mman.h>
 
-
 b8 vmap(vmap_t* mappings, usz count, u32 flags, err* err) {
 	int posix_flags = MAP_PRIVATE | MAP_ANONYMOUS; // MAP_NORESERVE ?
 
 	usz page_size = VM_PAGE_SIZE;
-	if (posix_flags & VM_HUGE_PAGES) {
+	if (flags & VM_HUGE_PAGES) {
 		page_size = VM_PAGE_SIZE_HUGE;
 		posix_flags |= MAP_HUGETLB;
 	}
@@ -16,7 +15,7 @@ b8 vmap(vmap_t* mappings, usz count, u32 flags, err* err) {
 	usz total_size = 0;
 	vmap_t* end = mappings + count;
 	for (vmap_t* vm = mappings; vm < end; ++vm) {
-		vm->size       = align(vm->size, page_size);
+		vm->size       = align(vm->size,       page_size);
 		vm->guard_size = align(vm->guard_size, page_size);
 		total_size += vm->size + vm->guard_size;
 	}
