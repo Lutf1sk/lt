@@ -4,6 +4,13 @@
 #include <time.h>
 #include <unistd.h>
 
+log_sink* default_log_sink = &(log_sink) {
+	.type = LOGSINK_FILE,
+	.file = {
+		.fd = STDERR_FILENO
+	}
+};
+
 static ls colored_prefixes[] = {
 	[LOG_EMERG]  = ls("\x1b[41;97;1m"),
 	[LOG_ALERT]  = ls("\x1b[101;30;1m"),
@@ -45,6 +52,9 @@ isz write_out(void* usr, const void* data, usz size) {
 }
 
 i32 vlogf(log_sink* sink, u8 info, const char* fmt, va_list args) {
+	if (!sink)
+		sink = default_log_sink;
+
 	u8  severity  = info & LOG_SEVERITY_MASK;
 	u64 unix_time = time(NULL);
 
@@ -54,16 +64,9 @@ i32 vlogf(log_sink* sink, u8 info, const char* fmt, va_list args) {
 	do {
 		if (sink->type == LOGSINK_FILE) {
 			if (sink->file.color)
-				lprintf_fn(write_out, &sink->file.fd, "{ls}{dt64} {ls} ", colored_prefixes[severity], unix_time, colored_severities[severity]);
+				lprintf_fn(write_out, &sink->file.fd, "{ls}{dt64} {ls} {ls}{ls}", colored_prefixes[severity], unix_time, colored_severities[severity], msg, colored_suffix);
 			else
-				lprintf_fn(write_out, &sink->file.fd, "{dt64} {ls} ", unix_time, severities[severity]);
-
-			write(sink->file.fd, msg.ptr, msg.size);
-
-			if (sink->file.color)
-				write(sink->file.fd, colored_suffix.ptr, colored_suffix.size);
-			else
-				write(sink->file.fd, "\n", 1);
+				lprintf_fn(write_out, &sink->file.fd, "{dt64} {ls} {ls}\n", unix_time, severities[severity], msg);
 		}
 
 		else if (sink->type == LOGSINK_NET_SYSLOG) {

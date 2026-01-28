@@ -35,6 +35,8 @@ typedef struct log_sink {
 	log_sink* fallback;
 } log_sink;
 
+extern log_sink* default_log_sink;
+
 i32 vlogf(log_sink* sink, u8 info, const char* fmt, va_list args);
 i32 llogf(log_sink* sink, u8 info, const char* fmt, ...);
 

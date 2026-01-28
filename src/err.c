@@ -1,4 +1,5 @@
 #include <lt2/common.h>
+#include <lt2/log.h>
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -6,11 +7,6 @@
 #include <string.h>
 
 #define err_store ((struct err*)3)
-
-static
-isz write_out(void* usr, const void* data, usz size) {
-	return write((int)(isz)usr, data, size);
-}
 
 void throw_errno_val(err* err, int posix_err) {
 	u32 code = ERR_ANY;
@@ -57,25 +53,17 @@ void throw(err* err, u8 code, const char* fmt, ...) {
 	}
 
 	if (err == err_fail) {
-		lfwrite(STDERR_FILENO, "\x1b[91merror\x1b[0m: ", 17, err_ignore);
-
-		va_list arg_list;
-		va_start(arg_list, fmt);
-		vlprintf(write_out, (void*)STDERR_FILENO, fmt, arg_list);
-		va_end(arg_list);
-
-		lfwrite(STDERR_FILENO, "\n", 1, err_ignore);
+		va_list args;
+		va_start(args, fmt);
+		vlogf(NULL, LOG_ERR, fmt, args);
+		va_end(args);
 		exit(1);
 	}
 	else if (err == err_warn) {
-		lfwrite(STDERR_FILENO, "\x1b[95mwarning\x1b[0m: ", 19, err_ignore);
-
-		va_list arg_list;
-		va_start(arg_list, fmt);
-		vlprintf(write_out, (void*)STDERR_FILENO, fmt, arg_list);
-		va_end(arg_list);
-
-		lfwrite(STDERR_FILENO, "\n", 1, err_ignore);
+		va_list args;
+		va_start(args, fmt);
+		vlogf(NULL, LOG_WARN, fmt, args);
+		va_end(args);
 	}
 }
 
