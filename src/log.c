@@ -61,6 +61,9 @@ i32 vlogf(log_sink* sink, u8 info, const char* fmt, va_list args) {
 	char msg_buf[LOG_MAX_SIZE];
 	ls msg = vlsprintf(lls(msg_buf, sizeof(msg_buf)), fmt, args);
 
+	if (msg.size && msg.ptr[msg.size - 1] == '\n')
+		--msg.size;
+
 	do {
 		if (sink->type == LOGSINK_FILE) {
 			if (sink->file.color)
