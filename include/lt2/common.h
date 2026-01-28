@@ -189,6 +189,8 @@ typedef isz(*read_fn) (void*, void*, usz);
 
 isz lprintf(const char* fmt, ...);
 isz vlprintf(write_fn fn, void* usr, const char* fmt, va_list args);
+isz lprintf_fn(write_fn, void* usr, const char* fmt, ...);
+
 isz llenf(const char* fmt, ...);
 isz vllenf(const char* fmt, va_list args);
 
@@ -198,6 +200,8 @@ typedef struct logfile_header logfile_header;
 typedef struct log_sink log_sink;
 
 // ----- files
+
+b8 convert_path(ls path, err* err);
 
 ls fmapall(ls path, u8 mode, err* err);
 void funmap(ls mapping, err* err);
@@ -220,6 +224,15 @@ typedef struct file_stat {
 
 b8 lfstat(ls path, file_stat out_stat[static 1], err* err);
 
+#define WATCH_MODIFIED 1
+#define WATCH_SAVED    2
+#define WATCH_DELETED  4
+#define WATCH_MOVED    8
+#define WATCH_EVENTS   0x0F
+#define WATCH_FAILED   0x80000000
+
+u32 fwatch_once(ls path, u32 events, err* err);
+
 // ----- directories
 
 typedef struct dir_handle* dir_handle;
@@ -234,8 +247,6 @@ typedef struct dir_entry {
 	u32 name_size;
 	u8  name[FILENAME_BUF_SIZE];
 } dir_entry;
-
-b8 convert_path(ls path, err* err);
 
 dir_handle ldopen(ls path, err* err);
 void ldclose(dir_handle dir, err* err);

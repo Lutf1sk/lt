@@ -4,8 +4,10 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <dirent.h>
+#include <limits.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <sys/inotify.h>
 
 thread_local char path_buf[PATH_BUF_SIZE];
 
@@ -155,5 +157,61 @@ b8 lfstat(ls path, file_stat out_stat[static 1], err* err) {
 	out_stat->type = posix_file_type(st.st_mode);
 	out_stat->size = st.st_size;
 	return 1;
+}
+
+u32 fwatch_once(ls path, u32 events, err* err) {
+	if (convert_path(path, err))
+		return WATCH_FAILED;
+
+	int in_fd = inotify_init();
+	if UNLIKELY (in_fd < 0) {
+		throw_errno(err);
+		return WATCH_FAILED;
+	}
+
+	int posix_events = 0;
+	if (events & WATCH_MODIFIED)
+		posix_events |= IN_MODIFY;
+	if (events & WATCH_SAVED)
+		posix_events |= IN_CLOSE_WRITE;
+	if (events & WATCH_DELETED)
+		posix_events |= IN_DELETE_SELF;
+	if (events & WATCH_MOVED)
+		posix_events |= IN_MOVE_SELF;
+
+	int watch_fd = inotify_add_watch(in_fd, path_buf, posix_events);
+	if UNLIKELY (watch_fd < 0) {
+		close(in_fd);
+		throw_errno(err);
+		return WATCH_FAILED;
+	}
+
+#define BUFSZ (16 * (sizeof(struct inotify_event) * NAME_MAX + 1))
+	u8 buf[BUFSZ];
+	ssize_t len = read(in_fd, buf, sizeof(buf));
+	if UNLIKELY (len < 0) {
+		close(in_fd);
+		throw_errno(err);
+		return WATCH_FAILED;
+	}
+
+	struct inotify_event* it  = (void*)buf;
+	struct inotify_event* end = (void*)(buf + len);
+
+	u32 out_events = 0;
+	while (it < end) {
+		if (it->mask & IN_MODIFY)
+			out_events |= WATCH_MODIFIED;
+		else if (it->mask & IN_CLOSE_WRITE)
+			out_events |= WATCH_SAVED;
+		else if (it->mask & IN_DELETE_SELF)
+			out_events |= WATCH_DELETED;
+		else if (it->mask & IN_MOVE_SELF)
+			out_events |= WATCH_MOVED;
+		it = (void*)((u8*)(it + 1) + it->len);
+	}
+
+	close(in_fd);
+	return out_events;
 }
 
