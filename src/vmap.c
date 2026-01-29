@@ -17,7 +17,7 @@ b8 vmap(vmap_t* mappings, usz count, u32 flags, err* err) {
 	for (vmap_t* vm = mappings; vm < end; ++vm) {
 		vm->size       = align(vm->size,       page_size);
 		vm->guard_size = align(vm->guard_size, page_size);
-		total_size += vm->size + vm->guard_size;
+		total_size += vm->size + vm->guard_size; // can overflow
 	}
 
 	if (!total_size)

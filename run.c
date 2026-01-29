@@ -2,9 +2,26 @@
 #include <lt2/time.h>
 #include <lt2/log.h>
 
-void* arena_alloc(uint8_t** arena, size_t size) {
-    void* top = *arena;
-    *arena += (uintptr_t)top + ((size + 31) & -32);
+typedef struct arena {
+	u8* top;
+	u8* base;
+	u8* end;
+} arena_t;
+
+INLINE
+void* arena_alloc(arena_t* arena, size_t size) {
+    uint8_t* top = arena->top;
+    uint8_t* new_top = top + ((size + 31) & -32);
+    if UNLIKELY (new_top > arena->end)
+        return NULL;
+    arena->top = new_top;
+    return top;
+}
+
+INLINE
+void* arena_alloc_unsafe(arena_t* arena, size_t size) {
+    u8* top = arena->base;
+    arena->top += (size + 31) & -32;
     return top;
 }
 
@@ -30,8 +47,15 @@ int main() {
 	vmap_t memmap[] = {
 		{ .permit = RW, .size = MB(2), .guard_size = 1, .out = &arena_base, .out_size = &arena_size },
 	};
-
 	vmap(memmap, COUNT_OF(memmap), 0, err_fail);
+
+	arena_t* arena = &(arena_t) {
+		.top  = arena_base,
+		.base = arena_base,
+		.end  = (u8*)arena_base + arena_size,
+	};
+
+	arena_alloc(arena, 128);
 
 	for (int i = 0; i < 8; ++i)
 		llogf(NULL, i, "asdf {u32}", 123);
