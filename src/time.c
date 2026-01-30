@@ -1,14 +1,16 @@
 #include <lt2/time.h>
 
-#if defined(ON_UNIX)
+#ifdef ON_UNIX
 #	ifndef _POSIX_C_SOURCE
 #		define _POSIX_C_SOURCE 199309L
 #	endif
 #	include <sys/time.h>
 #	include <time.h>
-#elif defined(ON_WINDOWS)
+#elif ON_WINDOWS
 #	define WIN32_LEAN_AND_MEAN
 #	include <windows.h>
+#elifdef ON_WASI
+#	include <lt2/wasi.h>
 #endif
 
 u64 time_ns(void) {
@@ -23,6 +25,10 @@ u64 time_ns(void) {
 	LARGE_INTEGER ticks;
 	QueryPerformanceCounter(&ticks);
 	return ticks.QuadPart * 1000000000 / freq.QuadPart; // this can probably overflow for large (but reasonable) values
+#elifdef ON_WASI
+	u64 ns;
+	__wasi_clock_time_get(WASI_CLOCKID_MONOTONIC, 1, &ns);
+	return ns;
 #endif
 }
 
@@ -46,6 +52,20 @@ void sleep_ns(u64 nsec) {
 	clock_nanosleep(CLOCK_MONOTONIC, 0, &t, NULL);
 #elifdef ON_WINDOWS
 	Sleep(LT_NSEC_TO_MSEC(nsec));
+#elifdef ON_WASI
+	wasi_subscription_t sub = {
+		.usr  = 1,
+		.type = WASI_EVENTTYPE_CLOCK,
+		.clock = {
+			.id        = WASI_CLOCKID_MONOTONIC,
+			.timeout   = nsec,
+			.precision = 1,
+			.flags     = 0
+		}
+	};
+	wasi_event_t ev;
+	usz ev_count;
+	__wasi_poll_oneoff(&sub, &ev, 1, &ev_count);
 #endif
 }
 

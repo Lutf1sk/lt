@@ -1,12 +1,18 @@
 #include <lt2/common.h>
 #include <lt2/log.h>
 
-#include <stdlib.h>
-#include <unistd.h>
-#include <errno.h>
-#include <string.h>
-
 #define err_store ((struct err*)3)
+
+#ifndef ON_WASI
+#	include <stdlib.h>
+#else
+#	include <lt2/wasi.h>
+#endif
+
+#ifdef ON_UNIX
+#	include <unistd.h>
+#	include <errno.h>
+#	include <string.h>
 
 void throw_errno_val(err* err, int posix_err) {
 	u32 code = ERR_ANY;
@@ -42,6 +48,7 @@ void throw_errno_val(err* err, int posix_err) {
 void throw_errno(err* err) {
 	throw_errno_val(err, errno);
 }
+#endif
 
 void throw(err* err, u8 code, const char* fmt, ...) {
 	if (err == err_ignore)

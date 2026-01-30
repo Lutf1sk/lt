@@ -1,8 +1,9 @@
 #include <lt2/common.h>
 
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
+#ifdef ON_UNIX
+#	include <fcntl.h>
+#	include <sys/mman.h>
+#	include <sys/stat.h>
 
 int posix_prot_tab[8] = {
 	[0]   = PROT_NONE,
@@ -53,3 +54,4 @@ u8 posix_file_type(int mode) {
 	}
 }
 
+#endif

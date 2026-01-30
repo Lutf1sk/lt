@@ -1,7 +1,8 @@
-#include <ctype.h>
-
 #include <lt2/str.h>
 #include <lt2/ini.h>
+
+#ifndef ON_WASI
+#	include <ctype.h>
 
 ini parse_ini(ls str, err* err) {
 	ini ini = {
@@ -89,6 +90,8 @@ ini parse_ini(ls str, err* err) {
 	}
 	return ini;
 }
+
+#endif // !ON_WASI
 
 isz ini_find_section(const ini ini[static 1], ls name) {
 	ini_section* sections = ini->sections;

@@ -1,12 +1,13 @@
 #include <lt2/net.h>
 
-#include <sys/socket.h>
-#include <poll.h>
-#include <netinet/in.h>
-#include <unistd.h>
-#include <netdb.h>
-#include <errno.h>
-#include <fcntl.h>
+#ifdef ON_UNIX
+#	include <sys/socket.h>
+#	include <poll.h>
+#	include <netinet/in.h>
+#	include <unistd.h>
+#	include <netdb.h>
+#	include <errno.h>
+#	include <fcntl.h>
 
 socket_addr resolve_host(ls host, err* err) {
 	char cstr[512];
@@ -56,7 +57,7 @@ socket_handle socket_open(socket_type type, err* err) {
 		return -1;
 	}
 
-	int sock = socket(AF_INET, type, 0);
+	int sock = socket(AF_INET, posix_type, 0);
 	if (sock < 0) {
 		throw_errno(err);
 		return -1;
@@ -219,4 +220,6 @@ usz socket_receive(socket_handle sock, void* data, usz size, err* err) {
 		throw(err, ERR_CLOSED, "cannot receive data from a closed socket");
 	return res;
 }
+
+#endif // ON_UNIX
 

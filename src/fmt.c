@@ -43,7 +43,8 @@ usz printi64(write_fn fn, void* usr, i64 n) {
 	return fn(usr, it, len);
 }
 
-#include <time.h>
+#ifndef ON_WASI
+#	include <time.h>
 
 usz printdt64(write_fn fn, void* usr, time_t n) {
 	struct tm* plocal = localtime(&n);
@@ -51,6 +52,13 @@ usz printdt64(write_fn fn, void* usr, time_t n) {
 	strftime((char*)buf, sizeof(buf), "%x %X", plocal);
 	return fn(usr, buf, strnlen((char*)buf, sizeof(buf)));
 }
+#else
+
+usz printdt64(write_fn fn, void* usr, u64 n) {
+	return 0;
+}
+#endif
+
 
 isz vlprintf_fn(write_fn fn, void* usr, const char* fmt, va_list args) {
 	usz size;
@@ -96,7 +104,7 @@ isz vlprintf_fn(write_fn fn, void* usr, const char* fmt, va_list args) {
 
 		else if (lseq(spec, ls("b8"))) written += printi64(fn, usr, va_arg(args, u32));
 
-		else if (lseq(spec, ls("dt64"))) written += printdt64(fn, usr, va_arg(args, time_t));
+		else if (lseq(spec, ls("dt64"))) written += printdt64(fn, usr, va_arg(args, u64));
 
 		else if (lseq(spec, ls("char"))) {
 			char cval = va_arg(args, int);

@@ -1,8 +1,9 @@
 #include <lt2/thread.h>
 
-#include <pthread.h>
-#include <sched.h>
-#include <signal.h>
+#ifdef ON_UNIX
+#	include <pthread.h>
+#	include <sched.h>
+#	include <signal.h>
 
 static
 void* thread_start_wrapper(void* args) {
@@ -84,3 +85,4 @@ b8 thread_yield(err* err) {
 	return 1;
 }
 
+#endif // ON_UNIX

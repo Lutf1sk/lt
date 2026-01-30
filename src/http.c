@@ -3,7 +3,8 @@
 #include <lt2/time.h>
 #include <lt2/str.h>
 
-#include <ctype.h>
+#ifndef ON_WASI
+#	include <ctype.h>
 
 ls get_http_header(http_request_state* state, ls key, err* error) {
 	for (usz i = 0; i < state->header_count; ++i) {
@@ -274,4 +275,6 @@ b8 receive_http_response_async(task* t, http_request_state* state, err* error) {
 	co_await(state->subtask_response = receive_http_content(co_subtask, state, error), 0);
 	return state->subtask_response;
 }
+
+#endif // !ON_WASI
 

@@ -1,13 +1,17 @@
 #include <lt2/common.h>
-#include <lt2/posix.h>
 
-#include <unistd.h>
-#include <fcntl.h>
-#include <dirent.h>
-#include <limits.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <sys/inotify.h>
+#ifdef ON_UNIX
+#	include <lt2/posix.h>
+
+#	include <unistd.h>
+#	include <fcntl.h>
+#	include <dirent.h>
+#	include <limits.h>
+#	include <sys/mman.h>
+#	include <sys/stat.h>
+#	include <sys/inotify.h>
+
+#	define INOTIFY_BUFSZ (16 * (sizeof(struct inotify_event) * NAME_MAX + 1))
 
 thread_local char path_buf[PATH_BUF_SIZE];
 
@@ -186,8 +190,7 @@ u32 fwatch_once(ls path, u32 events, err* err) {
 		return WATCH_FAILED;
 	}
 
-#define BUFSZ (16 * (sizeof(struct inotify_event) * NAME_MAX + 1))
-	u8 buf[BUFSZ];
+	u8 buf[INOTIFY_BUFSZ];
 	ssize_t len = read(in_fd, buf, sizeof(buf));
 	if UNLIKELY (len < 0) {
 		close(in_fd);
@@ -214,4 +217,6 @@ u32 fwatch_once(ls path, u32 events, err* err) {
 	close(in_fd);
 	return out_events;
 }
+
+#endif // ON_UNIX
 

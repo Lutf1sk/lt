@@ -8,10 +8,11 @@ typedef struct arena {
 	u8* end;
 } arena_t;
 
+/*
 INLINE
-void* arena_alloc(arena_t* arena, size_t size) {
-    uint8_t* top = arena->top;
-    uint8_t* new_top = top + ((size + 31) & -32);
+void* arena_alloc(arena_t* arena, usz size) {
+    u8* top = arena->top;
+    u8* new_top = top + ((size + 31) & -32);
     if UNLIKELY (new_top > arena->end)
         return NULL;
     arena->top = new_top;
@@ -19,28 +20,20 @@ void* arena_alloc(arena_t* arena, size_t size) {
 }
 
 INLINE
-void* arena_alloc_unsafe(arena_t* arena, size_t size) {
-    u8* top = arena->base;
-    arena->top += (size + 31) & -32;
+void* arena_alloc_unsafe(arena_t* arena, usz size) {
+    u8* top = (void*)(((usz)arena->top + 31) & -32);
+    arena->top = top + size;
     return top;
 }
+*/
 
 int main() {
-	log_sink* logger = &(log_sink) {
-		.type = LOGSINK_FILE,
-		.file = {
-			.color = 1,
-			.fd    = 2
-		}
-	};
-	logger->next = &(log_sink) {
-		.type = LOGSINK_FILE,
-		.file = {
-			.fd = fcreate(ls("log.txt"), RW, err_warn)
-		}
-	};
-	default_log_sink = logger;
+	for (int i = 0; i < 8; ++i) {
+		sleep_s(1);
+		llogf(NULL, i, "asdf {u32}", 123);
+	}
 
+/*
 	void* arena_base = NULL;
 	usz   arena_size = 0;
 
@@ -57,9 +50,6 @@ int main() {
 
 	arena_alloc(arena, 128);
 
-	for (int i = 0; i < 8; ++i)
-		llogf(NULL, i, "asdf {u32}", 123);
-
 	ls watch_path = ls("test.txt");
 
 	while (1) {
@@ -73,5 +63,7 @@ int main() {
 		ls str = fmapall(watch_path, RW, err_warn);
 		lprintf("content: {ls}\n", str);
 	}
+*/
+	return 0;
 }
 

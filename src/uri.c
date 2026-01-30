@@ -1,7 +1,11 @@
 #include <lt2/uri.h>
 #include <lt2/str.h>
 
-#include <ctype.h>
+#ifndef ON_WASI
+#	include <ctype.h>
+#else
+#	include <lt2/ctype.h>
+#endif
 
 static parsed_uri parse_uri_pass1(ls uri, err* error) {
 	parsed_uri parsed = {0};

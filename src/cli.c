@@ -1,17 +1,22 @@
 #include <lt2/cli.h>
 #include <lt2/str.h>
 
-#include <unistd.h>
+#ifdef ON_UNIX
+#	include <unistd.h>
+
+#elifdef ON_WASI
+#	include <lt2/wasi.h>
+#endif
 
 static
 isz write_out(void* usr, const void* data, usz size) {
-	return write((int)(isz)usr, data, size);
+	return write((i32)(usz)usr, data, size);
 }
 
 isz lprintf(const char* fmt, ...) {
 	va_list arg_list;
 	va_start(arg_list, fmt);
-	usz res = vlprintf_fn(write_out, (void*)STDOUT_FILENO, fmt, arg_list);
+	usz res = vlprintf_fn(write_out, (void*)(usz)STDOUT_FILENO, fmt, arg_list);
 	va_end(arg_list);
 	return res;
 }
@@ -91,6 +96,8 @@ b8 parse_cli_args(int argc, char** argv, cli_options cli[static 1], err* err) {
 	return 1;
 }
 
+#ifndef ON_WASI
+
 // TODO: this is messy. should be cleaned up.
 void print_cli_help(cli_options cli[static 1]) {
 	u8 cmdline_buf[2048];
@@ -160,4 +167,6 @@ void print_cli_help(cli_options cli[static 1]) {
 		}
 	}
 }
+
+#endif // !ON_WASI
 

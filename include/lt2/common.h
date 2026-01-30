@@ -8,10 +8,10 @@
 #	define ON_LINUX   1
 #elif defined(_WIN32) || defined(WIN32)
 #	define ON_WINDOWS 1
+#elifdef ON_WASI
 #else
 #	warn unsupported platform
 #endif
-
 
 #ifdef __clang__
 #	define IS_CLANG 1

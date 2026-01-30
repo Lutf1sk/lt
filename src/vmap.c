@@ -1,7 +1,9 @@
 #include <lt2/bits.h>
-#include <lt2/posix.h>
 
-#include <sys/mman.h>
+#ifdef ON_UNIX
+#	include <lt2/posix.h>
+
+#	include <sys/mman.h>
 
 b8 vmap(vmap_t* mappings, usz count, u32 flags, err* err) {
 	int posix_flags = MAP_PRIVATE | MAP_ANONYMOUS; // MAP_NORESERVE ?
@@ -59,4 +61,6 @@ void vunmap(vmap_t* mappings, usz count, err* err) {
 	if (munmap(mappings[0].base, total_size) < 0)
 		throw_errno(err);
 }
+
+#endif // ON_UNIX
 
