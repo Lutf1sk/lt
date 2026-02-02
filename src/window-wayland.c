@@ -273,6 +273,16 @@ static u32 keymap[256] = {
 	[51] = ',',
 	[52] = '.',
 	[53] = '/',
+
+	[56] = KEY_LALT,
+	[57] = ' ',
+
+	[100] = KEY_RALT,
+
+	[103] = KEY_UP,
+	[105] = KEY_LEFT,
+	[106] = KEY_RIGHT,
+	[108] = KEY_DOWN,
 };
 
 static
