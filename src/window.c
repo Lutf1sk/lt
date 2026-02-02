@@ -3,8 +3,8 @@
 i32 window_height;
 i32 window_width;
 
-double mouse_x;
-double mouse_y;
+f64 mouse_x;
+f64 mouse_y;
 
 #define MAX_EVENTS 32
 #define EVENT_MASK (MAX_EVENTS - 1)

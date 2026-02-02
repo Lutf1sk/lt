@@ -78,8 +78,8 @@ typedef struct wevent {
 extern i32 window_height;
 extern i32 window_width;
 
-extern double mouse_x;
-extern double mouse_y;
+extern f64 mouse_x;
+extern f64 mouse_y;
 
 void window_init(err* err);
 void queue_wevent(wevent_t event);
