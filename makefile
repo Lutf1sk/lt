@@ -10,11 +10,13 @@ CC = cc
 CFLAGS = \
 	-I./include \
 	-O0 -g -std=gnu2x \
-	-Wall -Werror
+	-Wall -Werror -Wno-unused-function
+LDFLAGS =
 
 ifdef WASI
 CC = clang
-CFLAGS += -DON_WASI=1 --target=wasm32
+CFLAGS  += -DON_WASI=1 --target=wasm32
+LDFLAGS += -nostdlib -Wl,--no-entry,--export-all
 OUT = bin/lt2.wasm
 RUN = bin/run.wasm
 OBJ = $(patsubst src/%.c,bin/obj/%.wasm,$(SRC))
@@ -23,6 +25,8 @@ endif
 ifdef WAYLAND
 HEADERS += include/lt2/wayland/xdg-shell-client.h
 SRC     += src/wayland/xdg-shell.c
+CFLAGS  += -DWAYLAND
+LDFLAGS += -lwayland-client
 endif
 
 all: $(OUT)
@@ -32,6 +36,7 @@ run: $(RUN)
 	-bin/run $(args)
 else
 run: $(RUN)
+	python -m http.server
 endif
 
 clean:
@@ -48,10 +53,10 @@ include/lt2/wayland/xdg-shell-client.h: /usr/share/wayland-protocols/stable/xdg-
 	wayland-scanner client-header <$< >$@
 
 bin/run: bin/lt2.a run.c
-	$(CC) $(CFLAGS) run.c bin/lt2.a -o bin/run
+	$(CC) $(CFLAGS) run.c bin/lt2.a -o bin/run $(LDFLAGS) 
 
 bin/run.wasm: bin/lt2.wasm run.c
-	$(CC) -nostdlib -Wl,--no-entry,--export-all $(CFLAGS) $(OBJ) run.c -o bin/run.wasm
+	$(CC) $(CFLAGS) $(OBJ) run.c -o bin/run.wasm $(LDFLAGS) 
 
 bin/lt2.a: $(OBJ)
 	ar -rcs bin/lt2.a $(OBJ)

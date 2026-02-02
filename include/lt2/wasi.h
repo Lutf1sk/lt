@@ -2,11 +2,6 @@
 
 #include <lt2/common.h>
 
-#define WASI_IMPORT(module, name) \
-	__attribute__((__import_module__(module), __import_name__(name)))
-
-
-
 #define STDIN_FILENO  0
 #define STDOUT_FILENO 1
 #define STDERR_FILENO 2
@@ -21,7 +16,7 @@ typedef struct wasi_ciovec {
 	usz size;
 } wasi_ciovec_t;
 
-WASI_IMPORT("wasi_snapshot_preview1", "fd_write")
+WASM_IMPORT("wasi_snapshot_preview1", "fd_write")
 int __wasi_fd_write(int fd, const wasi_ciovec_t* iovs, usz count, __SIZE_TYPE__* out_written);
 
 INLINE
@@ -33,13 +28,12 @@ isz write(int fd, const void* data, usz size) {
 }
 
 
-
 #define WASI_CLOCKID_REALTIME           0
 #define WASI_CLOCKID_MONOTONIC          1
 #define WASI_CLOCKID_PROCESS_CPUTIME_ID 2
 #define WASI_CLOCKID_THREAD_CPUTIME_ID  3
 
-WASI_IMPORT("wasi_snapshot_preview1", "clock_time_get")
+WASM_IMPORT("wasi_snapshot_preview1", "clock_time_get")
 int __wasi_clock_time_get(u32 clock, u64 precision, u64* time);
 
 INLINE
@@ -53,15 +47,9 @@ u64 time(u64* p) {
 }
 
 
-
 NORETURN
-WASI_IMPORT("wasi_snapshot_preview1", "proc_exit")
+WASM_IMPORT("wasi_snapshot_preview1", "proc_exit")
 void __wasi_proc_exit(u32 code);
-
-INLINE NORETURN
-void exit(u32 code) {
-	__wasi_proc_exit(code);
-}
 
 
 #define WASI_EVENTTYPE_CLOCK 0
@@ -87,6 +75,6 @@ typedef struct wasi_event {
 	} clock;
 } wasi_event_t;
 
-WASI_IMPORT("wasi_snapshot_preview1", "poll_oneoff")
+WASM_IMPORT("wasi_snapshot_preview1", "poll_oneoff")
 int __wasi_poll_oneoff(const wasi_subscription_t* sub, wasi_event_t* out_ev, usz sub_count, usz* out_ev_count);
 

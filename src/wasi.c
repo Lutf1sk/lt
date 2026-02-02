@@ -1,6 +1,7 @@
 #include <lt2/common.h>
 
 #ifdef ON_WASI
+#	include <lt2/wasi.h>
 
 int memcmp(const void* p1, const void* p2, usz size) {
 	const u8* it1 = p1;
@@ -39,6 +40,11 @@ int main();
 
 void _start() {
 	main();
+}
+
+NORETURN
+void exit(int code) {
+	__wasi_proc_exit(code);
 }
 
 #endif // ON_WASI

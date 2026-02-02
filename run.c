@@ -1,69 +1,81 @@
 #include <lt2/common.h>
-#include <lt2/time.h>
+#include <lt2/window.h>
 #include <lt2/log.h>
 
-typedef struct arena {
-	u8* top;
-	u8* base;
-	u8* end;
-} arena_t;
+#include <lt2/time.h>
 
-/*
-INLINE
-void* arena_alloc(arena_t* arena, usz size) {
-    u8* top = arena->top;
-    u8* new_top = top + ((size + 31) & -32);
-    if UNLIKELY (new_top > arena->end)
-        return NULL;
-    arena->top = new_top;
-    return top;
+u8 key_states[256];
+u8 button_states[16];
+
+void on_frame() {
+	wevent_t events[16];
+	usz event_count = poll_wevents(events, COUNT_OF(events));
+
+	for (wevent_t* ev = events, *end = ev + event_count; ev < end; ++ev) {
+		switch (ev->type) {
+		case WEV_MOTION:
+			break;
+
+		case WEV_BUTTON_PRESS:
+			button_states[ev->button.code] = 1;
+			break;
+
+		case WEV_BUTTON_RELEASE:
+			button_states[ev->button.code] = 0;
+			break;
+
+		case WEV_KEY_PRESS:
+			key_states[ev->key.code] = 1;
+			break;
+
+		case WEV_KEY_RELEASE:
+			key_states[ev->key.code] = 0;
+			break;
+
+		case WEV_QUIT:
+			llogf(NULL, LOG_INFO, "quit");
+			exit(0);
+			break;
+
+		case WEV_RESIZE:
+			llogf(NULL, LOG_INFO, "resize");
+			break;
+		}
+	}
+
+	static int x = 0;
+	static int y = 0;
+
+	x += key_states['D'] - key_states['A'];
+	y += key_states['S'] - key_states['W'];
+
+#ifndef ON_WASI
+	sleep_us(100);
+#endif
+
+	fill_rect(0, 0, window_width, window_height, 0xFF080808);
+
+	for (i32 i = -1; i < window_width; i += 100)
+		draw_vline(i, 0, window_height, 0xFFFFFFFF);
+	for (i32 i = 0; i < window_height; i += 100)
+		draw_hline(0, window_height - i, window_width, 0xFFFFFFFF);
+
+	window_present();
 }
 
-INLINE
-void* arena_alloc_unsafe(arena_t* arena, usz size) {
-    u8* top = (void*)(((usz)arena->top + 31) & -32);
-    arena->top = top + size;
-    return top;
+#ifdef ON_WASI
+void wasi_on_frame() {
+	on_frame();
 }
-*/
+#endif
 
 int main() {
-	for (int i = 0; i < 8; ++i) {
-		sleep_s(1);
-		llogf(NULL, i, "asdf {u32}", 123);
-	}
+	window_init(err_warn);
 
-/*
-	void* arena_base = NULL;
-	usz   arena_size = 0;
-
-	vmap_t memmap[] = {
-		{ .permit = RW, .size = MB(2), .guard_size = 1, .out = &arena_base, .out_size = &arena_size },
-	};
-	vmap(memmap, COUNT_OF(memmap), 0, err_fail);
-
-	arena_t* arena = &(arena_t) {
-		.top  = arena_base,
-		.base = arena_base,
-		.end  = (u8*)arena_base + arena_size,
-	};
-
-	arena_alloc(arena, 128);
-
-	ls watch_path = ls("test.txt");
-
-	while (1) {
-		llogf(NULL, LOG_INFO, "watching '{ls}'", watch_path);
-		u32 flags = fwatch_once(watch_path, WATCH_EVENTS, err_warn);
-		if (flags & WATCH_FAILED)
-			sleep_s(1);
-		if (!(flags & WATCH_EVENTS))
-			continue;
-
-		ls str = fmapall(watch_path, RW, err_warn);
-		lprintf("content: {ls}\n", str);
-	}
-*/
+#ifndef ON_WASI
+	while (true)
+		on_frame();
+#endif
 	return 0;
 }
 

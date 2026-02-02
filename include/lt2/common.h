@@ -44,6 +44,9 @@
 #	define UNLIKELY(x)  (__builtin_expect(!!(x), 0))
 #endif
 
+#define WASM_IMPORT(module, name) \
+	__attribute__((__import_module__(module), __import_name__(name)))
+
 #define CAT(a, b) a ## b
 #define EXCAT(a, b) CAT(a, b)
 
@@ -297,6 +300,9 @@ extern void  free   (void* addr);
 
 extern usz strlen (const char* str);
 extern usz strnlen(const char* str, usz max);
+
+NORETURN
+extern void exit(int code);
 
 // ----- async
 

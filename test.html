@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<script>
+		wasmFetch = fetch("./bin/run.wasm");
+	</script>
+	<script type="module" defer>
+		import {WASI, OpenFile, ConsoleStdout} from "https://cdn.jsdelivr.net/npm/@bjorn3/browser_wasi_shim@0.4.0/dist/index.js";
+		const wasi = new WASI([], [], [
+			new OpenFile([]),
+			ConsoleStdout.lineBuffered(str => console.log(str)),
+			ConsoleStdout.lineBuffered(str => console.log(str)),
+		]);
+
+		const keymap = {
+			Backspace: 8,
+			Tab: 9,
+			Enter: 10,
+			ShiftLeft: 0x80, ShiftRight: 0x81,
+			ControlLeft: 0x82, ControlRight: 0x83,
+			AltLeft: 0x84, AltRight: 0x85,
+			Pause: 0x90,
+			CapsLock: 0x91,
+			Escape: 27,
+			Space: 32,
+			PageUp: 0x92, PageDown: 0x93,
+			End: 0x95, Home: 0x94,
+			ArrowLeft: 0x97, ArrowUp: 0x96, ArrowRight: 0x99, ArrowDown: 0x98,
+			PrintScreen: 0x9A,
+			Insert: 0x9B, Delete: 127,
+			Digit0: 30, Digit1: 31, Digit2: 32, Digit3: 33, Digit4: 34, Digit5: 35, Digit6: 36, Digit7: 37, Digit8: 38, Digit9: 39,
+			KeyA: 65, KeyB: 66, KeyC: 67, KeyD: 68,
+			KeyE: 69, KeyF: 70, KeyG: 71, KeyH: 72,
+			KeyI: 73, KeyJ: 74, KeyK: 75, KeyL: 76,
+			KeyM: 77, KeyN: 78, KeyO: 79, KeyP: 80,
+			KeyQ: 81, KeyR: 82, KeyS: 83, KeyT: 84,
+			KeyU: 85, KeyV: 86, KeyW: 87, KeyX: 88,
+			KeyY: 89, KeyZ: 90,
+			MetaLeft: 0x86,
+			MetaRight: 0x87,
+			ContextMenu: 0,
+			Numpad0: 0, Numpad1: 0, Numpad2: 0, Numpad3: 0, Numpad4: 0, Numpad5: 0, Numpad6: 0, Numpad7: 0, Numpad8: 0, Numpad9: 0,
+			NumpadMultiply: 0, NumpadAdd: 0, NumpadSubtract: 0, NumpadDecimal: 0, NumpadDivide: 0,
+			F1: 0xA1, F2: 0xA2, F3: 0xA3, F4: 0xA4, F5: 0xA5, F6: 0xA6, F7: 0xA7, F8: 0xA8, F9: 0xA9, F10: 0xAA, F11: 0xAB, F12: 0xAC,
+			NumLock: 0,
+			ScrollLock: 0,
+			// media keys
+			Semicolon: 59,
+			Equal: 61,
+			Comma: 44,
+			Minus: 45,
+			Period: 46,
+			Slash: 92,
+			Backquote: 96,
+			BracketLeft: 91,
+			BackSlash: 92,
+			BracketRight: 93,
+			Quote: 39,
+		};
+
+		const u32torgba = (color) => `rgba(${(color >> 16) & 0xFF}, ${(color >> 8) & 0xFF}, ${color & 0xFF}, ${((color >> 24) & 0xFF) / 255})`;
+
+		const canvas = document.querySelector("canvas");
+		canvas.width  = window.innerWidth  * window.devicePixelRatio;
+		canvas.height = window.innerHeight * window.devicePixelRatio;
+		const context = canvas.getContext("2d");
+
+		const configure_text = () => {
+			context.font         = "30px sans";
+			context.textAlign    = "left";
+			context.textBaseline = "top";
+		};
+
+		const wasm = await WebAssembly.compileStreaming(wasmFetch);
+		const instance = await WebAssembly.instantiate(wasm, {
+			wasi_snapshot_preview1: wasi.wasiImport,
+			lt: {
+				get_canvas_width:  () => window.innerWidth  * window.devicePixelRatio,
+				get_canvas_height: () => window.innerHeight * window.devicePixelRatio,
+				get_canvas_scale:  () => window.devicePixelRatio,
+				get_text_height: () => 28,
+
+				draw_rect: (x, y, w, h, color) => { context.strokeStyle = u32torgba(color); context.strokeRect(x, y, w, h); },
+				fill_rect: (x, y, w, h, color) => { context.fillStyle   = u32torgba(color); context.fillRect  (x, y, w, h); },
+				draw_line: (x1, y1, x2, y2, color) => {
+					context.strokeStyle = u32torgba(color);
+					context.beginPath();
+					context.moveTo(x1, y1);
+					context.lineTo(x2, y2);
+					context.stroke();
+				},
+
+				fill_circle: (x, y, r, color) => {
+					context.fillStyle = u32torgba(color);
+					context.beginPath();
+					context.arc(x, y, r, 0, 2 * Math.PI);
+					context.fill();
+				},
+
+				draw_text: (text_ptr, text_len, x, y, color) => {
+					const view = new Uint8Array(memory.buffer, text_ptr, text_len);
+					const text = new TextDecoder().decode(view);
+					configure_text();
+					context.fillStyle = u32torgba(color);
+					context.fillText(text, x, y);
+				},
+
+				measure_text: (ptr, len) => {
+					const view = new Uint8Array(memory.buffer, ptr, len);
+					const text = new TextDecoder().decode(view);
+					configure_text();
+					return context.measureText(text).width;
+				},
+			}
+		});
+		wasi.start(instance);
+
+		window.addEventListener("resize", ev => {
+			const w = window.innerWidth  * window.devicePixelRatio;
+			const h = window.innerHeight * window.devicePixelRatio;
+			canvas.width  = w;
+			canvas.height = h;
+			instance.exports.queue_resize(w, h);
+		});
+
+		window.addEventListener("mousemove", ev => {
+			instance.exports.queue_motion(ev.clientX * window.devicePixelRatio, ev.clientY * window.devicePixelRatio);
+		});
+
+		window.addEventListener("mousedown", ev => {
+			instance.exports.queue_button_press(ev.button);
+		});
+
+		window.addEventListener("mouseup", ev => {
+			instance.exports.queue_button_release(ev.button);
+		});
+
+		window.onkeydown = ev => {
+			instance.exports.queue_key_press(keymap[ev.code]);
+			if (ev.code != "F12" && !(ev.ctrlKey && ev.code == "R"))
+				return false;
+		};
+
+		window.onkeyup = ev => {
+			instance.exports.queue_key_release(keymap[ev.code]);
+			if (ev.code != "F12" && !(ev.ctrlKey && ev.code == "R"))
+				return false;
+		};
+
+		window.oncontextmenu = ev => {
+			ev.stopPropagation();
+			return false;
+		};
+
+		const on_frame = () => {
+			instance.exports.on_frame();
+			requestAnimationFrame(on_frame);
+		};
+		requestAnimationFrame(on_frame);
+	</script>
+	<style>
+		* {
+			border:  0;
+			margin:  0;
+			padding: 0;
+			box-sizing: border-box;
+		}
+		canvas {
+			width:  100%;
+			height: 100%;
+		}
+	</style>
+</head>
+
+<body bgcolor="#000">
+	<canvas></canvas>
+</body>
+</html>
+

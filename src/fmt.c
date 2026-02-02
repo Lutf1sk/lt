@@ -1,7 +1,7 @@
 #include <lt2/common.h>
 #include <lt2/str.h>
 
-#define NUM_MAX 64
+#define NUM_MAX 32
 
 INLINE
 usz printu64(write_fn fn, void* usr, u64 n) {
@@ -55,7 +55,21 @@ usz printdt64(write_fn fn, void* usr, time_t n) {
 #else
 
 usz printdt64(write_fn fn, void* usr, u64 n) {
-	return 0;
+	char buf[NUM_MAX], *end = buf + sizeof(buf), *it = end - 1;
+
+	// Fill buffer backwards with the remainder of n/10
+	while (n >= 10) {
+		*it-- = n % 10 + '0';
+		n /= 10;
+	}
+	*it = n + '0';
+
+	usz pad = 20 - (end - it);
+	for (usz i = 0; i < pad; ++i)
+		*--it = '0';
+
+	usz len = end - it;
+	return fn(usr, it, len);
 }
 #endif
 
