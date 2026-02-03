@@ -271,5 +271,93 @@ int main(int argc, char** argv) {
 		tassert(lseq(ini_find_str(&ini, section2, ls("unkn"), ls("")), ls("")));
 		tassert(lseq(ini_find_str(&ini, section1, ls("fdsa"), ls("")), ls("")));
 	}
+
+	test ("str") {
+		tassert(lseq(ls("123"), ls("123")));
+		tassert(!lseq(ls("123"), ls("321")));
+		tassert(!lseq(ls("123"), ls("1233")));
+		tassert(!lseq(ls("123"), ls("1123")));
+		tassert(!lseq(ls("123"), ls("113")));
+		tassert(!lseq(ls("123"), ls("12")));
+
+		tassert(lscmp(ls("asdf"), ls("asdf")) == 0);
+		tassert(lscmp(ls("aaa"), ls("bbbb")) < 0);
+		tassert(lscmp(ls("aaaa"), ls("bbb")) > 0);
+		tassert(lscmp(ls("bbbb"), ls("aaa")) > 0);
+		tassert(lscmp(ls("bbb"), ls("aaaa")) < 0);
+		tassert(lscmp(ls("baa"), ls("abb")) > 0);
+		tassert(lscmp(ls("abb"), ls("baa")) < 0);
+
+		tassert(lseq_nocase(ls("asdf"), ls("asdf")));
+		tassert(!lseq_nocase(ls("asd"), ls("asdf")));
+		tassert(lseq_nocase(ls("FdS"), ls("fDs")));
+		tassert(!lseq_nocase(ls("123"), ls("asd")));
+		tassert(!lseq_nocase(ls("_asdf"), ls("_fdsa")));
+		tassert(lseq_nocase(ls("_ASdf"), ls("_asDF")));
+
+		tassert(lseq_upper(ls("asdf"), ls("ASDF")));
+		tassert(!lseq_upper(ls("ASDF"), ls("asdf")));
+		tassert(!lseq_upper(ls("asdf"), ls("asdf")));
+		tassert(!lseq_upper(ls("asdf"), ls("ASDFF")));
+
+		tassert(!lsprefix(ls("aasdf"), ls("asdf")));
+		tassert(lsprefix(ls("asdff"), ls("asdf")));
+		tassert(lsprefix(ls("asdf"), ls("asdf")));
+		tassert(!lsprefix(ls("asd"), ls("asdf")));
+
+		tassert(lssuffix(ls("asdf"), ls("asdf")));
+		tassert(!lssuffix(ls("asdf"), ls("asdff")));
+		tassert(lssuffix(ls("aasdf"), ls("asdf")));
+		tassert(!lssuffix(ls("sdf"), ls("asdf")));
+
+		tassert(lseq(lssplit(ls("word1 word2"), ' '), ls("word1")));
+		tassert(lseq(lssplit(ls("word1 word2 word3"), ' '), ls("word1")));
+
+		tassert(lseq(lssplit_bwd(ls("word1 word2"), ' '), ls("word2")));
+		tassert(lseq(lssplit_bwd(ls("word1 word2 word3"), ' '), ls("word3")));
+
+		tassert(lseq(stols("asdf"), ls("asdf")));
+		tassert(lseq(stols(""), ls("")));
+
+		tassert(lseq(lsrange(0, 0), ls("")));
+		ls range_str = ls("asdf");
+		tassert(lseq(lsrange(range_str.ptr, range_str.ptr + range_str.size), range_str));
+
+		tassert(lseq(lstake(ls("asdf"), 0), ls("")));
+		tassert(lseq(lstake(ls("asdf"), 2), ls("as")));
+		tassert(lseq(lstake(ls("asdf"), 5), ls("asdf")));
+
+		tassert(lseq(lsdrop(ls("asdf"), 0), ls("asdf")));
+		tassert(lseq(lsdrop(ls("asdf"), 2), ls("df")));
+		tassert(lseq(lsdrop(ls("asdf"), 5), ls("")));
+
+		tassert(lsfirst(ls("asdf"), 's') == 1);
+		tassert(lsfirst(ls("asdf"), '_') == 4);
+		tassert(lsfirst(ls("asdf"), 'f') == 3);
+		tassert(lsfirst(ls("asdf"), 'a') == 0);
+
+		tassert(lseq(lstrim_left(ls("  _  ")), ls("_  ")));
+		tassert(lseq(lstrim_right(ls("  _  ")), ls("  _")));
+		tassert(lseq(lstrim(ls("  _  ")), ls("_")));
+
+		tassert(lstof(ls("123.321"), err_ignore) == 123.321);
+
+		tassert(lstoi(ls("-"),     err_ignore) == 0);
+		tassert(lstoi(ls("1234"),  err_ignore) == 1234);
+		tassert(lstoi(ls("-1234"), err_ignore) == -1234);
+
+		tassert(lstou(ls(""),         err_ignore) == 0);
+		tassert(lstou(ls("1234"),     err_ignore) == 1234);
+		tassert(lstou(ls("43214321"), err_ignore) == 43214321);
+
+		tassert(hexlstou(ls("abCDEF"), err_ignore) == 0xABCDEF);
+		tassert(hexlstou(ls("abcDEF"), err_ignore) == 0xABCDEF);
+		tassert(hexlstou(ls("abc1234"), err_ignore) == 0xABC1234);
+
+		ls substr = ls("asdf");
+		tassert(lssubstr(substr, ls("as")) == substr.ptr);
+		tassert(lssubstr(substr, ls("df")) == substr.ptr + 2);
+		tassert(lssubstr(substr, ls("dfg")) == NULL);
+	}
 }
 
