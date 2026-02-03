@@ -64,11 +64,15 @@ ls lsrange(const void* start, const void* end) {
 
 INLINE
 ls lstake(ls str, usz bytes) {
+	if (bytes > str.size)
+		bytes = str.size;
 	return lls(str.ptr, bytes);
 }
 
 INLINE
 ls lsdrop(ls str, usz bytes) {
+	if (bytes > str.size)
+		bytes = str.size;
 	return lls(str.ptr + bytes, str.size - bytes);
 }
 
@@ -93,9 +97,4 @@ u8* lssubstr(ls str, ls substr);
 
 ls vlsprintf(ls buf, const char* fmt, va_list args);
 ls lsprintf(ls buf, const char* fmt, ...);
-
-ls lsdirname(ls path);
-ls lsbasename(ls path);
-
-ls lstrim_trailing_slash(ls path);
 
