@@ -188,18 +188,30 @@ void pointer_axis(void* userdata, struct wl_pointer* pointer, u32 time, u32 axis
 }
 
 static
+void pointer_axis_source(void* userdata, struct wl_pointer* pointer, u32 axis_source) {
+
+}
+
+static
+void pointer_axis_stop(void* userdata, struct wl_pointer* pointer, u32 time, u32 axis) {
+
+}
+
+static
 void pointer_frame(void* userdata, struct wl_pointer* pointer) {
 
 }
 
 static
 struct wl_pointer_listener pointer_listener = {
-	.enter  = pointer_enter,
-	.leave  = pointer_leave,
-	.motion = pointer_motion,
-	.button = pointer_button,
-	.axis   = pointer_axis,
-	.frame  = pointer_frame,
+	.enter       = pointer_enter,
+	.leave       = pointer_leave,
+	.motion      = pointer_motion,
+	.button      = pointer_button,
+	.axis        = pointer_axis,
+	.axis_source = pointer_axis_source,
+	.axis_stop   = pointer_axis_stop,
+	.frame       = pointer_frame,
 };
 
 static
