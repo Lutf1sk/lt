@@ -4,8 +4,8 @@
 #ifndef ON_WASI
 #	include <ctype.h>
 
-ini parse_ini(ls str, err* err) {
-	ini ini = {
+ini_t parse_ini(ls str, err* err) {
+	ini_t ini = {
 		.mappings = {
 			{ .size = KB(4), .guard_size = 1, .permit = RW, .out = (void**)&ini.sections },
 			{ .size = KB(4), .guard_size = 1, .permit = RW, .out = (void**)&ini.keys },
@@ -57,7 +57,7 @@ ini parse_ini(ls str, err* err) {
 			}
 
 			section = ++ini.section_count;
-			ini.sections[section] = (ini_section) {
+			ini.sections[section] = (ini_section_t) {
 				.name = name,
 				.first_occurence = ini.key_count,
 			};
@@ -93,8 +93,8 @@ ini parse_ini(ls str, err* err) {
 
 #endif // !ON_WASI
 
-isz ini_find_section(const ini ini[static 1], ls name) {
-	ini_section* sections = ini->sections;
+isz ini_find_section(const ini_t ini[static 1], ls name) {
+	ini_section_t* sections = ini->sections;
 	isz section_count = ini->section_count;
 	for (isz i = 1; i <= section_count; ++i) {
 		if (lseq(sections[i].name, name))
@@ -103,12 +103,12 @@ isz ini_find_section(const ini ini[static 1], ls name) {
 	return -1;
 }
 
-ini_key* ini_find_key(const ini ini[static 1], isz section, ls name) {
+ini_key_t* ini_find_key(const ini_t ini[static 1], isz section, ls name) {
 	if (section < 0)
 		return NULL;
 
-	ini_key* it  = ini->keys + ini->sections[section].first_occurence;
-	ini_key* end = it + ini->key_count;
+	ini_key_t* it  = ini->keys + ini->sections[section].first_occurence;
+	ini_key_t* end = it + ini->key_count;
 	for (; it < end && it->section == section; ++it) {
 		if (lseq(it->key, name))
 			return it;
@@ -116,8 +116,8 @@ ini_key* ini_find_key(const ini ini[static 1], isz section, ls name) {
 	return NULL;
 }
 
-ls ini_find_str(const ini ini[static 1], isz section, ls name, ls default_) {
-	ini_key* key = ini_find_key(ini, section, name);
+ls ini_find_str(const ini_t ini[static 1], isz section, ls name, ls default_) {
+	ini_key_t* key = ini_find_key(ini, section, name);
 	if (key == NULL)
 		return default_;
 	return key->value;
@@ -125,85 +125,78 @@ ls ini_find_str(const ini ini[static 1], isz section, ls name, ls default_) {
 
 // !! all of the following functions should check for overflow
 
-u8 ini_find_u8(const ini ini[static 1], isz section, ls name, u8 default_) {
-	ini_key* key = ini_find_key(ini, section, name);
+u8 ini_find_u8(const ini_t ini[static 1], isz section, ls name, u8 default_) {
+	ini_key_t* key = ini_find_key(ini, section, name);
 	if (key == NULL)
 		return default_;
 	return lstou(key->value, err_ignore);
 }
 
-u16 ini_find_u16(const ini ini[static 1], isz section, ls name, u16 default_) {
-	ini_key* key = ini_find_key(ini, section, name);
+u16 ini_find_u16(const ini_t ini[static 1], isz section, ls name, u16 default_) {
+	ini_key_t* key = ini_find_key(ini, section, name);
 	if (key == NULL)
 		return default_;
 	return lstou(key->value, err_ignore);
 }
 
-u32 ini_find_u32(const ini ini[static 1], isz section, ls name, u32 default_) {
-	ini_key* key = ini_find_key(ini, section, name);
+u32 ini_find_u32(const ini_t ini[static 1], isz section, ls name, u32 default_) {
+	ini_key_t* key = ini_find_key(ini, section, name);
 	if (key == NULL)
 		return default_;
 	return lstou(key->value, err_ignore);
 }
 
-u64 ini_find_u64(const ini ini[static 1], isz section, ls name, u64 default_) {
-	ini_key* key = ini_find_key(ini, section, name);
+u64 ini_find_u64(const ini_t ini[static 1], isz section, ls name, u64 default_) {
+	ini_key_t* key = ini_find_key(ini, section, name);
 	if (key == NULL)
 		return default_;
 	return lstou(key->value, err_ignore);
 }
 
-i8 ini_find_i8(const ini ini[static 1], isz section, ls name, i8 default_) {
-	ini_key* key = ini_find_key(ini, section, name);
+i8 ini_find_i8(const ini_t ini[static 1], isz section, ls name, i8 default_) {
+	ini_key_t* key = ini_find_key(ini, section, name);
 	if (key == NULL)
 		return default_;
 	return lstoi(key->value, err_ignore);
 }
 
-i16 ini_find_i16(const ini ini[static 1], isz section, ls name, i16 default_) {
-	ini_key* key = ini_find_key(ini, section, name);
+i16 ini_find_i16(const ini_t ini[static 1], isz section, ls name, i16 default_) {
+	ini_key_t* key = ini_find_key(ini, section, name);
 	if (key == NULL)
 		return default_;
 	return lstoi(key->value, err_ignore);
 }
 
-i32 ini_find_i32(const ini ini[static 1], isz section, ls name, i32 default_) {
-	ini_key* key = ini_find_key(ini, section, name);
+i32 ini_find_i32(const ini_t ini[static 1], isz section, ls name, i32 default_) {
+	ini_key_t* key = ini_find_key(ini, section, name);
 	if (key == NULL)
 		return default_;
 	return lstoi(key->value, err_ignore);
 }
 
-i64 ini_find_i64(const ini ini[static 1], isz section, ls name, i64 default_) {
-	ini_key* key = ini_find_key(ini, section, name);
+i64 ini_find_i64(const ini_t ini[static 1], isz section, ls name, i64 default_) {
+	ini_key_t* key = ini_find_key(ini, section, name);
 	if (key == NULL)
 		return default_;
 	return lstoi(key->value, err_ignore);
 }
 
-f32 ini_find_f32(const ini ini[static 1], isz section, ls name, f32 default_) {
-	ini_key* key = ini_find_key(ini, section, name);
+f32 ini_find_f32(const ini_t ini[static 1], isz section, ls name, f32 default_) {
+	ini_key_t* key = ini_find_key(ini, section, name);
 	if (key == NULL)
 		return default_;
 	return lstof(key->value, err_ignore);
 }
 
-f64 ini_find_f64(const ini ini[static 1], isz section, ls name, f64 default_) {
-	ini_key* key = ini_find_key(ini, section, name);
+f64 ini_find_f64(const ini_t ini[static 1], isz section, ls name, f64 default_) {
+	ini_key_t* key = ini_find_key(ini, section, name);
 	if (key == NULL)
 		return default_;
 	return lstof(key->value, err_ignore);
 }
 
-b8 ini_find_b8(const ini ini[static 1], isz section, ls name, b8 default_) {
-	ini_key* key = ini_find_key(ini, section, name);
-	if (key == NULL)
-		return default_;
-	return lseq(key->value, ls("1")) || !lseq(key->value, ls("true"));
-}
-
-ls ini_require_str(const ini ini[static 1], isz section, ls name, err* err) {
-	ini_key* key = ini_find_key(ini, section, name);
+ls ini_require_str(const ini_t ini[static 1], isz section, ls name, err* err) {
+	ini_key_t* key = ini_find_key(ini, section, name);
 	if (key == NULL) {
 		throw(err, ERR_NOT_FOUND, "ini key not found"); // !!
 		return ls("");
@@ -211,8 +204,8 @@ ls ini_require_str(const ini ini[static 1], isz section, ls name, err* err) {
 	return key->value;
 }
 
-u8 ini_require_u8(const ini ini[static 1], isz section, ls name, err* err) {
-	ini_key* key = ini_find_key(ini, section, name);
+u8 ini_require_u8(const ini_t ini[static 1], isz section, ls name, err* err) {
+	ini_key_t* key = ini_find_key(ini, section, name);
 	if (key == NULL) {
 		throw(err, ERR_NOT_FOUND, "ini key not found"); // !!
 		return 0;
@@ -220,8 +213,8 @@ u8 ini_require_u8(const ini ini[static 1], isz section, ls name, err* err) {
 	return lstou(key->value, err);
 }
 
-u16 ini_require_u16(const ini ini[static 1], isz section, ls name, err* err) {
-	ini_key* key = ini_find_key(ini, section, name);
+u16 ini_require_u16(const ini_t ini[static 1], isz section, ls name, err* err) {
+	ini_key_t* key = ini_find_key(ini, section, name);
 	if (key == NULL) {
 		throw(err, ERR_NOT_FOUND, "ini key not found"); // !!
 		return 0;
@@ -229,8 +222,8 @@ u16 ini_require_u16(const ini ini[static 1], isz section, ls name, err* err) {
 	return lstou(key->value, err);
 }
 
-u32 ini_require_u32(const ini ini[static 1], isz section, ls name, err* err) {
-	ini_key* key = ini_find_key(ini, section, name);
+u32 ini_require_u32(const ini_t ini[static 1], isz section, ls name, err* err) {
+	ini_key_t* key = ini_find_key(ini, section, name);
 	if (key == NULL) {
 		throw(err, ERR_NOT_FOUND, "ini key not found"); // !!
 		return 0;
@@ -238,8 +231,8 @@ u32 ini_require_u32(const ini ini[static 1], isz section, ls name, err* err) {
 	return lstou(key->value, err);
 }
 
-u64 ini_require_u64(const ini ini[static 1], isz section, ls name, err* err) {
-	ini_key* key = ini_find_key(ini, section, name);
+u64 ini_require_u64(const ini_t ini[static 1], isz section, ls name, err* err) {
+	ini_key_t* key = ini_find_key(ini, section, name);
 	if (key == NULL) {
 		throw(err, ERR_NOT_FOUND, "ini key not found"); // !!
 		return 0;
@@ -247,8 +240,8 @@ u64 ini_require_u64(const ini ini[static 1], isz section, ls name, err* err) {
 	return lstou(key->value, err);
 }
 
-i8 ini_require_i8(const ini ini[static 1], isz section, ls name, err* err) {
-	ini_key* key = ini_find_key(ini, section, name);
+i8 ini_require_i8(const ini_t ini[static 1], isz section, ls name, err* err) {
+	ini_key_t* key = ini_find_key(ini, section, name);
 	if (key == NULL) {
 		throw(err, ERR_NOT_FOUND, "ini key not found"); // !!
 		return 0;
@@ -256,8 +249,8 @@ i8 ini_require_i8(const ini ini[static 1], isz section, ls name, err* err) {
 	return lstou(key->value, err);
 }
 
-i16 ini_require_i16(const ini ini[static 1], isz section, ls name, err* err) {
-	ini_key* key = ini_find_key(ini, section, name);
+i16 ini_require_i16(const ini_t ini[static 1], isz section, ls name, err* err) {
+	ini_key_t* key = ini_find_key(ini, section, name);
 	if (key == NULL) {
 		throw(err, ERR_NOT_FOUND, "ini key not found"); // !!
 		return 0;
@@ -265,8 +258,8 @@ i16 ini_require_i16(const ini ini[static 1], isz section, ls name, err* err) {
 	return lstou(key->value, err);
 }
 
-i32 ini_require_i32(const ini ini[static 1], isz section, ls name, err* err) {
-	ini_key* key = ini_find_key(ini, section, name);
+i32 ini_require_i32(const ini_t ini[static 1], isz section, ls name, err* err) {
+	ini_key_t* key = ini_find_key(ini, section, name);
 	if (key == NULL) {
 		throw(err, ERR_NOT_FOUND, "ini key not found"); // !!
 		return 0;
@@ -274,8 +267,8 @@ i32 ini_require_i32(const ini ini[static 1], isz section, ls name, err* err) {
 	return lstou(key->value, err);
 }
 
-i64 ini_require_i64(const ini ini[static 1], isz section, ls name, err* err) {
-	ini_key* key = ini_find_key(ini, section, name);
+i64 ini_require_i64(const ini_t ini[static 1], isz section, ls name, err* err) {
+	ini_key_t* key = ini_find_key(ini, section, name);
 	if (key == NULL) {
 		throw(err, ERR_NOT_FOUND, "ini key not found"); // !!
 		return 0;
@@ -283,8 +276,8 @@ i64 ini_require_i64(const ini ini[static 1], isz section, ls name, err* err) {
 	return lstou(key->value, err);
 }
 
-f32 ini_require_f32(const ini ini[static 1], isz section, ls name, err* err) {
-	ini_key* key = ini_find_key(ini, section, name);
+f32 ini_require_f32(const ini_t ini[static 1], isz section, ls name, err* err) {
+	ini_key_t* key = ini_find_key(ini, section, name);
 	if (key == NULL) {
 		throw(err, ERR_NOT_FOUND, "ini key not found"); // !!
 		return 0;
@@ -292,8 +285,8 @@ f32 ini_require_f32(const ini ini[static 1], isz section, ls name, err* err) {
 	return lstou(key->value, err);
 }
 
-f64 ini_require_f64(const ini ini[static 1], isz section, ls name, err* err) {
-	ini_key* key = ini_find_key(ini, section, name);
+f64 ini_require_f64(const ini_t ini[static 1], isz section, ls name, err* err) {
+	ini_key_t* key = ini_find_key(ini, section, name);
 	if (key == NULL) {
 		throw(err, ERR_NOT_FOUND, "ini key not found"); // !!
 		return 0;
@@ -301,8 +294,8 @@ f64 ini_require_f64(const ini ini[static 1], isz section, ls name, err* err) {
 	return lstou(key->value, err);
 }
 
-b8 ini_require_b8(const ini ini[static 1], isz section, ls name, err* err) {
-	ini_key* key = ini_find_key(ini, section, name);
+b8 ini_require_b8(const ini_t ini[static 1], isz section, ls name, err* err) {
+	ini_key_t* key = ini_find_key(ini, section, name);
 	if (key == NULL) {
 		throw(err, ERR_NOT_FOUND, "ini key not found"); // !!
 		return 0;
