@@ -49,6 +49,8 @@
 #define WASM_IMPORT(module, name) \
 	__attribute__((__import_module__(module), __import_name__(name)))
 
+#define __with(begin, end) for (b8 __once = ((begin), 1); __once; (__once = 0), (end))
+
 #define CAT(a, b) a ## b
 #define EXCAT(a, b) CAT(a, b)
 

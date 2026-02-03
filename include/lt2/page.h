@@ -11,8 +11,6 @@ usz echo(html_template* t, ls str);
 usz echo_escaped(html_template* t, ls str);
 usz echo_attributes(html_template* t, char* fmt, ...);
 
-#define __with(begin, end) for (b8 __once = ((begin), 1); __once; (__once = 0), (end))
-
 #define $(str)     echo_escaped(__template, lls(str, strlen(str)))
 #define $ls(str)   echo_escaped(__template, str)
 #define $raw(str)  echo(__template, lls(str, strlen(str)))

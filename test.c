@@ -1,7 +1,11 @@
-#include <lt2/common.h>
-#include <lt2/log.h>
+#include <lt2/test.h>
 
 int main(int argc, char** argv) {
-	llogf(NULL, LOG_ERR, "hello world.");
+	default_log_sink->file.color = 1;
+
+	test ("arithmetic") {
+		tassert(1 == 1);
+		tassert(1 == 0);
+	}
 }
 
