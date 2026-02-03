@@ -17,9 +17,7 @@ b8 is_nzpow2(usz n) {
 INLINE
 usz pad(usz size, usz align) {
 	usz align_mask = (align - 1);
-	usz n = size & align_mask;
-	n ^= align_mask;
-	return n + 1;
+	return (align - (size & align_mask)) & align_mask;
 }
 
 INLINE
