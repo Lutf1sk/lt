@@ -150,5 +150,55 @@ int main(int argc, char** argv) {
 		pb_fill_circle(&pb, pb.width + 75, pb.height + 75, 75, 0xFFFFFFFF);
 		tassert(memcmp(pb.data, cmp_data, size) == 0);
 	}
+
+	test ("ctype") {
+		b8 isupper_matches_libc = 1;
+		for (usz c = 0; c < 128; ++c)
+			if (isupper(c) != lt_isupper(c))
+				isupper_matches_libc = 0;
+		tassert(isupper_matches_libc);
+
+		b8 islower_matches_libc = 1;
+		for (usz c = 0; c < 128; ++c)
+			if (islower(c) != lt_islower(c))
+				islower_matches_libc = 0;
+		tassert(islower_matches_libc);
+
+		b8 isalpha_matches_libc = 1;
+		for (usz c = 0; c < 128; ++c)
+			if (isalpha(c) != lt_isalpha(c))
+				isalpha_matches_libc = 0;
+		tassert(isalpha_matches_libc);
+
+		b8 isdigit_matches_libc = 1;
+		for (usz c = 0; c < 128; ++c)
+			if (isdigit(c) != lt_isdigit(c))
+				isdigit_matches_libc = 0;
+		tassert(isdigit_matches_libc);
+
+		b8 isalnum_matches_libc = 1;
+		for (usz c = 0; c < 128; ++c)
+			if (isalnum(c) != lt_isalnum(c))
+				isalnum_matches_libc = 0;
+		tassert(isalnum_matches_libc);
+
+		b8 isspace_matches_libc = 1;
+		for (usz c = 0; c < 128; ++c)
+			if (isspace(c) != lt_isspace(c))
+				isspace_matches_libc = 0;
+		tassert(isspace_matches_libc);
+
+		b8 toupper_matches_libc = 1;
+		for (usz c = 0; c < 128; ++c)
+			if (toupper(c) != lt_toupper(c))
+				toupper_matches_libc = 0;
+		tassert(toupper_matches_libc);
+
+		b8 tolower_matches_libc = 1;
+		for (usz c = 0; c < 128; ++c)
+			if (tolower(c) != lt_tolower(c))
+				tolower_matches_libc = 0;
+		tassert(tolower_matches_libc);
+	}
 }
 
