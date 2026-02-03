@@ -5,44 +5,55 @@ OBJ     = $(patsubst src/%.c,bin/obj/%.o,$(SRC))
 
 OUT = bin/lt.a
 RUN = bin/run
+RUNCMD = -$(RUN) $(args)
 
 CC = cc
 CFLAGS = \
 	-I./include \
-	-O0 -g -std=gnu2x \
+	-std=gnu2x \
 	-Wall -Werror -Wno-unused-function
 LDFLAGS =
 
+
+ifdef DEBUG
+CFLAGS  += -O0 -g
+LDFLAGS += -O0 -g
+else
+CFLAGS  += -O2
+LDFLAGS += -O2
+endif
+
 ifdef WASI
-CC = clang
-CFLAGS  += -DON_WASI=1 --target=wasm32
-LDFLAGS += -nostdlib -Wl,--no-entry,--export-all
-OUT = bin/lt2.wasm
 RUN = bin/run.wasm
-OBJ = $(patsubst src/%.c,bin/obj/%.wasm,$(SRC))
+RUNCMD = python -m http.server
+
+CC = clang
+CFLAGS  += --target=wasm32
+LDFLAGS += -nostdlib -Wl,--export-all
 endif
 
 ifdef WAYLAND
 HEADERS += include/lt2/wayland/xdg-shell-client.h
 SRC     += src/wayland/xdg-shell.c
-CFLAGS  += -DWAYLAND
-LDFLAGS += -lwayland-client
+CFLAGS  += -DWAYLAND `pkg-config --cflags wayland-client`
+LDFLAGS += `pkg-config --libs wayland-client`
 endif
+
 
 all: $(OUT)
 
-ifndef WASI
 run: $(RUN)
-	-bin/run $(args)
-else
-run: $(RUN)
-	python -m http.server
-endif
+	$(RUNCMD)
 
 clean:
 	-rm -r bin/
 	-rm -r include/lt2/wayland/
 	-rm -r src/wayland/
+
+test: all
+	@-mkdir -p bin/
+	$(CC) $(CFLAGS) test.c $(OUT) -o bin/test $(LDFLAGS)
+	bin/test $(args)
 
 src/wayland/xdg-shell.c: /usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml
 	@-mkdir -p $(dir $@)
@@ -52,25 +63,19 @@ include/lt2/wayland/xdg-shell-client.h: /usr/share/wayland-protocols/stable/xdg-
 	@-mkdir -p $(dir $@)
 	wayland-scanner client-header <$< >$@
 
-bin/run: bin/lt2.a run.c
-	$(CC) $(CFLAGS) run.c bin/lt2.a -o bin/run $(LDFLAGS) 
 
-bin/run.wasm: bin/lt2.wasm run.c
-	$(CC) $(CFLAGS) $(OBJ) run.c -o bin/run.wasm $(LDFLAGS) 
+$(RUN): $(OUT) run.c
+	@-mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) run.c $(OUT) -o $(RUN) $(LDFLAGS)
 
-bin/lt2.a: $(OBJ)
-	ar -rcs bin/lt2.a $(OBJ)
-
-bin/lt2.wasm: $(OBJ)
-	#$(CC) $(CFLAGS) $(OBJ) -o bin/lt2.wasm
+$(OUT): $(OBJ)
+	@-mkdir -p $(dir $@)
+	ar -rcs $(OUT) $(OBJ)
 
 bin/obj/%.o: src/%.c $(HEADERS) makefile
 	@-mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-bin/obj/%.wasm: src/%.c $(HEADERS) makefile
-	@-mkdir -p $(dir $@)
-	$(CC) -nostdlib $(CFLAGS) -c $< -o $@
 
-.PHONY: all run clean
+.PHONY: all run clean test
 

@@ -8,7 +8,9 @@
 #	define ON_LINUX   1
 #elif defined(_WIN32) || defined(WIN32)
 #	define ON_WINDOWS 1
-#elifdef ON_WASI
+#elifdef __wasm__
+#	define ON_WASI    1
+#	define main _start
 #else
 #	warn unsupported platform
 #endif

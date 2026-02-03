@@ -36,12 +36,6 @@ usz strnlen(const char* str, usz max) {
 	return it - str;
 }
 
-int main();
-
-void _start() {
-	main();
-}
-
 NORETURN
 void exit(int code) {
 	__wasi_proc_exit(code);
