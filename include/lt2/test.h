@@ -14,7 +14,7 @@ void after_test(result_t* res) {
 	if (res->failed)
 		llogf(NULL, LOG_ALERT, "[{char*}] {u32} failed ({u32} total)", res->name, res->failed, res->count);
 	else
-		llogf(NULL, LOG_INFO, "[{char*}] {u32} passed", res->name, res->failed, res->count);
+		llogf(NULL, LOG_INFO, "[{char*}] {u32} passed", res->name, res->count);
 }
 
 INLINE
@@ -23,9 +23,9 @@ void before_tassert(result_t* r) {
 }
 
 static
-void fail_tassert(result_t* r, const char* expr) {
+void fail_tassert(result_t* r, const char* expr, const char* file, usz line) {
 	++r->failed;
-	llogf(NULL, LOG_ALERT, "[{char*}] {char*}", r->name, expr);
+	llogf(NULL, LOG_ALERT, "[{char*}] {char*}:{usz}: {char*}", r->name, file, line, expr);
 }
 
 #define test(n) \
@@ -35,6 +35,6 @@ void fail_tassert(result_t* r, const char* expr) {
 	do { \
 		before_tassert(__tres); \
 		if (!(e)) \
-			fail_tassert(__tres, #e); \
+			fail_tassert(__tres, #e, __FILE__, __LINE__); \
 	} while (0)
 
