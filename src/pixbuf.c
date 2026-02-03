@@ -64,7 +64,7 @@ void line_lo(pixbuf_t* buf, i32 x1, i32 y1, i32 x2, i32 y2, u32 color) {
 
 	isz d = dy * 2 - dx;
 	for (i32 x = x1, y = y1; x <= x2; ++x) {
-		if (y < 0 || x >= buf->width || y < 0 || y >= buf->height) // !! this is dumb
+		if (x < 0 || x >= buf->width || y < 0 || y >= buf->height) // !! this is dumb
 			continue;
 
 		buf->data[y * buf->width + x] = color;
