@@ -359,5 +359,34 @@ int main(int argc, char** argv) {
 		tassert(lssubstr(substr, ls("df")) == substr.ptr + 2);
 		tassert(lssubstr(substr, ls("dfg")) == NULL);
 	}
+
+	test ("fmt") {
+		u8 buf[1024];
+		ls buf_str = lls(buf, sizeof(buf));
+
+		tassert(lseq(lsprintf(buf_str, "a{u8}b",  (u8) 123), ls("a123b")));
+		tassert(lseq(lsprintf(buf_str, "a{u16}b", (u16)1234), ls("a1234b")));
+		tassert(lseq(lsprintf(buf_str, "a{u32}b", (u32)12345), ls("a12345b")));
+		tassert(lseq(lsprintf(buf_str, "a{u64}b", (u64)123456), ls("a123456b")));
+
+		tassert(lseq(lsprintf(buf_str, "a{i8}b",  (i8) 123), ls("a123b")));
+		tassert(lseq(lsprintf(buf_str, "a{i16}b", (i16)1234), ls("a1234b")));
+		tassert(lseq(lsprintf(buf_str, "a{i32}b", (i32)12345), ls("a12345b")));
+		tassert(lseq(lsprintf(buf_str, "a{i64}b", (i64)123456), ls("a123456b")));
+
+		tassert(lseq(lsprintf(buf_str, "a{i8}b",  (i8) -123), ls("a-123b")));
+		tassert(lseq(lsprintf(buf_str, "a{i16}b", (i16)-1234), ls("a-1234b")));
+		tassert(lseq(lsprintf(buf_str, "a{i32}b", (i32)-12345), ls("a-12345b")));
+		tassert(lseq(lsprintf(buf_str, "a{i64}b", (i64)-123456), ls("a-123456b")));
+
+		tassert(lseq(lsprintf(buf_str, "a{ls}b", ls("asdf")), ls("aasdfb")));
+		tassert(lseq(lsprintf(buf_str, "a{ls}b", ls("")), ls("ab")));
+
+		tassert(lseq(lsprintf(buf_str, "a{char*}b", "asdf"), ls("aasdfb")));
+		tassert(lseq(lsprintf(buf_str, "a{char*}b", ""), ls("ab")));
+
+		tassert(lseq(lsprintf(buf_str, "a{char}b", 'A'), ls("aAb")));
+		tassert(lseq(lsprintf(buf_str, "a{char}b", 'b'), ls("abb")));
+	}
 }
 
