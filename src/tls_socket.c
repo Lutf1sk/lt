@@ -2,11 +2,10 @@
 
 #include <lt2/net.h>
 #include <lt2/time.h>
+#include <lt2/async.h>
 
 #include <openssl/ssl.h>
 #include <openssl/err.h>
-
-#define PATH_MAX 512
 
 static SSL_CTX* ssl_client_ctx = NULL;
 
@@ -130,8 +129,8 @@ tls_handle* socket_accept_tls(socket_handle sock, tls_context* cx, err* err) {
 	return NULL;
 }
 
-tls_handle* socket_accept_tls_async($async, tls_handshake_state* state, err* err) {
-	$enter_task();
+tls_handle* socket_accept_tls_async(task* t, tls_handshake_state* state, err* err) {
+	co_reenter(t);
 
 	if (!state->timeout_at_ms)
 		state->timeout_at_ms = time_ms() + S_TO_MS(60);
@@ -155,7 +154,7 @@ tls_handle* socket_accept_tls_async($async, tls_handshake_state* state, err* err
 			SSL_free((void*)state->handle);
 			return NULL;
 		}
-		$yield NULL;
+		co_yield(NULL);
 	}
 }
 
