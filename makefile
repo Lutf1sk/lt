@@ -39,6 +39,10 @@ CFLAGS  += -DWAYLAND `pkg-config --cflags wayland-client`
 LDFLAGS += `pkg-config --libs wayland-client`
 endif
 
+ifdef OPENSSL
+CFLAGS  += -DLT_OPENSSL `pkg-config --cflags openssl`
+LDFLAGS += `pkg-config --libs openssl`
+endif
 
 all: $(OUT)
 
