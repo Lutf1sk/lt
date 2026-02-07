@@ -24,7 +24,9 @@ u64 time_ns(void) {
 		QueryPerformanceFrequency(&freq);
 	LARGE_INTEGER ticks;
 	QueryPerformanceCounter(&ticks);
-	return ticks.QuadPart * 1000000000 / freq.QuadPart; // this can probably overflow for large (but reasonable) values
+	u64 whole = ((u64)ticks.QuadPart / (u64)freq.QuadPart) * 1000000000ULL;
+	u64 part  = ((u64)ticks.QuadPart % (u64)freq.QuadPart) * 1000000000ULL / (u64)freq.QuadPart;
+	return whole + part;
 #elifdef ON_WASI
 	u64 ns;
 	__wasi_clock_time_get(WASI_CLOCKID_MONOTONIC, 1, &ns);
@@ -51,7 +53,7 @@ void sleep_ns(u64 nsec) {
 	t.tv_nsec = nsec % 1000000000;
 	clock_nanosleep(CLOCK_MONOTONIC, 0, &t, NULL);
 #elifdef ON_WINDOWS
-	Sleep(LT_NSEC_TO_MSEC(nsec));
+	Sleep(NS_TO_MS(nsec));
 #elifdef ON_WASI
 	wasi_subscription_t sub = {
 		.usr  = 1,
