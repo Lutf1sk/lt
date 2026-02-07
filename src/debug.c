@@ -30,7 +30,10 @@ void handle_sigsegv(int sig, siginfo_t* si, void* usr) {
 	llogf(NULL, LOG_CRIT, "segmentation fault accessing 0x{void*}", si->si_addr);
 
 	log_ip(NULL, get_ip(ucx));
+
+#ifdef DEBUG
 	log_stack_trace(NULL, 2);
+#endif
 	exit(sig);
 }
 
