@@ -23,6 +23,15 @@ CFLAGS  += -O2
 LDFLAGS += -O2
 endif
 
+ifdef ASAN
+CFLAGS += -fsanitize=address
+endif
+
+ifdef UBSAN
+CFLAGS += -fsanitize=undefined
+endif
+
+
 ifdef WASI
 RUN = bin/run.wasm
 RUNCMD = python -m http.server
