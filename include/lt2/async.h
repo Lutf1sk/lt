@@ -4,6 +4,7 @@
 
 #define CO_UNIQUE_LABEL EXCAT(__co_label_, __LINE__)
 
+static
 task* co_next(task* t) {
 	if (t >= t->stack_end) {
 		throw(err_fail, ERR_LIMIT_EXCEEDED, "no subtasks available");
@@ -15,6 +16,12 @@ task* co_next(task* t) {
 		.stack_end = t->stack_end
 	};
 	return next;
+}
+
+static
+void co_reset(task* t, usz count) {
+	for (task* it = t, *end = it + count; it < end; ++it)
+		*it = (task) { .stack_end = end };
 }
 
 #define co_reenter(t) \
