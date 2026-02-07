@@ -8,7 +8,7 @@
 
 ls get_http_header(http_request_state* state, ls key, err* error) {
 	for (usz i = 0; i < state->header_count; ++i) {
-		if (lseq(key, state->header_keys[i]))
+		if (lseq_nocase(key, state->header_keys[i]))
 			return state->header_values[i];
 	}
 	throw(error, ERR_NOT_FOUND, "http header not found");
@@ -17,7 +17,7 @@ ls get_http_header(http_request_state* state, ls key, err* error) {
 
 ls* find_http_header(http_request_state* state, ls key) {
 	for (usz i = 0; i < state->header_count; ++i) {
-		if (lseq(key, state->header_keys[i]))
+		if (lseq_nocase(key, state->header_keys[i]))
 			return &state->header_values[i];
 	}
 	return NULL;
@@ -114,6 +114,8 @@ b8 parse_http_headers(http_request_state* state, err* error) {
 			state->flags |= HTTP_CHUNKED;
 		else if (lseq_upper(key, ls("HOST")))
 			state->host = value;
+		else if (lseq_upper(key, ls("AUTHORIZATION")))
+			state->authorization = value;
 	}
 }
 
@@ -226,6 +228,8 @@ b8 receive_http_request_async(task* t, http_request_state* state, err* error) {
 		throw(error, ERR_UNSUPPORTED, "unsupported HTTP version");
 		return 0;
 	}
+	state->version_major = 1;
+	state->version_minor = 1;
 
 	if UNLIKELY (!parse_http_headers(state, error))
 		return 0;
@@ -268,6 +272,8 @@ b8 receive_http_response_async(task* t, http_request_state* state, err* error) {
 		throw(error, ERR_UNSUPPORTED, "unsupported HTTP version");
 		return 0;
 	}
+	state->version_major = 1;
+	state->version_minor = 1;
 
 	if UNLIKELY (!parse_http_headers(state, error))
 		return 0;
