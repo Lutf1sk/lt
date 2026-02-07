@@ -41,6 +41,7 @@ typedef struct http_request_state {
 	usz chunk_size;
 
 	ls host;
+	ls authorization;
 
 	b8 subtask_response;
 } http_request_state;
