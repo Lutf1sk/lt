@@ -21,7 +21,7 @@ socket_addr resolve_host(ls host, err* err) {
 
 	struct addrinfo* res;
 	if (getaddrinfo(cstr, NULL, &hints, &res) < 0) {
-		throw(err, ERR_NOT_FOUND, "name resolution failed asdf"); // !!
+		throw(err, ERR_NOT_FOUND, "name resolution failed"); // !!
 		return (struct socket_addr){0};
 	}
 
