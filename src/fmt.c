@@ -43,6 +43,23 @@ usz printi64(write_fn fn, void* usr, i64 n) {
 	return fn(usr, it, len);
 }
 
+static u8 hextab[] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
+
+INLINE
+usz printh64(write_fn fn, void* usr, u64 n) {
+	char buf[NUM_MAX], *end = buf + sizeof(buf), *it = end - 1;
+
+	// Fill buffer backwards with the remainder of n/16
+	while (n >= 16) {
+		*it-- = hextab[n & 0xF];
+		n /= 16;
+	}
+	*it = hextab[n];
+
+	usz len = end - it;
+	return fn(usr, it, len);
+}
+
 #ifndef ON_WASI
 #	include <time.h>
 
@@ -119,6 +136,8 @@ isz vlprintf_fn(write_fn fn, void* usr, const char* fmt, va_list args) {
 		else if (lseq(spec, ls("b8"))) written += printi64(fn, usr, va_arg(args, u32));
 
 		else if (lseq(spec, ls("dt64"))) written += printdt64(fn, usr, va_arg(args, u64));
+
+		else if (lseq(spec, ls("void*"))) written += printh64(fn, usr, (usz)va_arg(args, void*));
 
 		else if (lseq(spec, ls("char"))) {
 			char cval = va_arg(args, int);
