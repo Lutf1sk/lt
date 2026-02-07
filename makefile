@@ -11,13 +11,13 @@ CC = cc
 CFLAGS = \
 	-I./include \
 	-std=gnu2x \
-	-Wall -Werror -Wno-unused-function
+	-Wall -Werror -Wno-unused-function -Wno-frame-address
 LDFLAGS =
 
 
 ifdef DEBUG
-CFLAGS  += -O0 -g
-LDFLAGS += -O0 -g
+CFLAGS  += -O0 -g -DDEBUG -fno-optimize-sibling-calls -fno-omit-frame-pointer
+LDFLAGS += -O0 -g -rdynamic
 else
 CFLAGS  += -O2
 LDFLAGS += -O2
