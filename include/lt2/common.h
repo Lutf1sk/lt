@@ -289,6 +289,25 @@ struct vmap {
 b8 vmap(vmap_t* mappings, usz count, u32 flags, err* err);
 void vunmap(vmap_t* mappings, usz count, err* err);
 
+typedef
+struct ringbuf {
+	void* first;
+	void* base;
+	void* end;
+	usz size;
+	usz used;
+} ringbuf_t;
+
+ringbuf_t vmap_ringbuf(usz size, err* err);
+
+INLINE
+usz rb_free_space(ringbuf_t* rb) {
+	return rb->size - rb->used;
+}
+
+usz rb_write(ringbuf_t* rb, const void* data, usz size);
+usz rb_read(ringbuf_t* rb, void* data, usz size);
+
 // ----- libc
 
 extern int memcmp(const void* ptr1, const void* ptr2, size_t size);
