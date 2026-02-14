@@ -310,11 +310,18 @@ extern void exit(int code);
 
 // ----- async
 
+b8 poll_handle(file_handle fd, u8 mode, u64 timeoout_ms);
+
 typedef struct task {
 	union {
 		void* reenter_at;
 		size_t running;
 	};
+
+	u8 mode;
+	u8 pad[3];
+	file_handle fd;
+
 	struct task* stack_end;
 	void* userdata;
 } task;

@@ -54,3 +54,21 @@ void co_reset(task* t, usz count) {
 			return __VA_ARGS__; \
 		}
 
+#define co_await_readable(fd, ...) \
+	do { \
+		__task->mode = R; \
+		__task->fd   = (fd); \
+	CO_UNIQUE_LABEL:; \
+		return __VA_ARGS__; \
+		__task->mode = 0; \
+	} while (0)
+
+#define co_await_writable(fd, ...) \
+	do { \
+		__task->mode = W; \
+		__task->fd   = (fd); \
+	CO_UNIQUE_LABEL:; \
+		return __VA_ARGS__; \
+		__task->mode = 0; \
+	} while (0)
+

@@ -62,5 +62,20 @@ void vunmap(vmap_t* mappings, usz count, err* err) {
 		throw_errno(err);
 }
 
+typedef
+struct ringbuf {
+	void* first;
+	void* base;
+	void* end;
+	usz size;
+} ringbuf_t;
+
+ringbuf_t vmap_ringbuf(usz size, err* err);
+
+
+ringbuf_t vmap_ringbuf(usz size, err* err) {
+	return (ringbuf_t) {};
+}
+
 #endif // ON_UNIX
 
