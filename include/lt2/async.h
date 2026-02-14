@@ -35,6 +35,7 @@ b8 poll_callable(task* t, u64 timeout_ms);
 			__task->reenter_at = LABEL_ADDR(CO_UNIQUE_LABEL); \
 		void* __jump_addr = __task->reenter_at; \
 		__task->reenter_at = NULL; \
+		__task->mode       = 0; \
 		GOTO_ADDR(__jump_addr); \
 	CO_UNIQUE_LABEL:; \
 	} while (0)
@@ -56,27 +57,9 @@ b8 poll_callable(task* t, u64 timeout_ms);
 			return __VA_ARGS__; \
 		}
 
-#define co_await_readable(__fd, ...) \
+#define co_set_awaiting(__fd, __mode) \
 	do { \
-		__task->mode = R; \
-		__task->fd   = (__fd); \
-	CO_UNIQUE_LABEL:; \
-		if (!poll_handle(__task->fd, __task->mode, 0)) { \
-			__task->reenter_at = LABEL_ADDR(CO_UNIQUE_LABEL); \
-			return __VA_ARGS__; \
-		} \
-		__task->mode = 0; \
-	} while (0)
-
-#define co_await_writable(__fd, ...) \
-	do { \
-		__task->mode = W; \
-		__task->fd   = (__fd); \
-	CO_UNIQUE_LABEL:; \
-		if (!poll_handle(__task->fd, __task->mode, 0)) { \
-			__task->reenter_at = LABEL_ADDR(CO_UNIQUE_LABEL); \
-			return __VA_ARGS__; \
-		} \
-		__task->mode = 0; \
+		__task->fd = __fd; \
+		__task->mode = __mode; \
 	} while (0)
 

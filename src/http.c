@@ -42,7 +42,15 @@ b8 receive_http_header_data(task* t, http_request_state* state, err* error) {
 			return 0;
 		}
 
-		co_await_readable(state->socket, 0);
+		while (!poll_handle(state->socket, R, 0)) {
+			if (time_ms() >= state->timeout_at_ms) {
+				throw(error, ERR_TIMED_OUT, "http connection timed out");
+				return 0;
+			}
+			co_set_awaiting(state->socket, R);
+			co_yield(0);
+		}
+
 		usz res = read_socket(state, state->buffer_it, state->buffer_end - state->buffer_it, error);
 		if UNLIKELY (!res)
 			return 0;
@@ -122,7 +130,15 @@ b8 receive_http_content(task* t, http_request_state* state, err* error) {
 		}
 
 		while (state->buffer_it < state->content_end) {
-			co_await_readable(state->socket, 0);
+			while (!poll_handle(state->socket, R, 0)) {
+				if (time_ms() >= state->timeout_at_ms) {
+					throw(error, ERR_TIMED_OUT, "http connection timed out");
+					return 0;
+				}
+				co_set_awaiting(state->socket, R);
+				co_yield(0);
+			}
+
 			usz res = read_socket(state, state->buffer_it, state->content_end - state->buffer_it, error);
 			if UNLIKELY (!res)
 				return 0;
@@ -137,7 +153,15 @@ b8 receive_http_content(task* t, http_request_state* state, err* error) {
 		u8* size_end = lssubstr(lsrange(state->processed_it, state->buffer_it), ls("\r\n"));
 		if (!size_end) {
 			// !! this can still end up receiving only a partial size if the packets align in just the right (wrong) way
-			co_await_readable(state->socket, 0);
+			while (!poll_handle(state->socket, R, 0)) {
+				if (time_ms() >= state->timeout_at_ms) {
+					throw(error, ERR_TIMED_OUT, "http connection timed out");
+					return 0;
+				}
+				co_set_awaiting(state->socket, R);
+				co_yield(0);
+			}
+
 			usz res = read_socket(state, state->buffer_it, state->buffer_end - state->buffer_it, error);
 			if UNLIKELY (!res)
 				return 0;
@@ -169,7 +193,15 @@ b8 receive_http_content(task* t, http_request_state* state, err* error) {
 
 		state->content_end = state->buffer_it + state->chunk_size - trail_bytes + 2;
 		while (state->buffer_it < state->content_end) {
-			co_await_readable(state->socket, 0);
+			while (!poll_handle(state->socket, R, 0)) {
+				if (time_ms() >= state->timeout_at_ms) {
+					throw(error, ERR_TIMED_OUT, "http connection timed out");
+					return 0;
+				}
+				co_set_awaiting(state->socket, R);
+				co_yield(0);
+			}
+
 			usz res = read_socket(state, state->buffer_it, state->content_end - state->buffer_it, error);
 			if UNLIKELY (!res)
 				return 0;

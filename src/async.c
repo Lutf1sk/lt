@@ -4,7 +4,7 @@
 #include <unistd.h>
 
 b8 poll_handle(file_handle fd, u8 mode, u64 timeout_ms) {
-	i16 poll_mode = 0;
+	i16 poll_mode = POLLERR;
 	if (mode & R)
 		poll_mode |= POLLIN;
 	if (mode & W)
@@ -12,11 +12,12 @@ b8 poll_handle(file_handle fd, u8 mode, u64 timeout_ms) {
 
 	struct pollfd pfd = {
 		.fd     = fd,
-		.events = POLLERR | poll_mode
+		.events = poll_mode
 	};
 
 	if (poll(&pfd, 1, timeout_ms) < 0)
-		return 0;
+		return 1;
+
 	return !!(pfd.revents & poll_mode);
 }
 
