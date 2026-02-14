@@ -104,42 +104,6 @@ b8 socket_connect_tcp(socket_handle sock, socket_addr* addr, u16 port, err* err)
 	return 1;
 }
 
-b8 socket_writable(socket_handle sock, u64 timeout_ms) {
-	struct pollfd pfd = {
-		.fd     = sock,
-		.events = POLLOUT | POLLERR
-	};
-
-	if (poll(&pfd, 1, timeout_ms) < 0)
-		return 0;
-
-	if (pfd.revents) {
-		int so_err = 1;
-		socklen_t optlen = sizeof(so_err);
-		if (getsockopt(sock, SOL_SOCKET, SO_ERROR, &so_err, &optlen) < 0 || so_err)
-			return 0;
-	}
-	return !!(pfd.revents & POLLOUT);
-}
-
-b8 socket_readable(socket_handle sock, u64 timeout_ms) {
-	struct pollfd pfd = {
-		.fd     = sock,
-		.events = POLLIN | POLLERR
-	};
-
-	if (poll(&pfd, 1, timeout_ms) < 0)
-		return 0;
-
-	if (pfd.revents) {
-		int so_err = 1;
-		socklen_t optlen = sizeof(so_err);
-		if (getsockopt(sock, SOL_SOCKET, SO_ERROR, &so_err, &optlen) < 0 || so_err)
-			return 0;
-	}
-	return !!(pfd.revents & POLLIN);
-}
-
 b8 socket_bind(socket_handle sock, u16 port, err* err) {
 	int reuse_addr = 1;
 	if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (void*)&reuse_addr, sizeof(int)) < 0) {

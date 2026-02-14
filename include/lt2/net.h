@@ -35,9 +35,6 @@ tls_context* tls_load_certificates(ls cert_path, ls key_path, ls cert_chain_path
 b8 socket_connect_tcp(socket_handle sock, socket_addr* addr, u16 port, err* err);
 tls_handle* socket_connect_tls(socket_handle sock, socket_addr* addr, u16 port, ls hostname, err* err);
 
-b8 socket_writable(socket_handle sock, u64 timeout_ms);
-b8 socket_readable(socket_handle sock, u64 timeout_ms);
-
 b8 socket_bind(socket_handle sock, u16 port, err* err);
 
 typedef struct tls_handshake_state {

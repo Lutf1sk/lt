@@ -23,15 +23,6 @@ ls* find_http_header(http_request_state* state, ls key) {
 	return NULL;
 }
 
-#define wait_readable(state) \
-	while (!socket_readable((state)->socket, 0)) { \
-		if (time_ms() >= (state)->timeout_at_ms) { \
-			throw(error, ERR_TIMED_OUT, "http connection timed out"); \
-			return 0; \
-		} \
-		co_yield(0); \
-	}
-
 #ifdef LT_OPENSSL
 #	define read_socket(state, buf, size, error) \
 		((state)->tls \
@@ -51,7 +42,7 @@ b8 receive_http_header_data(task* t, http_request_state* state, err* error) {
 			return 0;
 		}
 
-		wait_readable(state);
+		co_await_readable(state->socket, 0);
 		usz res = read_socket(state, state->buffer_it, state->buffer_end - state->buffer_it, error);
 		if UNLIKELY (!res)
 			return 0;
@@ -131,7 +122,7 @@ b8 receive_http_content(task* t, http_request_state* state, err* error) {
 		}
 
 		while (state->buffer_it < state->content_end) {
-			wait_readable(state);
+			co_await_readable(state->socket, 0);
 			usz res = read_socket(state, state->buffer_it, state->content_end - state->buffer_it, error);
 			if UNLIKELY (!res)
 				return 0;
@@ -146,7 +137,7 @@ b8 receive_http_content(task* t, http_request_state* state, err* error) {
 		u8* size_end = lssubstr(lsrange(state->processed_it, state->buffer_it), ls("\r\n"));
 		if (!size_end) {
 			// !! this can still end up receiving only a partial size if the packets align in just the right (wrong) way
-			wait_readable(state);
+			co_await_readable(state->socket, 0);
 			usz res = read_socket(state, state->buffer_it, state->buffer_end - state->buffer_it, error);
 			if UNLIKELY (!res)
 				return 0;
@@ -178,7 +169,7 @@ b8 receive_http_content(task* t, http_request_state* state, err* error) {
 
 		state->content_end = state->buffer_it + state->chunk_size - trail_bytes + 2;
 		while (state->buffer_it < state->content_end) {
-			wait_readable(state);
+			co_await_readable(state->socket, 0);
 			usz res = read_socket(state, state->buffer_it, state->content_end - state->buffer_it, error);
 			if UNLIKELY (!res)
 				return 0;
