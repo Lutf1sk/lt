@@ -63,7 +63,8 @@ b8 receive_http_header_data(task* t, http_request_state* state, err* error) {
 		u8* end = lssubstr(lsrange(search_from, state->buffer_it), ls("\r\n\r\n"));
 		if (!end)
 			continue;
-		state->content_start = end + 4;
+		state->headers_end = end + 4;
+		state->trailing_content = lsrange(state->headers_end, state->buffer_it);
 		return 1;
 	}
 }
@@ -71,12 +72,12 @@ b8 receive_http_header_data(task* t, http_request_state* state, err* error) {
 b8 parse_http_headers(http_request_state* state, err* error) {
 	u8* it = state->headers_start;
 	for (;;) {
-		if (it >= state->content_start)
+		if (it >= state->headers_end)
 			return 1;
 
 		u8* line_start = it;
 		for (;;) {
-			if UNLIKELY (it + 1 >= state->content_start) {
+			if UNLIKELY (it + 1 >= state->headers_end) {
 				throw(error, ERR_BAD_SYNTAX, "expected '\\r\\n' after http header");
 				return 0;
 			}
@@ -118,41 +119,65 @@ b8 parse_http_headers(http_request_state* state, err* error) {
 	}
 }
 
-b8 receive_http_content(task* t, http_request_state* state, err* error) {
+static
+usz receive_content(task* t, http_request_state* state, void* data, usz size, err* error) {
 	co_reenter(t);
 
-	// ----- read raw content
-	if (!(state->flags & HTTP_CHUNKED)) {
-		state->content_end = state->content_start + state->content_length;
-		if UNLIKELY (state->content_end > state->buffer_end) {
-			throw(error, ERR_LIMIT_EXCEEDED, "http content exceeds maximum size");
-			return 0;
-		}
+	state->chunk_size = state->content_length - state->trailing_content.size;
+	// this can happen if more than one request is sent over a single connection
+	if (state->content_length < state->trailing_content.size)
+		state->chunk_size = 0;
 
-		while (state->buffer_it < state->content_end) {
-			while (!poll_handle(state->socket, R, 0)) {
-				if (time_ms() >= state->timeout_at_ms) {
-					throw(error, ERR_TIMED_OUT, "http connection timed out");
-					return 0;
-				}
-				co_set_awaiting(state->socket, R);
-				co_yield(0);
-			}
-
-			usz res = read_socket(state, state->buffer_it, state->content_end - state->buffer_it, error);
-			if UNLIKELY (!res)
-				return 0;
-			state->buffer_it += res;
-		}
-		return 1;
+	while (state->trailing_content.size) {
+		if (size > state->trailing_content.size)
+			size = state->trailing_content.size;
+		memcpy(data, state->trailing_content.ptr, size);
+		state->trailing_content = lsdrop(state->trailing_content, size);
+		co_yield(size);
 	}
 
-	// ----- read chunked content
-	state->processed_it = state->content_start;
-	while LIKELY (state->buffer_it < state->buffer_end) {
-		u8* size_end = lssubstr(lsrange(state->processed_it, state->buffer_it), ls("\r\n"));
-		if (!size_end) {
-			// !! this can still end up receiving only a partial size if the packets align in just the right (wrong) way
+	while (state->chunk_size) {
+		while (!poll_handle(state->socket, R, 0)) {
+			if (time_ms() >= state->timeout_at_ms) {
+				throw(error, ERR_TIMED_OUT, "http connection timed out");
+				return 0;
+			}
+			co_set_awaiting(state->socket, R);
+			co_yield(0);
+		}
+
+		if (size > state->chunk_size)
+			size = state->chunk_size;
+		usz res = read_socket(state, data, size, error);
+		if UNLIKELY (!res)
+			return 0;
+		state->chunk_size -= res;
+		co_yield(res);
+	}
+	return 0;
+}
+
+static
+usz receive_chunked(task* t, http_request_state* state, void* data, usz size, err* error) {
+	co_reenter(t);
+
+	throw(error, ERR_NOT_IMPLEMENTED, "streaming not implemented for chunked content encoding");
+	return 0;
+
+	state->chunk_size_str = lls(state->chunk_size_buf, 0);
+
+	for (;;) {
+		u8* size_end;
+		for (;;) {
+			size_end = lssubstr(state->chunk_size_str, ls("\r\n"));
+			if (size_end)
+				break;
+
+			if (state->chunk_size_str.size >= sizeof(state->chunk_size_buf)) {
+				throw(error, ERR_BAD_SYNTAX, "invalid content chunk size");
+				return 0;
+			}
+
 			while (!poll_handle(state->socket, R, 0)) {
 				if (time_ms() >= state->timeout_at_ms) {
 					throw(error, ERR_TIMED_OUT, "http connection timed out");
@@ -162,37 +187,31 @@ b8 receive_http_content(task* t, http_request_state* state, err* error) {
 				co_yield(0);
 			}
 
-			usz res = read_socket(state, state->buffer_it, state->buffer_end - state->buffer_it, error);
+			u8* chunk_size_str_end = state->chunk_size_buf + state->chunk_size_str.size;
+			usz buf_remain = sizeof(state->chunk_size_buf) - state->chunk_size_str.size;
+			usz res = read_socket(state, chunk_size_str_end, buf_remain, error);
 			if UNLIKELY (!res)
 				return 0;
-			state->buffer_it += res;
-			size_end = lssubstr(lsrange(state->processed_it, state->buffer_it), ls("\r\n"));
-		}
-
-		if UNLIKELY (!size_end) {
-			throw(error, ERR_PROTOCOL, "invalid chunk size");
-			return 0;
+			state->chunk_size_str.size += res;
 		}
 
 		ls size_str = lsrange(state->processed_it, size_end);
-		size_end += 2;
 		state->chunk_size = hexlstou(size_str, error);
-		if (!state->chunk_size) {
-			state->content_length = state->content_end - state->content_start;
-			return 1;
+		if (!state->chunk_size)
+			return 0;
+
+		// !! could split very small chunks incorrectly
+		state->chunk_size_str = lsdrop(state->chunk_size_str, size_str.size + 2);
+		while (state->chunk_size_str.size) {
+			usz res = state->chunk_size_str.size;
+			if (res > size)
+				res = size;
+			memcpy(data, state->chunk_size_str.ptr, res);
+			state->chunk_size_str = lsdrop(state->chunk_size_str, res);
+			co_yield(res);
 		}
-		if (state->processed_it + state->chunk_size + 2 > state->buffer_end)
-			break;
 
-		usz trail_bytes = state->buffer_it - size_end;
-		memmove(state->processed_it, size_end, trail_bytes);
-		state->buffer_it -= size_end - state->processed_it;
-		state->processed_it += trail_bytes;
-		if (state->processed_it < state->buffer_it)
-			continue;
-
-		state->content_end = state->buffer_it + state->chunk_size - trail_bytes + 2;
-		while (state->buffer_it < state->content_end) {
+		while (state->chunk_size) {
 			while (!poll_handle(state->socket, R, 0)) {
 				if (time_ms() >= state->timeout_at_ms) {
 					throw(error, ERR_TIMED_OUT, "http connection timed out");
@@ -202,16 +221,20 @@ b8 receive_http_content(task* t, http_request_state* state, err* error) {
 				co_yield(0);
 			}
 
-			usz res = read_socket(state, state->buffer_it, state->content_end - state->buffer_it, error);
+			usz res = read_socket(state, data, size, error);
 			if UNLIKELY (!res)
 				return 0;
-			state->buffer_it += res;
+			state->chunk_size -= res;
+			co_yield(res);
 		}
-		state->buffer_it -= 2;
-		state->content_end = state->processed_it = state->buffer_it;
 	}
-	throw(error, ERR_LIMIT_EXCEEDED, "http content exceeds maximum length");
-	return 0;
+}
+
+usz receive_http_content_async(task* t, http_request_state* state, void* data, usz size, err* err) {
+	if (state->flags & HTTP_CHUNKED)
+		return receive_chunked(t, state, data, size, err);
+	else
+		return receive_content(t, state, data, size, err);
 }
 
 b8 receive_http_request_async(task* t, http_request_state* state, err* error) {
@@ -221,11 +244,11 @@ b8 receive_http_request_async(task* t, http_request_state* state, err* error) {
 		state->timeout_at_ms = time_ms() + S_TO_MS(60);
 	state->buffer_it = state->buffer_start;
 
-	co_await(state->subtask_response = receive_http_header_data(co_subtask, state, error), 0);
-	if UNLIKELY (!state->subtask_response)
+	co_await(b8 success = receive_http_header_data(co_subtask, state, error), 0);
+	if UNLIKELY (!success)
 		return 0;
 
-	state->headers_start = lssubstr(lsrange(state->buffer_start, state->content_start), ls("\r\n"));
+	state->headers_start = lssubstr(lsrange(state->buffer_start, state->headers_end), ls("\r\n"));
 	if UNLIKELY (!state->headers_start) {
 		throw(error, ERR_BAD_SYNTAX, "expected '\\r\\n' after http version");
 		return 0;
@@ -254,11 +277,7 @@ b8 receive_http_request_async(task* t, http_request_state* state, err* error) {
 	state->version_major = 1;
 	state->version_minor = 1;
 
-	if UNLIKELY (!parse_http_headers(state, error))
-		return 0;
-
-	co_await(state->subtask_response = receive_http_content(co_subtask, state, error), 0);
-	return state->subtask_response;
+	return parse_http_headers(state, error);
 }
 
 b8 receive_http_response_async(task* t, http_request_state* state, err* error) {
@@ -268,11 +287,11 @@ b8 receive_http_response_async(task* t, http_request_state* state, err* error) {
 		state->timeout_at_ms = time_ms() + S_TO_MS(60);
 	state->buffer_it = state->buffer_start;
 
-	co_await(state->subtask_response = receive_http_header_data(co_subtask, state, error), 0);
-	if UNLIKELY (!state->subtask_response)
+	co_await(b8 success = receive_http_header_data(co_subtask, state, error), 0);
+	if UNLIKELY (!success)
 		return 0;
 
-	state->headers_start = lssubstr(lsrange(state->buffer_start, state->content_start), ls("\r\n"));
+	state->headers_start = lssubstr(lsrange(state->buffer_start, state->headers_end), ls("\r\n"));
 	if UNLIKELY (!state->headers_start) {
 		throw(error, ERR_BAD_SYNTAX, "expected '\\r\\n' after http response status");
 		return 0;
@@ -298,11 +317,7 @@ b8 receive_http_response_async(task* t, http_request_state* state, err* error) {
 	state->version_major = 1;
 	state->version_minor = 1;
 
-	if UNLIKELY (!parse_http_headers(state, error))
-		return 0;
-
-	co_await(state->subtask_response = receive_http_content(co_subtask, state, error), 0);
-	return state->subtask_response;
+	return parse_http_headers(state, error);
 }
 
 #endif // !ON_WASI

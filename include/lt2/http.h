@@ -34,16 +34,16 @@ typedef struct http_request_state {
 	u8* processed_it;
 
 	u8* headers_start;
+	u8* headers_end;
+	ls  trailing_content;
 
-	u8* content_start;
-	u8* content_end;
-	usz content_length;
 	usz chunk_size;
+	u8  chunk_size_buf[24];
+	ls  chunk_size_str;
 
+	usz content_length;
 	ls host;
 	ls authorization;
-
-	b8 subtask_response;
 } http_request_state;
 
 ls  get_http_header (http_request_state* state, ls key, err* error);
@@ -51,4 +51,5 @@ ls* find_http_header(http_request_state* state, ls key);
 
 b8 receive_http_response_async(task* t, http_request_state* state, err* error);
 b8 receive_http_request_async(task* t, http_request_state* state, err* error);
+usz receive_http_content_async(task* t, http_request_state* state, void* data, usz size, err* error);
 
