@@ -20,3 +20,16 @@ b8 poll_handle(file_handle fd, u8 mode, u64 timeout_ms) {
 	return !!(pfd.revents & poll_mode);
 }
 
+b8 poll_callable(task* t, u64 timeout_ms) {
+	task* end = t->stack_end;
+	while (t < end && t->running) {
+		if (!t->mode) {
+			t = t + 1;
+			continue;
+		}
+
+		return poll_handle(t->fd, t->mode, timeout_ms);
+	}
+	return 1;
+}
+

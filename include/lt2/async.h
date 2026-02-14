@@ -24,6 +24,8 @@ void co_reset(task* t, usz count) {
 		*it = (task) { .stack_end = end };
 }
 
+b8 poll_callable(task* t, u64 timeout_ms);
+
 #define co_reenter(t) \
 	task* __task = (t); \
 	task* co_subtask; \
