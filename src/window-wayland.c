@@ -50,6 +50,12 @@ struct xdg_wm_base_listener xdg_wm_base_listener = {
 };
 
 void recreate_buffer(i32 width, i32 height) {
+	if (win.pb.data && window_width && window_height) {
+		munmap(win.pb.data, window_width * window_height * sizeof(u32));
+		win.pb.data = NULL;
+		wl_buffer_destroy(win.buffer);
+	}
+
 	window_width  = width;
 	window_height = height;
 
