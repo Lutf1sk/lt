@@ -5,6 +5,9 @@
 #	include <lt2/posix.h>
 
 #	define __USE_GNU
+#	ifndef _GNU_SOURCE
+#		define _GNU_SOURCE
+#	endif
 #	include <sys/mman.h>
 
 ringbuf_t vmap_ringbuf(usz size, err* err) {
