@@ -2,14 +2,12 @@
 #include <lt2/str.h>
 #include <lt2/log.h>
 
-#define __USE_GNU
-#include <dlfcn.h>
-#include <signal.h>
+#ifdef ON_LINUX
+#	define __USE_GNU
+#	include <dlfcn.h>
+#	include <signal.h>
 
 static thread_local void* thread_root_frame = NULL;
-
-// !! TODO
-#define ON_AMD64 1
 
 static
 void* get_ip(ucontext_t* uc) {
@@ -94,16 +92,16 @@ void stack_trace_ip(log_sink* logger, void* ip) {
 	}
 }
 
-#ifdef DEBUG
+#	ifdef DEBUG
 
 NOINLINE
 void log_stack_trace(log_sink* logger, usz skip_frames) {
-#define TRACE(n) \
-	case n: \
-		if (__builtin_frame_address(n) >= thread_root_frame) \
-			break; \
-		ip = __builtin_extract_return_addr(__builtin_return_address(n)); \
-		stack_trace_ip(logger, ip);
+#		define TRACE(n) \
+			case n: \
+				if (__builtin_frame_address(n) >= thread_root_frame) \
+					break; \
+				ip = __builtin_extract_return_addr(__builtin_return_address(n)); \
+				stack_trace_ip(logger, ip);
 
 	void* ip;
 	switch (skip_frames) {
@@ -137,5 +135,7 @@ void log_stack_trace(log_sink* logger, usz skip_frames) {
 
 }
 
-#endif // DEBUG
+#	endif // DEBUG
+
+#endif // ON_LINUX
 

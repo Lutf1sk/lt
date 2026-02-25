@@ -462,5 +462,5 @@ void measure_text(ls str) {
 
 }
 
-#endif // ON_LINUX
+#endif // WAYLAND
 

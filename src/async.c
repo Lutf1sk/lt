@@ -1,7 +1,9 @@
 #include <lt2/common.h>
 
-#include <poll.h>
-#include <unistd.h>
+#ifdef ON_LINUX
+
+#	include <poll.h>
+#	include <unistd.h>
 
 b8 poll_handle(file_handle fd, u8 mode, u64 timeout_ms) {
 	i16 poll_mode = POLLERR;
@@ -33,4 +35,6 @@ b8 poll_callable(task* t, u64 timeout_ms) {
 	}
 	return 1;
 }
+
+#endif // ON_LINUX
 
