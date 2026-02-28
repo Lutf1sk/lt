@@ -165,6 +165,7 @@ typedef enum err_code {
 	ERR_UNREACHABLE,
 	ERR_FEATURE_DISABLED,
 	ERR_PROTOCOL,
+	ERR_BAD_FORMAT,
 
 	ERR_COUNT
 } err_code;

@@ -12,7 +12,7 @@ CFLAGS = \
 	-I./include \
 	-std=gnu2x \
 	-Wall -Werror -Wno-unused-function -Wno-frame-address
-LDFLAGS =
+LDFLAGS = -lm
 
 
 ifdef debug

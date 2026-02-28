@@ -1,16 +1,13 @@
+#define CTYPE_PREFIX lt_
 #include <lt2/test.h>
-
+#include <lt2/ctype.h>
 #include <lt2/pixbuf.h>
 #include <lt2/bits.h>
-
-#define CTYPE_PREFIX lt_
-#include <lt2/ctype.h>
-#include <ctype.h>
-
 #include <lt2/ini.h>
 #include <lt2/str.h>
+#include <lt2/base64.h>
 
-#include <math.h>
+#include <ctype.h>
 
 int main(int argc, char** argv) {
 	default_log_sink->file.color = 1;
@@ -156,49 +153,49 @@ int main(int argc, char** argv) {
 
 	test ("ctype") {
 		b8 isupper_matches_libc = 1;
-		for (usz c = 0; c < 128; ++c)
-			if (isupper(c) != lt_isupper(c))
+		for (u8 c = 0; c < 128; ++c)
+			if (!!isupper(c) != lt_isupper(c))
 				isupper_matches_libc = 0;
 		tassert(isupper_matches_libc);
 
 		b8 islower_matches_libc = 1;
-		for (usz c = 0; c < 128; ++c)
-			if (islower(c) != lt_islower(c))
+		for (u8 c = 0; c < 128; ++c)
+			if (!!islower(c) != lt_islower(c))
 				islower_matches_libc = 0;
 		tassert(islower_matches_libc);
 
 		b8 isalpha_matches_libc = 1;
-		for (usz c = 0; c < 128; ++c)
-			if (isalpha(c) != lt_isalpha(c))
+		for (u8 c = 0; c < 128; ++c)
+			if (!!isalpha(c) != lt_isalpha(c))
 				isalpha_matches_libc = 0;
 		tassert(isalpha_matches_libc);
 
 		b8 isdigit_matches_libc = 1;
-		for (usz c = 0; c < 128; ++c)
-			if (isdigit(c) != lt_isdigit(c))
+		for (u8 c = 0; c < 128; ++c)
+			if (!!isdigit(c) != lt_isdigit(c))
 				isdigit_matches_libc = 0;
 		tassert(isdigit_matches_libc);
 
 		b8 isalnum_matches_libc = 1;
-		for (usz c = 0; c < 128; ++c)
-			if (isalnum(c) != lt_isalnum(c))
+		for (u8 c = 0; c < 128; ++c)
+			if (!!isalnum(c) != lt_isalnum(c))
 				isalnum_matches_libc = 0;
 		tassert(isalnum_matches_libc);
 
 		b8 isspace_matches_libc = 1;
-		for (usz c = 0; c < 128; ++c)
-			if (isspace(c) != lt_isspace(c))
+		for (u8 c = 0; c < 128; ++c)
+			if (!!isspace(c) != lt_isspace(c))
 				isspace_matches_libc = 0;
 		tassert(isspace_matches_libc);
 
 		b8 toupper_matches_libc = 1;
-		for (usz c = 0; c < 128; ++c)
+		for (u8 c = 0; c < 128; ++c)
 			if (toupper(c) != lt_toupper(c))
 				toupper_matches_libc = 0;
 		tassert(toupper_matches_libc);
 
 		b8 tolower_matches_libc = 1;
-		for (usz c = 0; c < 128; ++c)
+		for (u8 c = 0; c < 128; ++c)
 			if (tolower(c) != lt_tolower(c))
 				tolower_matches_libc = 0;
 		tassert(tolower_matches_libc);
@@ -387,6 +384,24 @@ int main(int argc, char** argv) {
 
 		tassert(lseq(lsprintf(buf_str, "a{char}b", 'A'), ls("aAb")));
 		tassert(lseq(lsprintf(buf_str, "a{char}b", 'b'), ls("abb")));
+	}
+
+	test ("base64") {
+		ls str = ls("Fuck you 1234567");
+
+		usz enc_len = b64_encoded_len(str.size);
+		void* enc_data = malloc(enc_len);
+		usz real_enc_len = b64_encode(enc_data, str.ptr, str.size);
+
+		tassert(enc_len == real_enc_len);
+		tassert(lseq(lls(enc_data, real_enc_len), ls("RnVjayB5b3UgMTIzNDU2Nw==")));
+
+		usz dec_len = b64_decoded_len(enc_data, real_enc_len, err_warn);
+		void* dec_data = malloc(dec_len);
+		usz real_dec_len = b64_decode(dec_data, enc_data, real_enc_len, err_warn);
+
+		tassert(dec_len == real_dec_len);
+		tassert(lseq(lls(dec_data, real_dec_len), str));
 	}
 }
 
