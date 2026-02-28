@@ -329,7 +329,7 @@ usz http_recv_content_chunk(task* t, http_connection_t* conn, void* data, usz si
 			return 0;
 		}
 
-		if (conn->rb.used < conn->rb.size && poll_handle(conn->socket, R, conn->timeout_at_ms)) {
+		if (conn->rb.used < conn->rb.size && conn->remain > conn->rb.used && poll_handle(conn->socket, R, conn->timeout_at_ms)) {
 			u8* avail_from = rb_free_from(&conn->rb);
 			usz avail_size = rb_free_space(&conn->rb);
 
