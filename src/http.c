@@ -3,321 +3,349 @@
 #include <lt2/time.h>
 #include <lt2/str.h>
 
-#ifndef ON_WASI
-#	include <ctype.h>
 
-ls get_http_header(http_request_state* state, ls key, err* error) {
-	for (usz i = 0; i < state->header_count; ++i) {
-		if (lseq_nocase(key, state->header_keys[i]))
-			return state->header_values[i];
+ls http_get_header(http_headers_t* headers, ls key, err* error) {
+	for (usz i = 0; i < headers->count; ++i) {
+		if (lseq_nocase(key, headers->keys[i])) {
+			return headers->vals[i];
+		}
 	}
-	throw(error, ERR_NOT_FOUND, "http header not found");
+	throw(error, ERR_NOT_FOUND, "missing required http header");
 	return ls("");
 }
 
-ls* find_http_header(http_request_state* state, ls key) {
-	for (usz i = 0; i < state->header_count; ++i) {
-		if (lseq_nocase(key, state->header_keys[i]))
-			return &state->header_values[i];
+ls* http_find_header(http_headers_t* headers, ls key) {
+	for (usz i = 0; i < headers->count; ++i) {
+		if (lseq_nocase(key, headers->keys[i])) {
+			return &headers->vals[i];
+		}
 	}
 	return NULL;
 }
 
-#ifdef LT_OPENSSL
-#	define read_socket(state, buf, size, error) \
-		((state)->tls \
-			? socket_receive_tls((state)->tls, buf, size, error) \
-			: socket_receive((state)->socket,  buf, size, error))
-#else
-#	define read_socket(state, buf, size, error) \
-	socket_receive((state)->socket, buf, size, error)
-#endif
+#ifndef ON_WASI
 
-b8 receive_http_header_data(task* t, http_request_state* state, err* error) {
-	co_reenter(t);
+const ls proto_pfx = ls("HTTP/1.1");
 
-	for (;;) {
-		if UNLIKELY (state->buffer_it >= state->buffer_end) {
-			throw(error, ERR_LIMIT_EXCEEDED, "http headers exceed maximum length");
-			return 0;
-		}
-
-		while (!poll_handle(state->socket, R, 0)) {
-			if (time_ms() >= state->timeout_at_ms) {
-				throw(error, ERR_TIMED_OUT, "http connection timed out");
-				return 0;
-			}
-			co_set_awaiting(state->socket, R);
-			co_yield(0);
-		}
-
-		usz res = read_socket(state, state->buffer_it, state->buffer_end - state->buffer_it, error);
-		if UNLIKELY (!res)
-			return 0;
-
-		u8* search_from = state->buffer_it - 3;
-		if (search_from < state->buffer_start)
-			search_from = state->buffer_start;
-		state->buffer_it += res;
-
-		u8* end = lssubstr(lsrange(search_from, state->buffer_it), ls("\r\n\r\n"));
-		if (!end)
-			continue;
-		state->headers_end = end + 4;
-		state->trailing_content = lsrange(state->headers_end, state->buffer_it);
-		return 1;
-	}
+INLINE
+usz http_recv(http_connection_t* conn, void* data, usz size, err* error) {
+	if (conn->tls)
+		return socket_receive_tls(conn->tls, data, size, error);
+	else
+		return socket_receive(conn->socket, data, size, error);
 }
 
-b8 parse_http_headers(http_request_state* state, err* error) {
-	u8* it = state->headers_start;
+http_response_t* http_recv_response_preamble(task* t, http_connection_t* conn, http_response_t* out, err* error) {
+	co_reenter(t);
+
+	usz len;
 	for (;;) {
-		if (it >= state->headers_end)
-			return 1;
+		u8* start = conn->rb.first;
+		u8* end   = start + conn->rb.used;
+		ls avail = lsrange(start, end);
 
-		u8* line_start = it;
+		u8* preamble_end = lssubstr(avail, ls("\r\n"));
+
+		// SHOULD skip empty lines
+		if (preamble_end == start) {
+			rb_skip(&conn->rb, 2);
+			continue;
+		}
+
+		if (preamble_end) {
+			len = preamble_end - start;
+			break;
+		}
+
+		if (conn->rb.size == conn->rb.used) {
+			throw(error, ERR_LIMIT_EXCEEDED, "http preamble length exceeds buffer size");
+			return NULL;
+		}
+
 		for (;;) {
-			if UNLIKELY (it + 1 >= state->headers_end) {
-				throw(error, ERR_BAD_SYNTAX, "expected '\\r\\n' after http header");
-				return 0;
+			if (time_ms() > conn->timeout_at_ms) {
+				throw(error, ERR_TIMED_OUT, "http request timed out while receiving preamble");
+				return NULL;
 			}
-			if (it[0] == '\r' && it[1] == '\n')
+			if (poll_handle(conn->socket, R, conn->timeout_at_ms))
 				break;
-			++it;
+			co_yield(NULL);
 		}
-		ls line = lsrange(line_start, it);
-		if (!line.size)
-			return 1;
-		it += 2;
 
-		if UNLIKELY (state->header_count >= state->max_header_count) {
-			throw(error, ERR_LIMIT_EXCEEDED, "maximum http header limit exceeded");
-			return 0;
+		usz avail_size = rb_free_space(&conn->rb);
+		u8* avail_from = rb_free_from(&conn->rb);
+		usz read = http_recv(conn, avail_from, avail_size, error);
+		if (!read)
+			return NULL;
+		conn->rb.used += read;
+
+		co_yield(NULL);
+	}
+
+	ls preamble = lls(conn->rb.first, len);
+
+	ls proto = lssplit(preamble, ' ');
+	if (!lseq(proto, proto_pfx)) {
+		throw(error, ERR_BAD_SYNTAX, "invalid protocol string");
+		return NULL;
+	}
+	preamble = lstrim_left(lsdrop(preamble, proto.size));
+
+	ls code_str = lssplit(preamble, ' ');
+	u16 code = lstou(code_str, error);
+	if (!code || code > 999) {
+		throw(error, ERR_BAD_SYNTAX, "invalid status code");
+		return NULL;
+	}
+	preamble = lstrim_left(lsdrop(preamble, code_str.size));
+
+	ls msg = preamble;
+	if (!msg.size) {
+		throw(error, ERR_BAD_SYNTAX, "invalid status message");
+		return NULL;
+	}
+
+	if (conn->strbuf_it + msg.size > conn->strbuf_end) {
+		throw(error, ERR_NO_MEMORY, "not enough buffer space available for http status string");
+		return NULL;
+	}
+
+	memcpy(conn->strbuf_it, msg.ptr, msg.size);
+	out->status_msg = lls(conn->strbuf_it, msg.size);
+	conn->strbuf_it += msg.size;
+
+	out->status_code = code;
+
+	out->ver_minor = 1;
+	out->ver_major = 1;
+
+	rb_skip(&conn->rb, len + 2);
+	return out;
+}
+
+http_request_t* http_recv_request_preamble(task* t, http_connection_t* conn, http_request_t* out, err* error) {
+	co_reenter(t);
+
+	usz len;
+	for (;;) {
+		u8* start = conn->rb.first;
+		u8* end   = start + conn->rb.used;
+		ls avail = lsrange(start, end);
+
+		u8* preamble_end = lssubstr(avail, ls("\r\n"));
+
+		// SHOULD skip empty lines
+		if (preamble_end == start) {
+			rb_skip(&conn->rb, 2);
+			continue;
 		}
-		usz header_index = state->header_count++;
+
+		if (preamble_end) {
+			len = preamble_end - start;
+			break;
+		}
+
+		if (conn->rb.size == conn->rb.used) {
+			throw(error, ERR_LIMIT_EXCEEDED, "http preamble length exceeds buffer size");
+			return NULL;
+		}
+
+		for (;;) {
+			if (time_ms() > conn->timeout_at_ms) {
+				throw(error, ERR_TIMED_OUT, "http request timed out while receiving preamble");
+				return NULL;
+			}
+			if (poll_handle(conn->socket, R, conn->timeout_at_ms))
+				break;
+			co_yield(NULL);
+		}
+
+		usz avail_size = rb_free_space(&conn->rb);
+		u8* avail_from = rb_free_from(&conn->rb);
+		usz read = http_recv(conn, avail_from, avail_size, error);
+		if (!read)
+			return NULL;
+		conn->rb.used += read;
+
+		co_yield(NULL);
+	}
+
+	ls preamble = lls(conn->rb.first, len);
+
+	ls method = lssplit(preamble, ' ');
+	if (!method.size) {
+		throw(error, ERR_BAD_SYNTAX, "invalid request method");
+		return NULL;
+	}
+	preamble = lstrim_left(lsdrop(preamble, method.size));
+
+	ls path = lssplit(preamble, ' ');
+	if (!path.size) {
+		throw(error, ERR_BAD_SYNTAX, "invalid request path");
+		return NULL;
+	}
+	preamble = lstrim_left(lsdrop(preamble, path.size));
+
+	if (!lseq(preamble, proto_pfx)) {
+		throw(error, ERR_BAD_SYNTAX, "invalid protocol string");
+		return NULL;
+	}
+
+	if (conn->strbuf_it + method.size + path.size > conn->strbuf_end) {
+		throw(error, ERR_NO_MEMORY, "not enough buffer space available for http method and/or path strings");
+		return NULL;
+	}
+
+	memcpy(conn->strbuf_it, method.ptr, method.size);
+	out->method = lls(conn->strbuf_it, method.size);
+	conn->strbuf_it += method.size;
+
+	memcpy(conn->strbuf_it, path.ptr, path.size);
+	out->path = lls(conn->strbuf_it, path.size);
+	conn->strbuf_it += path.size;
+
+	out->ver_minor = 1;
+	out->ver_major = 1;
+
+	rb_skip(&conn->rb, len + 2);
+	return out;
+}
+
+http_headers_t* http_recv_headers(task* t, http_connection_t* conn, http_headers_t* out, err* error) {
+	co_reenter(t);
+
+	usz len;
+	for (;;) {
+		u8* start = conn->rb.first;
+		u8* end   = start + conn->rb.used;
+		ls avail = lsrange(start, end);
+
+		u8* headers_end = lssubstr(avail, ls("\r\n\r\n"));
+
+		if (headers_end) {
+			len = headers_end - start + 2;
+			break;
+		}
+
+		if (conn->rb.size == conn->rb.used) {
+			throw(error, ERR_LIMIT_EXCEEDED, "total http header lengths exceed buffer size");
+			return NULL;
+		}
+
+		for (;;) {
+			if (time_ms() > conn->timeout_at_ms) {
+				throw(error, ERR_TIMED_OUT, "http request timed out while receiving headers");
+				return NULL;
+			}
+			if (poll_handle(conn->socket, R, conn->timeout_at_ms))
+				break;
+			co_yield(NULL);
+		}
+
+		usz avail_size = rb_free_space(&conn->rb);
+		u8* avail_from = rb_free_from(&conn->rb);
+		usz read = http_recv(conn, avail_from, avail_size, error);
+		if (!read)
+			return NULL;
+		conn->rb.used += read;
+
+		co_yield(NULL);
+	}
+
+	usz count = 0;
+
+	b8 chunked = 0;
+	usz content_length = 0;
+
+	ls rem = lls(conn->rb.first, len);
+	while (rem.size) {
+		u8* line_end = lssubstr(rem, ls("\r\n"));
+		if (!line_end) {
+			throw(error, ERR_BAD_SYNTAX, "missing crlf after http header");
+			return NULL;
+		}
+		ls line = lsrange(rem.ptr, line_end);
 
 		ls key = lssplit(line, ':');
-		if UNLIKELY (key.size == line.size) {
-			throw(error, ERR_BAD_SYNTAX, "expected ':' before '\\r\\n' in http header");
-			return 0;
+		if (key.size == line.size) {
+			throw(error, ERR_BAD_SYNTAX, "missing ':' in http header");
+			return NULL;
 		}
-		state->header_keys[header_index] = key;
-		u8* val_start = line.ptr + key.size + 1;
-		ls value = lstrim(lsrange(val_start, it));
-		state->header_values[header_index] = value;
+		ls val = lstrim(lsdrop(line, key.size + 1));
+		key = lstrim(key);
 
-		if (lseq_upper(key, ls("CONTENT-LENGTH")))
-			state->content_length = lstou(value, error);
-		else if (lseq_upper(key, ls("CONNECTION")) && lseq_upper(value, ls("KEEP-ALIVE")))
-			state->flags |= HTTP_KEEP_ALIVE;
-		else if (lseq_upper(key, ls("TRANSFER-ENCODING")) && lseq_upper(value, ls("CHUNKED")))
-			state->flags |= HTTP_CHUNKED;
-		else if (lseq_upper(key, ls("HOST")))
-			state->host = value;
-		else if (lseq_upper(key, ls("AUTHORIZATION")))
-			state->authorization = value;
+		if (count >= conn->max_header_count) {
+			throw(error, ERR_LIMIT_EXCEEDED, "http header count exceeded max limit");
+			return NULL;
+		}
+
+		conn->header_vals[count] = val;
+		conn->header_keys[count] = key;
+		++count;
+
+		if (lseq_nocase(key, ls("Content-Length")))
+			content_length = lstou(val, err_ignore); // !!
+		else if (lseq_nocase(key, ls("Transfer-Encoding")) && lseq_nocase(val, ls("chunked")))
+			chunked = 1;
+
+		rem = lsdrop(rem, line.size + 2);
 	}
+
+	if (conn->strbuf_it + len > conn->strbuf_end) {
+		throw(error, ERR_NO_MEMORY, "not enough buffer space available for header strings");
+		return NULL;
+	}
+
+	memcpy(conn->strbuf_it, conn->rb.first, len);
+	ls str = lls(conn->strbuf_it, len);
+	conn->strbuf_it += len;
+	rb_skip(&conn->rb, len + 2);
+	out->str = str;
+
+	out->count = count;
+	out->keys  = conn->header_keys;
+	out->vals  = conn->header_vals;
+
+	conn->remain  = content_length;
+	conn->chunked = chunked;
+
+	return out;
 }
 
-static
-usz receive_content(task* t, http_request_state* state, void* data, usz size, err* error) {
+usz http_recv_content_chunk(task* t, http_connection_t* conn, void* data, usz size, err* error) {
 	co_reenter(t);
 
-	state->chunk_size = state->content_length - state->trailing_content.size;
-	// this can happen if more than one request is sent over a single connection
-	if (state->content_length < state->trailing_content.size)
-		state->chunk_size = 0;
-
-	while (state->trailing_content.size) {
-		if (size > state->trailing_content.size)
-			size = state->trailing_content.size;
-		memcpy(data, state->trailing_content.ptr, size);
-		state->trailing_content = lsdrop(state->trailing_content, size);
-		co_yield(size);
+	if (conn->chunked) {
+		throw(error, ERR_NOT_IMPLEMENTED, "chunked transfer encoding is not implemented");
+		return 0;
 	}
 
-	while (state->chunk_size) {
-		while (!poll_handle(state->socket, R, 0)) {
-			if (time_ms() >= state->timeout_at_ms) {
-				throw(error, ERR_TIMED_OUT, "http connection timed out");
-				return 0;
-			}
-			co_set_awaiting(state->socket, R);
-			co_yield(0);
+	while (conn->remain) {
+		if (size > conn->remain)
+			size = conn->remain;
+
+		if (time_ms() > conn->timeout_at_ms) {
+			throw(error, ERR_TIMED_OUT, "http request timed out while receiving content");
+			return 0;
 		}
 
-		if (size > state->chunk_size)
-			size = state->chunk_size;
-		usz res = read_socket(state, data, size, error);
-		if UNLIKELY (!res)
-			return 0;
-		state->chunk_size -= res;
+		if (conn->rb.used < conn->rb.size && poll_handle(conn->socket, R, conn->timeout_at_ms)) {
+			u8* avail_from = rb_free_from(&conn->rb);
+			usz avail_size = rb_free_space(&conn->rb);
+
+			usz res = http_recv(conn, avail_from, avail_size, error);
+			if (!res) {
+				return 0;
+			}
+			conn->rb.used += res;
+		}
+
+		usz res = rb_read(&conn->rb, data, size);
+		conn->remain -= res;
 		co_yield(res);
 	}
+
 	return 0;
-}
-
-static
-usz receive_chunked(task* t, http_request_state* state, void* data, usz size, err* error) {
-	co_reenter(t);
-
-	throw(error, ERR_NOT_IMPLEMENTED, "streaming not implemented for chunked content encoding");
-	return 0;
-
-	state->chunk_size_str = lls(state->chunk_size_buf, 0);
-
-	for (;;) {
-		u8* size_end;
-		for (;;) {
-			size_end = lssubstr(state->chunk_size_str, ls("\r\n"));
-			if (size_end)
-				break;
-
-			if (state->chunk_size_str.size >= sizeof(state->chunk_size_buf)) {
-				throw(error, ERR_BAD_SYNTAX, "invalid content chunk size");
-				return 0;
-			}
-
-			while (!poll_handle(state->socket, R, 0)) {
-				if (time_ms() >= state->timeout_at_ms) {
-					throw(error, ERR_TIMED_OUT, "http connection timed out");
-					return 0;
-				}
-				co_set_awaiting(state->socket, R);
-				co_yield(0);
-			}
-
-			u8* chunk_size_str_end = state->chunk_size_buf + state->chunk_size_str.size;
-			usz buf_remain = sizeof(state->chunk_size_buf) - state->chunk_size_str.size;
-			usz res = read_socket(state, chunk_size_str_end, buf_remain, error);
-			if UNLIKELY (!res)
-				return 0;
-			state->chunk_size_str.size += res;
-		}
-
-		ls size_str = lsrange(state->processed_it, size_end);
-		state->chunk_size = hexlstou(size_str, error);
-		if (!state->chunk_size)
-			return 0;
-
-		// !! could split very small chunks incorrectly
-		state->chunk_size_str = lsdrop(state->chunk_size_str, size_str.size + 2);
-		while (state->chunk_size_str.size) {
-			usz res = state->chunk_size_str.size;
-			if (res > size)
-				res = size;
-			memcpy(data, state->chunk_size_str.ptr, res);
-			state->chunk_size_str = lsdrop(state->chunk_size_str, res);
-			co_yield(res);
-		}
-
-		while (state->chunk_size) {
-			while (!poll_handle(state->socket, R, 0)) {
-				if (time_ms() >= state->timeout_at_ms) {
-					throw(error, ERR_TIMED_OUT, "http connection timed out");
-					return 0;
-				}
-				co_set_awaiting(state->socket, R);
-				co_yield(0);
-			}
-
-			usz res = read_socket(state, data, size, error);
-			if UNLIKELY (!res)
-				return 0;
-			state->chunk_size -= res;
-			co_yield(res);
-		}
-	}
-}
-
-usz receive_http_content_async(task* t, http_request_state* state, void* data, usz size, err* err) {
-	if (state->flags & HTTP_CHUNKED)
-		return receive_chunked(t, state, data, size, err);
-	else
-		return receive_content(t, state, data, size, err);
-}
-
-b8 receive_http_request_async(task* t, http_request_state* state, err* error) {
-	co_reenter(t);
-
-	if (!state->timeout_at_ms)
-		state->timeout_at_ms = time_ms() + S_TO_MS(60);
-	state->buffer_it = state->buffer_start;
-
-	co_await(b8 success = receive_http_header_data(co_subtask, state, error), 0);
-	if UNLIKELY (!success)
-		return 0;
-
-	state->headers_start = lssubstr(lsrange(state->buffer_start, state->headers_end), ls("\r\n"));
-	if UNLIKELY (!state->headers_start) {
-		throw(error, ERR_BAD_SYNTAX, "expected '\\r\\n' after http version");
-		return 0;
-	}
-	state->headers_start += 2; // skip \r\n
-
-	u8* it = state->buffer_start;
-	while (it < state->headers_start && !isspace(*it))
-		++it;
-	state->method = lsrange(state->buffer_start, it++);
-
-	u8* path_start = it;
-	while (it < state->headers_start && !isspace(*it))
-		++it;
-	state->path = lsrange(path_start, it++);
-
-	u8* version_start = it;
-	while (it < state->headers_start && !isspace(*it))
-		++it;
-	ls version = lsrange(version_start, it++);
-
-	if UNLIKELY (!lseq(version, ls("HTTP/1.1"))) {
-		throw(error, ERR_UNSUPPORTED, "unsupported HTTP version");
-		return 0;
-	}
-	state->version_major = 1;
-	state->version_minor = 1;
-
-	return parse_http_headers(state, error);
-}
-
-b8 receive_http_response_async(task* t, http_request_state* state, err* error) {
-	co_reenter(t);
-
-	if (!state->timeout_at_ms)
-		state->timeout_at_ms = time_ms() + S_TO_MS(60);
-	state->buffer_it = state->buffer_start;
-
-	co_await(b8 success = receive_http_header_data(co_subtask, state, error), 0);
-	if UNLIKELY (!success)
-		return 0;
-
-	state->headers_start = lssubstr(lsrange(state->buffer_start, state->headers_end), ls("\r\n"));
-	if UNLIKELY (!state->headers_start) {
-		throw(error, ERR_BAD_SYNTAX, "expected '\\r\\n' after http response status");
-		return 0;
-	}
-	state->headers_start += 2; // skip \r\n
-
-	u8* it = state->buffer_start;
-	while (it < state->headers_start && !isspace(*it))
-		++it;
-	ls version = lsrange(state->buffer_start, it++);
-
-	u8* status_code_start = it;
-	while (it < state->headers_start && !isspace(*it))
-		++it;
-	state->status_code = lstou(lsrange(status_code_start, it++), error);
-
-	state->status_msg = lsrange(it, state->headers_start - 2);
-
-	if UNLIKELY (!lseq(version, ls("HTTP/1.1"))) {
-		throw(error, ERR_UNSUPPORTED, "unsupported HTTP version");
-		return 0;
-	}
-	state->version_major = 1;
-	state->version_minor = 1;
-
-	return parse_http_headers(state, error);
 }
 
 #endif // !ON_WASI

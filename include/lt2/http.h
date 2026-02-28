@@ -6,50 +6,62 @@
 #define HTTP_KEEP_ALIVE 1
 #define HTTP_CHUNKED    2
 
-typedef struct http_request_state {
-	socket_handle socket;
-	tls_handle* tls;
+typedef struct http_response {
+	u8 ver_major;
+	u8 ver_minor;
+
+	u16 status_code;
+	ls status_msg;
+} http_response_t;
+
+typedef struct http_request {
+	u8 ver_major;
+	u8 ver_minor;
 
 	ls path;
 	ls method;
+} http_request_t;
 
-	u8 version_major;
-	u8 version_minor;
-	u8 flags;
-	u8 pad[1];
-
-	u16 header_count;
-	u16 max_header_count;
-	ls* header_keys;
-	ls* header_values;
-
-	usz status_code;
+typedef struct http_headers {
+	u16 status_code;
 	ls status_msg;
+
+	ls str;
+
+	usz count;
+	ls* keys;
+	ls* vals;
+} http_headers_t;
+
+typedef struct http_connection {
+	tls_handle* tls;
+	socket_handle socket;
 
 	u64 timeout_at_ms;
 
-	u8* buffer_start;
-	u8* buffer_end;
-	u8* buffer_it;
-	u8* processed_it;
+	u8* strbuf;
+	u8* strbuf_it;
+	u8* strbuf_end;
 
-	u8* headers_start;
-	u8* headers_end;
-	ls  trailing_content;
+	ls* header_keys;
+	ls* header_vals;
+	usz max_header_count;
 
-	usz chunk_size;
-	u8  chunk_size_buf[24];
-	ls  chunk_size_str;
+	ringbuf_t rb;
 
-	usz content_length;
-	ls host;
-	ls authorization;
-} http_request_state;
+	b8 keep_alive;
+	b8 chunked;
 
-ls  get_http_header (http_request_state* state, ls key, err* error);
-ls* find_http_header(http_request_state* state, ls key);
+	usz remain;
+} http_connection_t;
 
-b8 receive_http_response_async(task* t, http_request_state* state, err* error);
-b8 receive_http_request_async(task* t, http_request_state* state, err* error);
-usz receive_http_content_async(task* t, http_request_state* state, void* data, usz size, err* error);
+ls  http_get_header (http_headers_t* headers, ls key, err* error);
+ls* http_find_header(http_headers_t* headers, ls key);
+
+http_response_t* http_recv_response_preamble(task* t, http_connection_t* conn, http_response_t* out, err* error);
+http_request_t*  http_recv_request_preamble (task* t, http_connection_t* conn, http_request_t*  out, err* error);
+
+http_headers_t* http_recv_headers(task* t, http_connection_t* conn, http_headers_t* out, err* error);
+
+usz http_recv_content_chunk(task* t, http_connection_t* conn, void* data, usz size, err* error);
 
