@@ -15,7 +15,7 @@ CFLAGS = \
 LDFLAGS =
 
 
-ifdef DEBUG
+ifdef debug
 CFLAGS  += -O0 -g -DDEBUG -fno-optimize-sibling-calls -fno-omit-frame-pointer
 LDFLAGS += -O0 -g -rdynamic
 else
@@ -23,16 +23,16 @@ CFLAGS  += -O2
 LDFLAGS += -O2
 endif
 
-ifdef ASAN
+ifdef asan
 CFLAGS += -fsanitize=address
 endif
 
-ifdef UBSAN
+ifdef ubsan
 CFLAGS += -fsanitize=undefined
 endif
 
 
-ifdef WASI
+ifdef wasi
 RUN = bin/run.wasm
 RUNCMD = python -m http.server
 
@@ -41,14 +41,14 @@ CFLAGS  += --target=wasm32
 LDFLAGS += -nostdlib -Wl,--export-all
 endif
 
-ifdef WAYLAND
+ifdef wayland
 HEADERS += include/lt2/wayland/xdg-shell-client.h
 SRC     += src/wayland/xdg-shell.c
 CFLAGS  += -DWAYLAND `pkg-config --cflags wayland-client`
 LDFLAGS += `pkg-config --libs wayland-client`
 endif
 
-ifdef OPENSSL
+ifdef ssl
 CFLAGS  += -DLT_OPENSSL `pkg-config --cflags openssl`
 LDFLAGS += `pkg-config --libs openssl`
 endif
