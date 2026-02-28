@@ -317,8 +317,14 @@ usz rb_free_space(ringbuf_t* rb) {
 	return rb->size - rb->used;
 }
 
+INLINE
+void* rb_free_from(ringbuf_t* rb) {
+	return rb->base + (rb->first - rb->base + rb->used) % rb->size;
+}
+
 usz rb_write(ringbuf_t* rb, const void* data, usz size);
 usz rb_read(ringbuf_t* rb, void* data, usz size);
+usz rb_skip(ringbuf_t* rb, usz size);
 
 // ----- libc
 
@@ -341,7 +347,7 @@ extern void exit(int code);
 
 // ----- async
 
-b8 poll_handle(file_handle fd, u8 mode, u64 timeoout_ms);
+b8 poll_handle(file_handle fd, u8 mode, u64 timeout_ms);
 
 typedef struct task {
 	union {

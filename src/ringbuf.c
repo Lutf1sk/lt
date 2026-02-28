@@ -62,3 +62,11 @@ usz rb_read(ringbuf_t* rb, void* data, usz size) {
 	return size;
 }
 
+usz rb_skip(ringbuf_t* rb, usz size) {
+	if (size > rb->used)
+		size = rb->used;
+	rb->first = rb->base + (rb->first - rb->base + size) % rb->size;
+	rb->used -= size;
+	return size;
+}
+
