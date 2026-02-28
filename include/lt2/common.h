@@ -32,6 +32,18 @@
 #	define HAS_AVX  1
 #endif
 
+#if defined(__x86_64__) || defined(_M_64)
+#	define ON_AMD64 1
+#elif defined(i386) || defined(__i386__) || defined(__i386) || defined(M_IX86)
+#	define ON_X86 1
+#elif defined(__arm__)
+#	define ON_ARM32 1
+#elif defined(__aarch64__)
+#	define ON_ARM64 1
+#else
+#	warn unsupported architecture
+#endif
+
 #if defined(IS_GCC) || defined(IS_CLANG)
 #	define ATTRIB(attrib) __attribute__((attrib))
 #	define ALIGN(n)     ATTRIB(aligned(n))
