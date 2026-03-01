@@ -5,11 +5,14 @@
 #	include <lt2/time.h>
 #	include <lt2/log.h>
 #	include <lt2/pixbuf.h>
+#	include <lt2/str.h>
 
 #	include <wayland-client.h>
 #	include <lt2/wayland/xdg-shell-client.h>
 
 #	include <string.h>
+#	include <time.h>
+#	include <errno.h>
 
 #	ifndef _POSIX_C_SOURCE
 #		define _POSIX_C_SOURCE 200112L
@@ -56,15 +59,33 @@ void recreate_buffer(i32 width, i32 height) {
 		munmap(win.pb.data, window_width * window_height * sizeof(u32));
 		win.pb.data = NULL;
 		wl_buffer_destroy(win.buffer);
+		win.buffer = NULL;
 	}
 
 	window_width  = width;
 	window_height = height;
 
+	if (!window_width || !window_height) {
+		win.pb.width = width;
+		win.pb.width = height;
+		return;
+	}
+
+	llogf(NULL, LOG_INFO, "resizing to {u32}x{u32}\n", width, height);
+
 	const usz size = window_width * window_height * sizeof(u32);
-	const char* path = "/lt2-wl-shm";
-	int fd = shm_open(path, O_RDWR | O_CREAT | O_EXCL, 0x0600);
-	if (fd < 0) {
+
+	int fd;
+	char path[512];
+	u64 t = time(NULL);
+	for (usz i = 0; i < 10; ++i) {
+		lsprintf(lls(path, sizeof(path)), "/lt2-wl-shm-{u64}{char}", t * 10 + i, 0); // !! should be randomized
+
+		fd = shm_open(path, O_RDWR | O_CREAT | O_EXCL, 0x0600);
+		if (fd >= 0)
+			break;
+		if (errno == EEXIST)
+			continue;
 		throw_errno(err_fail);
 		return;
 	}
@@ -420,9 +441,12 @@ void window_init(err* err) {
 
 	win.xdg_toplevel = xdg_surface_get_toplevel(win.xdg_surface);
 	xdg_toplevel_set_title(win.xdg_toplevel, "A window");
+	xdg_toplevel_set_app_id(win.xdg_toplevel, "An app ID");
 	xdg_toplevel_add_listener(win.xdg_toplevel, &xdg_toplevel_listener, &win);
 
 	wl_surface_commit(win.wl_surface);
+
+	wl_display_roundtrip(display);
 
 	recreate_buffer(800, 600);
 }
