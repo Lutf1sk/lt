@@ -1,7 +1,7 @@
 #include <lt2/pixbuf.h>
 
 FLATTEN
-void pb_draw_rect(pixbuf_t* buf, i32 x, i32 y, i32 w, i32 h, u32 color) {
+void pb_draw_rect(pixbuf_t buf[static 1], i32 x, i32 y, i32 w, i32 h, u32 color) {
 	if (w <= 0 || h <= 0)
 		return;
 
@@ -16,7 +16,7 @@ void pb_draw_rect(pixbuf_t* buf, i32 x, i32 y, i32 w, i32 h, u32 color) {
 	pb_draw_hline(buf, x, y + h - 1, x2, color);
 }
 
-void pb_fill_rect(pixbuf_t* buf, i32 x, i32 y, i32 w, i32 h, u32 color) {
+void pb_fill_rect(pixbuf_t buf[static 1], i32 x, i32 y, i32 w, i32 h, u32 color) {
 	if (w <= 0 || h <= 0)
 		return;
 
@@ -43,7 +43,7 @@ void pb_fill_rect(pixbuf_t* buf, i32 x, i32 y, i32 w, i32 h, u32 color) {
 }
 
 static
-void line_lo(pixbuf_t* buf, i32 x1, i32 y1, i32 x2, i32 y2, u32 color) {
+void line_lo(pixbuf_t buf[static 1], i32 x1, i32 y1, i32 x2, i32 y2, u32 color) {
 	if (x2 < x1) {
 		i32 tmp = x2;
 		x2 = x1;
@@ -79,7 +79,7 @@ void line_lo(pixbuf_t* buf, i32 x1, i32 y1, i32 x2, i32 y2, u32 color) {
 }
 
 static
-void line_hi(pixbuf_t* buf, i32 x1, i32 y1, i32 x2, i32 y2, u32 color) {
+void line_hi(pixbuf_t buf[static 1], i32 x1, i32 y1, i32 x2, i32 y2, u32 color) {
 	if (y2 < y1) {
 		i32 tmp = y2;
 		y2 = y1;
@@ -115,7 +115,7 @@ void line_hi(pixbuf_t* buf, i32 x1, i32 y1, i32 x2, i32 y2, u32 color) {
 }
 
 FLATTEN
-void pb_draw_line(pixbuf_t* buf, i32 x, i32 y, i32 x2, i32 y2, u32 color) {
+void pb_draw_line(pixbuf_t buf[static 1], i32 x, i32 y, i32 x2, i32 y2, u32 color) {
 	i32 adx = x2 - x;
 	if (adx < 0)
 		adx = -adx;
@@ -129,7 +129,7 @@ void pb_draw_line(pixbuf_t* buf, i32 x, i32 y, i32 x2, i32 y2, u32 color) {
 		line_hi(buf, x, y, x2, y2, color);
 }
 
-void pb_draw_hline(pixbuf_t* buf, i32 x, i32 y, i32 x2, u32 color) {
+void pb_draw_hline(pixbuf_t buf[static 1], i32 x, i32 y, i32 x2, u32 color) {
 	if (y < 0 || y >= buf->height)
 		return;
 
@@ -148,7 +148,7 @@ void pb_draw_hline(pixbuf_t* buf, i32 x, i32 y, i32 x2, u32 color) {
 		buf->data[y * buf->width + i] = color;
 }
 
-void pb_draw_vline(pixbuf_t* buf, i32 x, i32 y, i32 y2, u32 color) {
+void pb_draw_vline(pixbuf_t buf[static 1], i32 x, i32 y, i32 y2, u32 color) {
 	if (x < 0 || x >= buf->width)
 		return;
 
@@ -167,10 +167,47 @@ void pb_draw_vline(pixbuf_t* buf, i32 x, i32 y, i32 y2, u32 color) {
 		buf->data[i * buf->width + x] = color;
 }
 
+void pb_blit_entire(pixbuf_t buf[static 1], i32 x, i32 y, const pixbuf_t other[static 1]) {
+	for (usz i = 0; i < other->height; ++i)
+		memcpy(&buf->data[(y + i) * buf->width + x], &other->data[i * other->width], other->width * sizeof(u32));
+}
+
+void pb_blit(pixbuf_t buf[static 1], i32 x, i32 y, const pixbuf_t other[static 1]) {
+	if (x + other->width < 0 || x >= buf->width)
+		return;
+	if (y + other->height < 0 || y >= buf->height)
+		return;
+
+	i32 sx = 0;
+	i32 sy = 0;
+	i32 sw = other->width;
+	i32 sh = other->height;
+
+	if (x + sw > buf->width)
+		sw -= x + sw - buf->width;
+	if (y + sh > buf->height)
+		sh -= y + sh - buf->height;
+
+	if (x < 0) {
+		sx -= x;
+		sw += x;
+		x = 0;
+	}
+	if (y < 0) {
+		sy -= y;
+		sh += y;
+		y = 0;
+	}
+
+
+	for (i32 i = 0; i < sh; ++i)
+		memcpy(&buf->data[(y + i) * buf->width + x], &other->data[(sy + i) * other->width + sx], sw * sizeof(u32));
+}
+
 #ifndef ON_WASI
 #	include <math.h>
 
-void pb_fill_circle(pixbuf_t* buf, i32 x, i32 y, i32 r, i32 color) {
+void pb_fill_circle(pixbuf_t buf[static 1], i32 x, i32 y, i32 r, i32 color) {
 	i32 min_y = y - r;
 	i32 max_y = y + r;
 	if (min_y < 0)

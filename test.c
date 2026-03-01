@@ -149,6 +149,29 @@ int main(int argc, char** argv) {
 		pb_fill_circle(&pb, -75, -75, 75, 0xFFFFFFFF);
 		pb_fill_circle(&pb, pb.width + 75, pb.height + 75, 75, 0xFFFFFFFF);
 		tassert(memcmp(pb.data, cmp_data, size) == 0);
+
+		pixbuf_t image = {
+			.width  = 2,
+			.height = 2,
+			.data   = (u32[]) {
+				0xFFFFFFFF, 0xFFFFFFFF,
+				0xFFFFFFFF, 0xFFFFFFFF,
+			}
+		};
+
+		memset(cmp_data, 0, size);
+		memset(pb.data, 0, size);
+		pb_blit(&pb, -1, -1, &image);
+		pb_blit(&pb, pb.width - 1, pb.height - 1, &image);
+		cmp_data[0] = 0xFFFFFFFF;
+		cmp_data[pb.height * pb.width - 1] = 0xFFFFFFFF;
+		tassert(memcmp(pb.data, cmp_data, size) == 0);
+
+		memset(cmp_data, 0, size);
+		memset(pb.data, 0, size);
+		pb_blit(&pb, -2, -2, &image);
+		pb_blit(&pb, pb.width, pb.height, &image);
+		tassert(memcmp(pb.data, cmp_data, size) == 0);
 	}
 
 	test ("ctype") {
