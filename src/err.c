@@ -1,5 +1,6 @@
 #include <lt2/common.h>
 #include <lt2/log.h>
+#include <lt2/debug.h>
 
 #define err_store ((struct err*)3)
 
@@ -63,6 +64,9 @@ void throw(err* err, u8 code, const char* fmt, ...) {
 		va_list args;
 		va_start(args, fmt);
 		vlogf(NULL, LOG_ERR, fmt, args);
+#ifdef DEBUG
+		log_stack_trace(NULL, 1);
+#endif
 		va_end(args);
 		exit(1);
 	}

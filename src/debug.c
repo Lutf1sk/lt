@@ -101,6 +101,8 @@ void log_stack_trace(log_sink* logger, usz skip_frames) {
 				if (__builtin_frame_address(n) >= thread_root_frame) \
 					break; \
 				ip = __builtin_extract_return_addr(__builtin_return_address(n)); \
+				if (!ip) \
+					break; \
 				stack_trace_ip(logger, ip);
 
 	void* ip;
