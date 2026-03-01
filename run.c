@@ -3,6 +3,7 @@
 #include <lt2/log.h>
 #include <lt2/async.h>
 #include <lt2/time.h>
+#include <lt2/debug.h>
 
 #include <stdlib.h>
 
@@ -129,6 +130,7 @@ enum species_id {
 	SP_DWARF  = 1,
 	SP_ELF    = 2,
 	SP_GOBLIN = 3,
+
 	SP_COUNT,
 };
 
@@ -374,10 +376,12 @@ void on_frame() {
 }
 
 int main(int argc, char** argv) {
-	window_init(err_warn);
+	default_log_sink->file.color = 1;
 
-	for (usz i = 0; i < 30; ++i)\
-		rand();
+	set_root_frame();
+	add_debug_hooks(err_warn);
+
+	window_init(err_warn);
 
 	for (;;)
 		on_frame();
