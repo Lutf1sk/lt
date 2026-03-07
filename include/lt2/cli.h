@@ -24,3 +24,13 @@ typedef struct cli_options {
 b8 parse_cli_args(int argc, char** argv, cli_options cli[static 1], err* err);
 void print_cli_help(cli_options cli[static 1]);
 
+typedef struct cli_process {
+	file_handle out;
+	file_handle in;
+	file_handle err;
+	u64 pid;
+} cli_process_t;
+
+cli_process_t cli_run(ls cmd, err* error);
+void cli_close(cli_process_t* p, err* error);
+

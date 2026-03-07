@@ -3,7 +3,6 @@
 
 #ifdef ON_UNIX
 #	include <unistd.h>
-
 #elifdef ON_WASI
 #	include <lt2/wasi.h>
 #endif
@@ -97,6 +96,8 @@ b8 parse_cli_args(int argc, char** argv, cli_options cli[static 1], err* err) {
 }
 
 #ifndef ON_WASI
+#	include <stdio.h>
+
 
 // TODO: this is messy. should be cleaned up.
 void print_cli_help(cli_options cli[static 1]) {
@@ -167,6 +168,83 @@ void print_cli_help(cli_options cli[static 1]) {
 		}
 	}
 }
+
+
+cli_process_t cli_run(ls cmd, err* error) {
+	int out_fds[2] = {0};
+	int in_fds [2] = {0};
+	int err_fds[2] = {0};
+
+	if UNLIKELY (pipe(out_fds) < 0) {
+		throw_errno(error);
+		goto err0;
+	}
+	if UNLIKELY (pipe(in_fds) < 0) {
+		throw_errno(error);
+		goto err1;
+	}
+	if UNLIKELY (pipe(err_fds) < 0) {
+		throw_errno(error);
+		goto err2;
+	}
+
+	pid_t child_pid = fork();
+	if (!child_pid) {
+		close(out_fds[0]);
+		close(in_fds [1]);
+		close(err_fds[0]);
+
+		if UNLIKELY (dup2(out_fds[1], STDOUT_FILENO) < 0)
+			exit(1);
+		if UNLIKELY (dup2(in_fds [0], STDIN_FILENO) < 0)
+			exit(1);
+		if UNLIKELY (dup2(err_fds[1], STDERR_FILENO) < 0)
+			exit(1);
+
+		close(out_fds[1]);
+		close(in_fds [0]);
+		close(err_fds[1]);
+
+		char* cstr = malloc(cmd.size + 1);
+		memcpy(cstr, cmd.ptr, cmd.size);
+		cstr[cmd.size] = 0;
+
+		execl("/bin/sh", "/bin/sh", "-c", cstr, NULL);
+		exit(1); // execl should never return if successful
+	}
+
+	close(out_fds[1]);
+	close(in_fds [0]);
+	close(err_fds[1]);
+
+	return (cli_process_t) {
+		.out = out_fds[0],
+		.in  = in_fds [1],
+		.err = err_fds[0],
+		.pid = child_pid,
+	};
+
+err2:
+	close(in_fds[0]);
+	close(in_fds[1]);
+err1:
+	close(out_fds[0]);
+	close(out_fds[1]);
+err0:
+	return (cli_process_t) {
+		.out = -1,
+		.in  = -1,
+		.err = -1,
+	};
+}
+
+void cli_close(cli_process_t* p, err* error) {
+	// !! TODO: error handling
+	close(p->out);
+	close(p->in);
+	close(p->err);
+}
+
 
 #endif // !ON_WASI
 
