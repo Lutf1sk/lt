@@ -84,6 +84,13 @@ usz lsfirst(ls str, u8 c) {
 	return str.size;
 }
 
+INLINE
+void lsreplacec(ls str, u8 from, u8 to) {
+	for (u8* it = str.ptr, *end = it + str.size; it < end; ++it)
+		if (*it == from)
+			*it = to;
+}
+
 ls lstrim_left(ls str);
 ls lstrim_right(ls str);
 ls lstrim(ls str);
