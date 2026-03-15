@@ -68,6 +68,8 @@ test: all
 	$(CC) $(CFLAGS) test.c $(OUT) -o bin/test $(LDFLAGS)
 	bin/test $(args)
 
+ci: test
+
 src/wayland/xdg-shell.c: /usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml
 	@-mkdir -p $(dir $@)
 	wayland-scanner private-code <$< >$@
@@ -90,5 +92,5 @@ bin/obj/%.o: src/%.c $(HEADERS) makefile
 	$(CC) $(CFLAGS) -c $< -o $@
 
 
-.PHONY: all run clean test
+.PHONY: all run clean test ci
 
