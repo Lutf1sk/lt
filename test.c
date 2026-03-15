@@ -6,6 +6,7 @@
 #include <lt2/ini.h>
 #include <lt2/str.h>
 #include <lt2/base64.h>
+#include <lt2/memstream.h>
 
 #include <ctype.h>
 
@@ -425,6 +426,40 @@ int main(int argc, char** argv) {
 
 		tassert(dec_len == real_dec_len);
 		tassert(lseq(lls(dec_data, real_dec_len), str));
+	}
+
+	test ("memstream") {
+		u8 buf[128];
+		memstream_t ms = {
+			.data = buf,
+			.it   = buf,
+			.end  = buf + sizeof(buf)
+		};
+
+		tassert(!ms_write8(&ms, 'A'));
+		tassert(!ms_write8(&ms, 'B'));
+		tassert(!ms_write8(&ms, 'C'));
+		tassert(!ms_writes(&ms, ls("abc")));
+		tassert(!ms_write(&ms, "123", 3));
+		tassert(lseq(ms_result(&ms), ls("ABCabc123")));
+
+		tassert(!ms_write8(&ms, 'A'));
+		tassert(!ms_write16(&ms, 'A'));
+		tassert(!ms_write32(&ms, 'A'));
+		tassert(!ms_write64(&ms, 'A'));
+
+		u8 ul_buf[128];
+		memset(ul_buf, '_', sizeof(ul_buf));
+		tassert(!ms_write(&ms, ul_buf, ms.end - ms.it));
+
+		tassert(ms_write8(&ms, 'A'));
+		tassert(ms_write16(&ms, 'A'));
+		tassert(ms_write32(&ms, 'A'));
+		tassert(ms_write64(&ms, 'A'));
+		tassert(ms_writes(&ms, ls("asdf")));
+		tassert(ms_write(&ms, "123", 3));
+		tassert(!ms_writes(&ms, ls("")));
+		tassert(!ms_write(&ms, "", 0));
 	}
 }
 
