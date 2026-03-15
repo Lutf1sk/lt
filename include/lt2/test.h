@@ -9,13 +9,9 @@ typedef struct result {
 	u32 failed;
 } result_t;
 
-INLINE
-void after_test(result_t* res) {
-	if (res->failed)
-		llogf(NULL, LOG_ALERT, "[{char*}] {u32} failed ({u32} total)", res->name, res->failed, res->count);
-	else
-		llogf(NULL, LOG_INFO, "[{char*}] {u32} passed", res->name, res->count);
-}
+extern b8 any_test_failed;
+
+void after_test(result_t* res);
 
 INLINE
 void before_tassert(result_t* r) {

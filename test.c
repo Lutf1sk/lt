@@ -461,5 +461,8 @@ int main(int argc, char** argv) {
 		tassert(!ms_writes(&ms, ls("")));
 		tassert(!ms_write(&ms, "", 0));
 	}
+
+	if (any_test_failed)
+		exit(1);
 }
 
