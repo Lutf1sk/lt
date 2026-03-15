@@ -4,13 +4,43 @@
 #include <lt2/async.h>
 #include <lt2/time.h>
 #include <lt2/debug.h>
+#include <lt2/pixbuf.h>
 
 #include <stdlib.h>
+
+#undef X
+#define X 0xFFF0F0F0,
+#define _ 0xFF000000,
+
+pixbuf_t player_image = {
+	.width  = 16,
+	.height = 16,
+	.data   = (u32[]) {
+		_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+		_ X X X X X X X X X X X X X X _
+		_ X X X X X X X X X X X X X X _
+		_ X X _ _ _ _ _ _ _ _ _ _ X X _
+		_ X X _ _ _ _ _ _ _ _ _ _ X X _
+		_ X X _ _ _ _ _ _ _ _ _ _ X X _
+		_ X X _ _ _ _ _ _ _ _ _ _ X X _
+		_ X X _ _ _ _ _ _ _ _ _ _ X X _
+		_ X X _ _ _ _ _ _ _ _ _ _ X X _
+		_ X X _ _ _ _ _ _ _ _ _ _ X X _
+		_ X X _ _ _ _ _ _ _ _ _ _ X X _
+		_ X X _ _ _ _ _ _ _ _ _ _ X X _
+		_ X X _ _ _ _ _ _ _ _ _ _ X X _
+		_ X X X X X X X X X X X X X X _
+		_ X X X X X X X X X X X X X X _
+		_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+	},
+};
 
 // ----- camera
 
 i32 camera_pos_x = 0.0;
 i32 camera_pos_y = 0.0;
+
+f64 ui_scale = 1.4;
 
 void wdraw_rect(i32 x, i32 y, i32 w, i32 h, u32 color) {
 	x -= camera_pos_x;
@@ -24,6 +54,17 @@ void wfill_rect(i32 x, i32 y, i32 w, i32 h, u32 color) {
 	fill_rect(x, y, w, h, color);
 }
 
+INLINE
+void ui_draw_rect(i32 x, i32 y, i32 w, i32 h, u32 color) {
+	draw_rect(x * ui_scale, y * ui_scale, w * ui_scale, h * ui_scale, color);
+}
+
+INLINE
+void ui_fill_rect(i32 x, i32 y, i32 w, i32 h, u32 color) {
+	fill_rect(x * ui_scale, y * ui_scale, w * ui_scale, h * ui_scale, color);
+}
+
+
 // ----- input
 
 u8 key_states[256];
@@ -35,7 +76,7 @@ b8 key_pressed(u8 key) {
 	return key_states[key] && !prev_key_states[key];
 }
 
-void update_input() {
+void poll_input() {
 	wevent_t events[16];
 	usz event_count = poll_wevents(events, COUNT_OF(events));
 
@@ -294,10 +335,6 @@ void print_creature_info(creature_t* creature) {
 		lprintf("{ls}: {u16}\n", stat_names[i], creature->stat_vals[i]);
 }
 
-// ----- ui
-
-f64 ui_scale = 1.0;
-
 // ----- dialogue
 
 typedef struct dialogue_state {
@@ -307,8 +344,10 @@ typedef struct dialogue_state {
 void speak_1(dialogue_state* state) {
 	co_reenter(&state->t);
 
+	goto first;
 	do {
 		co_yield();
+	first:
 		fill_rect(100, 100, 200, 200, 0xFF000000);
 	} while (!key_pressed(KEY_ENTER));
 
@@ -332,7 +371,7 @@ void on_frame() {
 
 	fill_rect(0, 0, window_width, window_height, 0xFF1a1a1a);
 
-	update_input();
+	poll_input();
 
 	if (key_pressed('R')) {
 		player = generate_creature(0, 0xFF);
@@ -346,6 +385,16 @@ void on_frame() {
 	(void)delta;
 	prev_time_ns = cur_time_ns;
 
+
+	static f32 px = 200;
+	static f32 py = 200;
+
+	px += (key_states['D'] - key_states['A']) * delta * 200.0;
+	py += (key_states['S'] - key_states['W']) * delta * 200.0;
+
+	put_pixbuf(px, py, &player_image);
+
+
 #define BAR_HEIGHT 13
 #define BAR_WIDTH  200
 
@@ -356,17 +405,17 @@ void on_frame() {
 	f64 mp_fac = (f64)player.mp / (f64)player.stat_vals[S_MAX_MP];
 	f64 sp_fac = (f64)player.sp / (f64)player.stat_vals[S_MAX_SP];
 
-	fill_rect(BAR_POSX * ui_scale, (BAR_POSY + (BAR_HEIGHT + 5) * 0) * ui_scale, BAR_WIDTH * ui_scale,          BAR_HEIGHT * ui_scale, 0xFF440000);
-	fill_rect(BAR_POSX * ui_scale, (BAR_POSY + (BAR_HEIGHT + 5) * 0) * ui_scale, BAR_WIDTH * hp_fac * ui_scale, BAR_HEIGHT * ui_scale, 0xFFEE0000);
-	draw_rect(BAR_POSX * ui_scale, (BAR_POSY + (BAR_HEIGHT + 5) * 0) * ui_scale, BAR_WIDTH * ui_scale,          BAR_HEIGHT * ui_scale, 0xFF000000);
+	ui_fill_rect(BAR_POSX, (BAR_POSY + (BAR_HEIGHT + 5) * 0), BAR_WIDTH,          BAR_HEIGHT, 0xFF440000);
+	ui_fill_rect(BAR_POSX, (BAR_POSY + (BAR_HEIGHT + 5) * 0), BAR_WIDTH * hp_fac, BAR_HEIGHT, 0xFFEE0000);
+	ui_draw_rect(BAR_POSX, (BAR_POSY + (BAR_HEIGHT + 5) * 0), BAR_WIDTH,          BAR_HEIGHT, 0xFF000000);
 
-	fill_rect(BAR_POSX * ui_scale, (BAR_POSY + (BAR_HEIGHT + 5) * 1) * ui_scale, BAR_WIDTH * ui_scale,          BAR_HEIGHT * ui_scale, 0xFF002244);
-	fill_rect(BAR_POSX * ui_scale, (BAR_POSY + (BAR_HEIGHT + 5) * 1) * ui_scale, BAR_WIDTH * mp_fac * ui_scale, BAR_HEIGHT * ui_scale, 0xFF0088BB);
-	draw_rect(BAR_POSX * ui_scale, (BAR_POSY + (BAR_HEIGHT + 5) * 1) * ui_scale, BAR_WIDTH * ui_scale,          BAR_HEIGHT * ui_scale, 0xFF000000);
+	ui_fill_rect(BAR_POSX, (BAR_POSY + (BAR_HEIGHT + 5) * 1), BAR_WIDTH,          BAR_HEIGHT, 0xFF002244);
+	ui_fill_rect(BAR_POSX, (BAR_POSY + (BAR_HEIGHT + 5) * 1), BAR_WIDTH * mp_fac, BAR_HEIGHT, 0xFF0088BB);
+	ui_draw_rect(BAR_POSX, (BAR_POSY + (BAR_HEIGHT + 5) * 1), BAR_WIDTH,          BAR_HEIGHT, 0xFF000000);
 
-	fill_rect(BAR_POSX * ui_scale, (BAR_POSY + (BAR_HEIGHT + 5) * 2) * ui_scale, BAR_WIDTH * ui_scale,          BAR_HEIGHT * ui_scale, 0xFF443300);
-	fill_rect(BAR_POSX * ui_scale, (BAR_POSY + (BAR_HEIGHT + 5) * 2) * ui_scale, BAR_WIDTH * sp_fac * ui_scale, BAR_HEIGHT * ui_scale, 0xFFEEAA00);
-	draw_rect(BAR_POSX * ui_scale, (BAR_POSY + (BAR_HEIGHT + 5) * 2) * ui_scale, BAR_WIDTH * ui_scale,          BAR_HEIGHT * ui_scale, 0xFF000000);
+	ui_fill_rect(BAR_POSX, (BAR_POSY + (BAR_HEIGHT + 5) * 2), BAR_WIDTH,          BAR_HEIGHT, 0xFF443300);
+	ui_fill_rect(BAR_POSX, (BAR_POSY + (BAR_HEIGHT + 5) * 2), BAR_WIDTH * sp_fac, BAR_HEIGHT, 0xFFEEAA00);
+	ui_draw_rect(BAR_POSX, (BAR_POSY + (BAR_HEIGHT + 5) * 2), BAR_WIDTH,          BAR_HEIGHT, 0xFF000000);
 
 	static dialogue_state dialogue;
 	if (dialogue.t.running || key_states['E'])
