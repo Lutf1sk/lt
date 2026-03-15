@@ -86,12 +86,16 @@ void queue_wevent(wevent_t event);
 usz poll_wevents(wevent_t* events, usz max_events);
 void window_present();
 
+#include <lt2/pixbuf.h>
+
 void draw_rect(i32 x, i32 y, i32 w, i32 h, u32 color);
 void fill_rect(i32 x, i32 y, i32 w, i32 h, u32 color);
 void draw_line(i32 x, i32 y, i32 x2, i32 y2, u32 color);
 void draw_vline(i32 x, i32 y, i32 y2, u32 color);
 void draw_hline(i32 x, i32 y, i32 x2, u32 color);
 void fill_circle(i32 x, i32 y, i32 r, u32 color);
+void put_entire_pixbuf(i32 x, i32 y, const pixbuf_t other[static 1]);
+void put_pixbuf(i32 x, i32 y, const pixbuf_t other[static 1]);
 
 void draw_text(ls str, i32 x, i32 y, u32 color);
 void measure_text(ls str);

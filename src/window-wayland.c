@@ -494,5 +494,13 @@ void measure_text(ls str) {
 
 }
 
+void put_entire_pixbuf(i32 x, i32 y, const pixbuf_t other[static 1]) {
+	pb_blit_entire(&win.pb, x, y, other);
+}
+
+void put_pixbuf(i32 x, i32 y, const pixbuf_t other[static 1]) {
+	pb_blit(&win.pb, x, y, other);
+}
+
 #endif // WAYLAND
 
