@@ -11,7 +11,7 @@ CC = cc
 CFLAGS = \
 	-I./include \
 	-std=gnu2x \
-	-Wall -Werror -Wno-unused-function -Wno-frame-address -Wno-logical-not-parenthesis
+	-Wall -Werror -Wno-unused-function -Wno-frame-address -Wno-logical-not-parentheses
 LDFLAGS = -lm
 
 
