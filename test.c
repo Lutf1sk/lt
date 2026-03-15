@@ -7,6 +7,7 @@
 #include <lt2/str.h>
 #include <lt2/base64.h>
 #include <lt2/memstream.h>
+#include <lt2/uri.h>
 
 #include <ctype.h>
 
@@ -460,6 +461,73 @@ int main(int argc, char** argv) {
 		tassert(ms_write(&ms, "123", 3));
 		tassert(!ms_writes(&ms, ls("")));
 		tassert(!ms_write(&ms, "", 0));
+	}
+
+	test ("uri") {
+		parsed_uri parsed;
+
+		parsed = parse_uri(ls(""), err_warn);
+		tassert(lseq(parsed.scheme, ls("")));
+		tassert(lseq(parsed.host,   ls("")));
+		tassert(lseq(parsed.path,   ls("")));
+		tassert(lseq(parsed.query,  ls("")));
+		tassert(parsed.port == 0);
+
+		parsed = parse_uri(ls("http://asdf.net/fdsa?q=v"), err_warn);
+		tassert(lseq(parsed.scheme, ls("http")));
+		tassert(lseq(parsed.host,   ls("asdf.net")));
+		tassert(lseq(parsed.path,   ls("/fdsa")));
+		tassert(lseq(parsed.query,  ls("?q=v")));
+		tassert(parsed.port == 80);
+
+		parsed = parse_uri(ls("https://asdf:44300/fdsa/?q=v"), err_warn);
+		tassert(lseq(parsed.scheme, ls("https")));
+		tassert(lseq(parsed.host,   ls("asdf")));
+		tassert(lseq(parsed.path,   ls("/fdsa/")));
+		tassert(lseq(parsed.query,  ls("?q=v")));
+		tassert(parsed.port == 44300);
+
+		parsed = parse_uri(ls("asdf.net/fdsa/?"), err_warn);
+		tassert(lseq(parsed.scheme, ls("")));
+		tassert(lseq(parsed.host,   ls("asdf.net")));
+		tassert(lseq(parsed.path,   ls("/fdsa/")));
+		tassert(lseq(parsed.query,  ls("?")));
+		tassert(parsed.port == 0);
+
+		parsed = parse_uri(ls("asdf.net"), err_warn);
+		tassert(lseq(parsed.scheme, ls("")));
+		tassert(lseq(parsed.host,   ls("asdf.net")));
+		tassert(lseq(parsed.path,   ls("")));
+		tassert(lseq(parsed.query,  ls("")));
+		tassert(parsed.port == 0);
+
+		parsed = parse_uri(ls("/fdsa"), err_warn);
+		tassert(lseq(parsed.scheme, ls("")));
+		tassert(lseq(parsed.host,   ls("")));
+		tassert(lseq(parsed.path,   ls("/fdsa")));
+		tassert(lseq(parsed.query,  ls("")));
+		tassert(parsed.port == 0);
+
+		parsed = parse_uri(ls("?q"), err_warn);
+		tassert(lseq(parsed.scheme, ls("")));
+		tassert(lseq(parsed.host,   ls("")));
+		tassert(lseq(parsed.path,   ls("")));
+		tassert(lseq(parsed.query,  ls("?q")));
+		tassert(parsed.port == 0);
+
+		parsed = parse_uri(ls(""), err_warn);
+		tassert(lseq(parsed.scheme, ls("")));
+		tassert(lseq(parsed.host,   ls("")));
+		tassert(lseq(parsed.path,   ls("")));
+		tassert(lseq(parsed.query,  ls("")));
+		tassert(parsed.port == 0);
+
+		parsed = parse_uri(ls("file:///root/file"), err_warn);
+		tassert(lseq(parsed.scheme, ls("file")));
+		tassert(lseq(parsed.host,   ls("")));
+		tassert(lseq(parsed.path,   ls("/root/file")));
+		tassert(lseq(parsed.query,  ls("")));
+		tassert(parsed.port == 0);
 	}
 
 	if (any_test_failed)
