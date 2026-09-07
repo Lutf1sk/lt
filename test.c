@@ -236,62 +236,27 @@ int main(int argc, char** argv) {
 			"neg  = -2345678\n"
 		);
 
-		ini_t ini = parse_ini(ini_string, err_fail);
+		ini_t ini = ini_parse(ini_string, err_fail);
 		isz section1 = ini_find_section(&ini, ls("section1"));
 		isz section2 = ini_find_section(&ini, ls("section2"));
 		tassert(section1 >= 0 && section2 >= 0);
 
-		ini_key_t* key1 = ini_find_key(&ini, section1, ls("asdf"));
-		ini_key_t* key2 = ini_find_key(&ini, section2, ls("asdf"));
-		tassert(key1 && key2);
+		isz line_i = ini_find_value_line(&ini, section1, ls("asdf"));
+		tassert(lseq(ini_line_value(&ini, &ini.sections[section1].lines[line_i]), ls("1")));
 
-		tassert(!ini_find_key(&ini, section1, ls("asdff")));
-		tassert(!ini_find_key(&ini, 123, ls("asdf")));
+		ls str_val = ini_find_value(&ini, section2, ls("asdf"));
+		tassert(lseq(str_val, ls(" 2")));
 
-		tassert(lseq(key1->value, ls("1")));
-		tassert(lseq(key2->value, ls("2")));
+		tassert(ini_find_value_line(&ini, section1, ls("asdff")) < 0);
+		tassert(ini_find_value(&ini, 123, ls("asdf")).size == 0);
 
-		tassert(ini_find_u8(&ini, section2, ls("fdsa"), 0) == 64);
-		tassert(ini_find_i8(&ini, section2, ls("fdsa"), 0) == 64);
-		tassert(ini_find_i8(&ini, section2, ls("neg"),  0) == 50);
-		tassert(ini_find_i8(&ini, section2, ls("unkn"), 0) == 0);
-		tassert(ini_find_i8(&ini, section1, ls("fdsa"), 0) == 0);
+		tassert(lseq(ini_find_value(&ini, section2, ls("fdsa")), ls(" 123456")));
+		tassert(lseq(ini_find_value(&ini, section2, ls("fdsa")), ls(" 123456")));
+		tassert(lseq(ini_find_value(&ini, section2, ls("neg")),  ls(" -2345678")));
+		tassert(lseq(ini_find_value(&ini, section2, ls("unkn")), ls("")));
+		tassert(lseq(ini_find_value(&ini, section1, ls("fdsa")), ls("")));
 
-		tassert(ini_find_u16(&ini, section2, ls("fdsa"), 0) == 57920);
-		tassert(ini_find_i16(&ini, section2, ls("fdsa"), 0) == -7616);
-		tassert(ini_find_i16(&ini, section2, ls("neg"),  0) == 13618);
-		tassert(ini_find_i16(&ini, section2, ls("unkn"), 0) == 0);
-		tassert(ini_find_i16(&ini, section1, ls("fdsa"), 0) == 0);
-
-		tassert(ini_find_u32(&ini, section2, ls("fdsa"), 0) == 123456);
-		tassert(ini_find_i32(&ini, section2, ls("fdsa"), 0) == 123456);
-		tassert(ini_find_i32(&ini, section2, ls("neg"),  0) == -2345678);
-		tassert(ini_find_i32(&ini, section2, ls("unkn"), 0) == 0);
-		tassert(ini_find_i32(&ini, section1, ls("fdsa"), 0) == 0);
-
-		tassert(ini_find_u64(&ini, section2, ls("fdsa"), 0) == 123456);
-		tassert(ini_find_i64(&ini, section2, ls("fdsa"), 0) == 123456);
-		tassert(ini_find_i64(&ini, section2, ls("neg"),  0) == -2345678);
-		tassert(ini_find_i64(&ini, section2, ls("unkn"), 0) == 0);
-		tassert(ini_find_i64(&ini, section1, ls("fdsa"), 0) == 0);
-
-		tassert(ini_find_f32(&ini, section2, ls("fdsa"), 0) == 123456.0f);
-		tassert(ini_find_f32(&ini, section2, ls("fdsa"), 0) == 123456.0f);
-		tassert(ini_find_f32(&ini, section2, ls("neg"),  0) == -2345678.0f);
-		tassert(ini_find_f32(&ini, section2, ls("unkn"), 0) == 0.0f);
-		tassert(ini_find_f32(&ini, section1, ls("fdsa"), 0) == 0.0f);
-
-		tassert(ini_find_f64(&ini, section2, ls("fdsa"), 0) == 123456.0);
-		tassert(ini_find_f64(&ini, section2, ls("fdsa"), 0) == 123456.0);
-		tassert(ini_find_f64(&ini, section2, ls("neg"),  0) == -2345678.0);
-		tassert(ini_find_f64(&ini, section2, ls("unkn"), 0) == 0.0);
-		tassert(ini_find_f64(&ini, section1, ls("fdsa"), 0) == 0.0);
-
-		tassert(lseq(ini_find_str(&ini, section2, ls("fdsa"), ls("")), ls("123456")));
-		tassert(lseq(ini_find_str(&ini, section2, ls("fdsa"), ls("")), ls("123456")));
-		tassert(lseq(ini_find_str(&ini, section2, ls("neg"),  ls("")), ls("-2345678")));
-		tassert(lseq(ini_find_str(&ini, section2, ls("unkn"), ls("")), ls("")));
-		tassert(lseq(ini_find_str(&ini, section1, ls("fdsa"), ls("")), ls("")));
+		// !! should test all the add/remove functions
 	}
 
 	test ("str") {
