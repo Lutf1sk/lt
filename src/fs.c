@@ -25,6 +25,20 @@ b8 convert_path(ls path, err* err) {
 	return 0;
 }
 
+static
+isz write_out(void* usr, const void* data, usz size) {
+	return write(*(file_handle*)usr, data, size);
+}
+
+
+isz lfprintf(file_handle fd, const char* fmt, ...) {
+	va_list args;
+	va_start(args, fmt);
+	isz res = vlprintf_fn(write_out, &fd, fmt, args);
+	va_end(args);
+	return res;
+}
+
 ls fmapall(ls path, u8 mode, err* err) {
 	file_handle file = lfopen(path, mode, err);
 	if (file < 0)
@@ -59,6 +73,7 @@ file_handle fcreate(ls path, u8 prot, err* err) {
 		throw_errno(err);
 		return -1;
 	}
+	lseek(fd, 0, SEEK_END);
 	return fd;
 }
 

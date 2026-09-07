@@ -94,6 +94,9 @@ typedef uint8_t b8;
 typedef float  f32;
 typedef double f64;
 
+typedef int file_handle;
+typedef struct dir_handle* dir_handle;
+
 // ----- strings
 
 typedef struct ls {
@@ -208,6 +211,7 @@ typedef isz(*write_fn)(void*, const void*, usz);
 typedef isz(*read_fn) (void*, void*, usz);
 
 isz lprintf(const char* fmt, ...);
+isz lfprintf(file_handle f, const char* fmt, ...);
 isz vlprintf_fn(write_fn fn, void* usr, const char* fmt, va_list args);
 isz lprintf_fn(write_fn, void* usr, const char* fmt, ...);
 
@@ -225,8 +229,6 @@ b8 convert_path(ls path, err* err);
 
 ls fmapall(ls path, u8 mode, err* err);
 void funmap(ls mapping, err* err);
-
-typedef int file_handle;
 
 file_handle fcreate(ls path, u8 prot, err* err);
 file_handle lfopen(ls path, u8 mode, err* err);
@@ -254,8 +256,6 @@ b8 lfstat(ls path, file_stat out_stat[static 1], err* err);
 u32 fwatch_once(ls path, u32 events, err* err);
 
 // ----- directories
-
-typedef struct dir_handle* dir_handle;
 
 #define FS_ANY  0
 #define FS_FILE 1
