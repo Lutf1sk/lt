@@ -188,8 +188,8 @@ lt_err_t lt_fcopyp(lstr_t from, lstr_t to, void* buf, usz bufsz, lt_alloc_t allo
 
 	err = LT_SUCCESS;
 
-err1:	lt_fclose(inf, alloc);
-err0:	lt_fclose(outf, alloc);
+err1:	lt_fclose(outf, alloc);
+err0:	lt_fclose(inf, alloc);
 		return err;
 }
 
