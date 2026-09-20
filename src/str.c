@@ -45,6 +45,17 @@ ls lstrim(ls str) {
 	return lstrim_left(lstrim_right(str));
 }
 
+char* lstos(ls str, err* err) {
+	char* cstr = malloc(str.size + 1);
+	if UNLIKELY (!cstr) {
+		throw(NULL, ERR_NO_MEMORY, "failed to allocate null terminated string");
+		return NULL;
+	}
+	memcpy(cstr, str.ptr, str.size);
+	cstr[str.size] = 0;
+	return cstr;
+}
+
 f64 lstof(ls str, err* err) {
 	if UNLIKELY (!str.size) {
 		throw(err, ERR_EMPTY, "cannot convert empty string to floating-point number");

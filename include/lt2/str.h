@@ -95,6 +95,7 @@ ls lstrim_left(ls str);
 ls lstrim_right(ls str);
 ls lstrim(ls str);
 
+char* lstos(ls str, err* err);
 f64 lstof(ls str, err* err);
 i64 lstoi(ls str, err* err);
 u64 lstou(ls str, err* err);
