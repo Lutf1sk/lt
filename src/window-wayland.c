@@ -42,7 +42,7 @@ static struct wl_registry*   registry;
 static struct wl_seat*       seat;
 static struct wl_pointer*    pointer;
 static struct wl_keyboard*   keyboard;
-
+static struct wl_output*     output;
 
 static
 void xdg_wm_base_ping(void* userdata, struct xdg_wm_base* xdg_wm_base, u32 serial) {
@@ -396,6 +396,47 @@ struct wl_seat_listener seat_listener = {
 };
 
 static
+void output_description(void* userdata, struct wl_output* output, const char* description) {
+	llogf(NULL, LOG_DEBUG, "got output description '{char*}'", description);
+}
+
+static
+void output_done(void* userdata, struct wl_output* output) {
+	llogf(NULL, LOG_DEBUG, "got output done event");
+}
+
+static
+void output_geometry(void* userdata, struct wl_output* output, i32 x, i32 y, i32 phys_width, i32 phys_height, i32 subpixel, const char* make, const char* model, i32 transform) {
+	llogf(NULL, LOG_DEBUG, "got output geometry x={i32}, y={i32}, phys_width={i32}, phys_height={i32}, subpixel={i32}, make='{char*}', model='{char*}', transform={i32}",
+		x, y, phys_width, phys_height, subpixel, make, model, transform);
+}
+
+static
+void output_mode(void* userdata, struct wl_output* output, u32 flags, i32 width, i32 height, i32 refresh) {
+	llogf(NULL, LOG_DEBUG, "got output mode {i32}x{i32}@{i32}.{i32}hz", width, height, refresh / 1000, refresh % 1000);
+}
+
+static
+void output_name(void* userdata, struct wl_output* output, const char* name) {
+	llogf(NULL, LOG_DEBUG, "got output name '{char*}'", name);
+}
+
+static
+void output_scale(void* userdata, struct wl_output* output, i32 scale) {
+	llogf(NULL, LOG_DEBUG, "got output scale {i32}", scale);
+}
+
+static
+struct wl_output_listener output_listener = {
+	.description = output_description,
+	.done        = output_done,
+	.geometry    = output_geometry,
+	.mode        = output_mode,
+	.name        = output_name,
+	.scale       = output_scale,
+};
+
+static
 void global(void* userdata, struct wl_registry* registry, u32 name, const char* interface, u32 version) {
 	if (strcmp(interface, wl_shm_interface.name) == 0) {
 		shm = wl_registry_bind(registry, name, &wl_shm_interface, 1);
@@ -410,6 +451,10 @@ void global(void* userdata, struct wl_registry* registry, u32 name, const char* 
 	else if (strcmp(interface, wl_seat_interface.name) == 0) {
 		seat = wl_registry_bind(registry, name, &wl_seat_interface, 7);
 		wl_seat_add_listener(seat, &seat_listener, NULL);
+	}
+	else if (strcmp(interface, wl_output_interface.name) == 0) {
+		output = wl_registry_bind(registry, name, &wl_output_interface, 4);
+		wl_output_add_listener(output, &output_listener, NULL);
 	}
 	else {
 		llogf(NULL, LOG_DEBUG, "ignoring global interface of type '{char*}'", interface);
@@ -427,8 +472,8 @@ struct wl_registry_listener listener = {
 	.global_remove = global_remove,
 };
 
-void window_init(err* err) {
-	display  = wl_display_connect(NULL);
+void window_init(const window_info_t info[static 1], err* err) {
+	display = wl_display_connect(NULL);
 
 	registry = wl_display_get_registry(display);
 	wl_registry_add_listener(registry, &listener, NULL);
@@ -440,15 +485,34 @@ void window_init(err* err) {
 	xdg_surface_add_listener(win.xdg_surface, &xdg_surface_listener, &win);
 
 	win.xdg_toplevel = xdg_surface_get_toplevel(win.xdg_surface);
-	xdg_toplevel_set_title(win.xdg_toplevel, "A window");
-	xdg_toplevel_set_app_id(win.xdg_toplevel, "An app ID");
+	char* title_cstr = lstos(info->title, err);
+	if (title_cstr) {
+		xdg_toplevel_set_title(win.xdg_toplevel, title_cstr);
+		free(title_cstr);
+	}
+	char* app_id_cstr = lstos(info->app_id, err);
+	if (app_id_cstr) {
+		xdg_toplevel_set_app_id(win.xdg_toplevel, app_id_cstr);
+		free(app_id_cstr);
+	}
 	xdg_toplevel_add_listener(win.xdg_toplevel, &xdg_toplevel_listener, &win);
 
 	wl_surface_commit(win.wl_surface);
 
 	wl_display_roundtrip(display);
 
-	recreate_buffer(800, 600);
+	recreate_buffer(info->width, info->height);
+}
+
+void window_resize(i32 width, i32 height) {
+	xdg_toplevel_configure(&win, win.xdg_toplevel, width, height, NULL);
+}
+
+void window_set_fullscreen(b8 fullscreen) {
+	if (fullscreen)
+		xdg_toplevel_set_fullscreen(win.xdg_toplevel, NULL);
+	else
+		xdg_toplevel_unset_fullscreen(win.xdg_toplevel);
 }
 
 void platform_poll_wevents() {

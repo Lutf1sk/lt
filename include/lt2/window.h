@@ -75,13 +75,23 @@ typedef struct wevent {
 	};
 } wevent_t;
 
+typedef struct window_info {
+	ls title;
+	ls app_id;
+	i32 width, height;
+} window_info_t;
+
 extern i32 window_height;
 extern i32 window_width;
 
 extern f64 mouse_x;
 extern f64 mouse_y;
 
-void window_init(err* err);
+void window_init(const window_info_t info[static 1], err* err);
+
+void window_resize(i32 width, i32 height);
+void window_set_fullscreen(b8 fullscreen);
+
 void queue_wevent(wevent_t event);
 usz poll_wevents(wevent_t* events, usz max_events);
 void window_present();

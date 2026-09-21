@@ -1,2 +1,3 @@
 -I./include
 -std=gnu2x
+-DWAYLAND=1
