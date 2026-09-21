@@ -4,25 +4,8 @@
 
 #define CO_UNIQUE_LABEL EXCAT(__co_label_, __LINE__)
 
-static
-task* co_next(task* t) {
-	if (t >= t->stack_end) {
-		throw(err_fail, ERR_LIMIT_EXCEEDED, "no subtasks available");
-		return NULL; // unreachable
-	}
-
-	task* next = t + 1;
-	*next = (task) {
-		.stack_end = t->stack_end
-	};
-	return next;
-}
-
-static
-void co_reset(task* t, usz count) {
-	for (task* it = t, *end = it + count; it < end; ++it)
-		*it = (task) { .stack_end = end };
-}
+task* co_next(task* t);
+void co_reset(task* t, usz count);
 
 b8 poll_callable(task* t, u64 timeout_ms);
 
@@ -48,6 +31,7 @@ b8 poll_callable(task* t, u64 timeout_ms);
 	} while (0)
 
 #define co_await(call, ...) \
+	do { \
 		co_subtask = co_next(__task); \
 	CO_UNIQUE_LABEL:; \
 		co_subtask = __task + 1; \
@@ -55,7 +39,8 @@ b8 poll_callable(task* t, u64 timeout_ms);
 		if (co_subtask->running) { \
 			__task->reenter_at = LABEL_ADDR(CO_UNIQUE_LABEL); \
 			return __VA_ARGS__; \
-		}
+		} \
+	} while (0)
 
 #define co_set_awaiting(__fd, __mode) \
 	do { \

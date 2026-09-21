@@ -1,5 +1,24 @@
 #include <lt2/common.h>
 
+task* co_next(task* t) {
+	if (t >= t->stack_end) {
+		throw(err_fail, ERR_LIMIT_EXCEEDED, "no subtasks available");
+		return NULL; // unreachable
+	}
+
+	task* next = t + 1;
+	*next = (task) {
+		.stack_end = t->stack_end
+	};
+	return next;
+}
+
+void co_reset(task* t, usz count) {
+	for (task* it = t, *end = it + count; it < end; ++it)
+		*it = (task) { .stack_end = end };
+}
+
+
 #ifdef ON_LINUX
 
 #	include <poll.h>
