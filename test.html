@@ -9,7 +9,7 @@
 		wasmFetch = fetch("./bin/run.wasm");
 	</script>
 	<script type="module" defer>
-		import {WASI, OpenFile, ConsoleStdout} from "https://cdn.jsdelivr.net/npm/@bjorn3/browser_wasi_shim@0.4.0/dist/index.js";
+		import {WASI, OpenFile, ConsoleStdout} from "https://cdn.jsdelivr.net/npm/@bjorn3/browser_wasi_shim@0.4.2/dist/index.js";
 		const wasi = new WASI([], [], [
 			new OpenFile([]),
 			ConsoleStdout.lineBuffered(str => console.log(str)),
@@ -75,6 +75,8 @@
 			context.textBaseline = "top";
 		};
 
+		let memory = null;
+
 		const wasm = await WebAssembly.compileStreaming(wasmFetch);
 		const instance = await WebAssembly.instantiate(wasm, {
 			wasi_snapshot_preview1: wasi.wasiImport,
@@ -115,8 +117,31 @@
 					configure_text();
 					return context.measureText(text).width;
 				},
+
+				resize: (w, h) => {
+					canvas.width  = w;
+					canvas.height = h;
+				},
+
+				get_fullscreen: () => document.fullscreenElement == canvas,
+
+				set_fullscreen: (fullscreen) => {
+					if (fullscreen != 0)
+						canvas.requestFullscreen();
+					else
+						document.exitFullscreen();
+				},
+
+				put_image_data: (x, y, w, h, ptr) => {
+					const view = new Uint8ClampedArray(memory.buffer, ptr, w * h * 4);
+					const img_data = new ImageData(view, w, h);
+					context.putImageData(img_data, x, y);
+				},
 			}
 		});
+
+		memory = instance.exports.memory;
+
 		wasi.start(instance);
 
 		window.addEventListener("resize", ev => {

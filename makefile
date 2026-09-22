@@ -12,7 +12,7 @@ CFLAGS = \
 	-I./include \
 	-std=gnu2x \
 	-Wall -Werror -Wno-unused-function -Wno-frame-address -Wno-logical-not-parentheses
-LDFLAGS = -lm
+LDFLAGS =
 
 
 ifdef debug
@@ -38,7 +38,9 @@ RUNCMD = python -m http.server
 
 CC = clang
 CFLAGS  += --target=wasm32
-LDFLAGS += -nostdlib -Wl,--export-all
+LDFLAGS += -nostdlib -Wl,--export-all -v
+else
+LDFLAGS = -lm
 endif
 
 ifdef wayland

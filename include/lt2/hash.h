@@ -37,7 +37,7 @@ u32 fnv1a_hashs(const char str[static 1]) {
 INLINE
 u32 fnv1a_hashls(ls str) {
 	u32 hash = LT_FNV_BASE32;
-	for (char* it = str.ptr, *end = it + str.size; it < end; ++it) {
+	for (u8* it = str.ptr, *end = it + str.size; it < end; ++it) {
 		hash = (hash ^ (u32)*it) * LT_FNV_PRIME32;
 	}
 	return hash;

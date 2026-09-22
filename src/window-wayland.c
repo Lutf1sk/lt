@@ -1,6 +1,8 @@
 #include <lt2/common.h>
 
 #ifdef WAYLAND
+#	include <wayland-client-protocol.h>
+
 #	include <lt2/window.h>
 #	include <lt2/time.h>
 #	include <lt2/log.h>
@@ -26,9 +28,12 @@ typedef struct window_state {
 	struct wl_surface*   wl_surface;
 	struct xdg_surface*  xdg_surface;
 	struct xdg_toplevel* xdg_toplevel;
-	struct wl_buffer*    buffer;
+	struct wl_buffer*    buffers[2];
 	u32* buffer_data;
 	pixbuf_t pb;
+	u8 active_buffer;
+	b8 fullscreen;
+	b8 maximized;
 } window_state;
 
 static window_state win = {0};
@@ -56,10 +61,16 @@ struct xdg_wm_base_listener xdg_wm_base_listener = {
 
 void recreate_buffer(i32 width, i32 height) {
 	if (win.pb.data && window_width && window_height) {
-		munmap(win.pb.data, window_width * window_height * sizeof(u32));
+		munmap(win.pb.data, window_width * window_height * sizeof(u32) * 2);
 		win.pb.data = NULL;
-		wl_buffer_destroy(win.buffer);
-		win.buffer = NULL;
+		if (win.buffers[0]) {
+			wl_buffer_destroy(win.buffers[0]);
+			win.buffers[0] = NULL;
+		}
+		if (win.buffers[1]) {
+			wl_buffer_destroy(win.buffers[1]);
+			win.buffers[1] = NULL;
+		}
 	}
 
 	window_width  = width;
@@ -73,7 +84,8 @@ void recreate_buffer(i32 width, i32 height) {
 
 	llogf(NULL, LOG_INFO, "resizing to {u32}x{u32}\n", width, height);
 
-	const usz size = window_width * window_height * sizeof(u32);
+	const usz buf_size = window_width * window_height * sizeof(u32);
+	const usz pool_size = buf_size * 2;
 
 	int fd;
 	char path[512];
@@ -91,19 +103,20 @@ void recreate_buffer(i32 width, i32 height) {
 	}
 	shm_unlink(path);
 
-	if (ftruncate(fd, size) < 0) {
+	if (ftruncate(fd, pool_size) < 0) {
 		throw_errno(err_fail);
 		return;
 	}
 
-	u32* data = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+	u32* data = mmap(NULL, pool_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 	if (data == MAP_FAILED) {
 		throw_errno(err_fail);
 		return;
 	}
 
-	struct wl_shm_pool* pool = wl_shm_create_pool(shm, fd, size);
-	win.buffer = wl_shm_pool_create_buffer(pool, 0, window_width, window_height, window_width * sizeof(u32), WL_SHM_FORMAT_XRGB8888);
+	struct wl_shm_pool* pool = wl_shm_create_pool(shm, fd, pool_size);
+	win.buffers[0] = wl_shm_pool_create_buffer(pool, 0,        window_width, window_height, window_width * sizeof(u32), WL_SHM_FORMAT_XRGB8888);
+	win.buffers[1] = wl_shm_pool_create_buffer(pool, buf_size, window_width, window_height, window_width * sizeof(u32), WL_SHM_FORMAT_XRGB8888);
 	win.buffer_data = data;
 	wl_shm_pool_destroy(pool);
 	close(fd);
@@ -121,6 +134,16 @@ void xdg_toplevel_configure(void* userdata, struct xdg_toplevel* toplevel, i32 w
 
 	if (width == window_width && height == window_height)
 		return;
+
+	win.fullscreen = 0;
+	win.maximized  = 0;
+	u32* state;
+	wl_array_for_each(state, states) {
+		if (*state == XDG_TOPLEVEL_STATE_FULLSCREEN)
+			win.fullscreen = 1;
+		else if (*state == XDG_TOPLEVEL_STATE_MAXIMIZED)
+			win.maximized = 1;
+	}
 
 	recreate_buffer(width, height);
 
@@ -152,7 +175,7 @@ void xdg_surface_configure(void* userdata, struct xdg_surface* xdg_surface, u32 
 
 	llogf(NULL, LOG_DEBUG, "configuring surface {void*}", xdg_surface);
 
-	wl_surface_attach(win->wl_surface, win->buffer, 0, 0);
+	wl_surface_attach(win->wl_surface, win->buffers[win->active_buffer], 0, 0);
 	xdg_surface_ack_configure(xdg_surface, serial);
 	wl_surface_commit(win->wl_surface);
 }
@@ -508,11 +531,26 @@ void window_resize(i32 width, i32 height) {
 	xdg_toplevel_configure(&win, win.xdg_toplevel, width, height, NULL);
 }
 
-void window_set_fullscreen(b8 fullscreen) {
+void set_fullscreen(b8 fullscreen) {
 	if (fullscreen)
 		xdg_toplevel_set_fullscreen(win.xdg_toplevel, NULL);
 	else
 		xdg_toplevel_unset_fullscreen(win.xdg_toplevel);
+}
+
+b8 get_fullscreen(void) {
+	return win.fullscreen;
+}
+
+void set_maximized(b8 maximized) {
+	if (maximized)
+		xdg_toplevel_set_maximized(win.xdg_toplevel);
+	else
+		xdg_toplevel_unset_maximized(win.xdg_toplevel);
+}
+
+b8 get_maximized(void) {
+	return win.maximized;
 }
 
 void platform_poll_wevents() {
@@ -521,9 +559,12 @@ void platform_poll_wevents() {
 
 void window_present() {
 	wl_surface_damage(win.wl_surface, 0, 0, window_width, window_height);
-	wl_surface_attach(win.wl_surface, win.buffer, 0, 0);
+	wl_surface_attach(win.wl_surface, win.buffers[win.active_buffer], 0, 0);
 	wl_surface_commit(win.wl_surface);
 	wl_display_flush(display);
+
+	win.active_buffer = !win.active_buffer;
+	win.pb.data = win.buffer_data + (window_width * window_height * win.active_buffer);
 }
 
 void draw_vline(i32 x, i32 y, i32 y2, u32 color) {

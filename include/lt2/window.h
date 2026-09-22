@@ -90,7 +90,12 @@ extern f64 mouse_y;
 void window_init(const window_info_t info[static 1], err* err);
 
 void window_resize(i32 width, i32 height);
-void window_set_fullscreen(b8 fullscreen);
+
+void set_fullscreen(b8 fullscreen);
+b8 get_fullscreen(void);
+
+void set_maximized(b8 fullscreen);
+b8 get_maximized(void);
 
 void queue_wevent(wevent_t event);
 usz poll_wevents(wevent_t* events, usz max_events);

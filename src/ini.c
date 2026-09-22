@@ -4,8 +4,6 @@
 #define CTYPE_PREFIX lt_
 #include <lt2/ctype.h>
 
-#include <assert.h>
-
 #define STRTAB_BLOCKSIZE 8192
 
 static
@@ -14,7 +12,8 @@ u32 write_string(ini_t ini[static 1], ls str) {
 	if ((new_size ^ ini->strtab_size) & ~(STRTAB_BLOCKSIZE-1)) {
 		usz new_capacity = align(new_size, STRTAB_BLOCKSIZE);
 		void* new_mem = realloc(ini->strtab, new_capacity);
-		assert(new_mem);
+		if (!new_mem)
+			throw(err_fail, ERR_NO_MEMORY, "failed to reallocate ini string table");
 		ini->strtab = new_mem;
 	}
 
@@ -66,7 +65,8 @@ usz ini_add_section(ini_t ini[static 1], ls name) {
 	if ((ini->section_count & (SECTION_BLOCKSIZE-1)) == 0) {
 		usz new_capacity = (usz)ini->section_count + SECTION_BLOCKSIZE;
 		void* new_mem = realloc(ini->sections, new_capacity * sizeof(ini_section_t));
-		assert(new_mem);
+		if (!new_mem)
+			throw(err_fail, ERR_NO_MEMORY, "failed to reallocate ini section table");
 		ini->sections = new_mem;
 	}
 
@@ -87,7 +87,8 @@ isz ini_add_line(ini_t ini[static 1], isz section_i, ini_line_t line[static 1]) 
 	if ((section->line_count & (ENTRY_BLOCKSIZE-1)) == 0) {
 		usz new_capacity = section->line_count + ENTRY_BLOCKSIZE;
 		void* new_mem = realloc(section->lines, new_capacity * sizeof(ini_line_t));
-		assert(new_mem);
+		if (!new_mem)
+			throw(err_fail, ERR_NO_MEMORY, "failed to reallocate ini section entry table");
 		section->lines = new_mem;
 	}
 
@@ -155,7 +156,10 @@ u8* skip_line(u8* it, u8* end) {
 ini_t ini_parse(ls str, err* err) {
 	ini_t ini = { 0 };
 	ini.strtab = malloc(STRTAB_BLOCKSIZE);
-	assert(ini.strtab);
+	if (!ini.strtab) {
+		throw(err, ERR_NO_MEMORY, "failed to allocate ini string table");
+		return ini;
+	}
 	u32 section_i = ini_add_section(&ini, lls(NULL, 0));
 
 	u8* it = str.ptr, *end = it + str.size;

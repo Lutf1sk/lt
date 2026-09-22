@@ -6,7 +6,9 @@
 #include <lt2/debug.h>
 #include <lt2/pixbuf.h>
 
-#include <stdlib.h>
+#include <lt2/hash.h>
+
+#define rand() (pcg_hash(time_ns()))
 
 #undef X
 #define X 0xFFF0F0F0,
@@ -67,53 +69,72 @@ void ui_fill_rect(i32 x, i32 y, i32 w, i32 h, u32 color) {
 
 // ----- input
 
+#define HELD     0x01
+#define PRESSED  0x02
+#define RELEASED 0x04
+
 u8 key_states[256];
-u8 prev_key_states[256];
 u8 button_states[16];
-u8 prev_button_states[16];
 
 b8 key_pressed(u8 key) {
-	return key_states[key] && !prev_key_states[key];
+	return !!(key_states[key] & PRESSED);
+}
+
+b8 key_released(u8 key) {
+	return !!(key_states[key] & RELEASED);
+}
+
+b8 key_held(u8 key) {
+	return !!(key_states[key] & HELD);
+}
+
+void on_input_event(wevent_t* ev) {
+	switch (ev->type) {
+	case WEV_MOTION:
+		break;
+
+	case WEV_BUTTON_PRESS:
+		button_states[ev->button.code] |= PRESSED | HELD;
+		break;
+
+	case WEV_BUTTON_RELEASE:
+		button_states[ev->button.code] |= RELEASED;
+		button_states[ev->button.code] &= ~HELD;
+		break;
+
+	case WEV_KEY_PRESS:
+		key_states[ev->key.code] |= PRESSED | HELD;
+		break;
+
+	case WEV_KEY_RELEASE:
+		key_states[ev->key.code] |= RELEASED;
+		key_states[ev->key.code] &= ~HELD;
+		break;
+
+	case WEV_QUIT:
+		llogf(NULL, LOG_INFO, "quit");
+		exit(0);
+		break;
+
+	case WEV_RESIZE:
+		llogf(NULL, LOG_INFO, "resize");
+		break;
+	}
 }
 
 void poll_input() {
+	for (usz i = 0; i < COUNT_OF(key_states); ++i)
+		key_states[i] &= HELD;
+	for (usz i = 0; i < COUNT_OF(button_states); ++i)
+		button_states[i] &= HELD;
+
 	wevent_t events[16];
-	usz event_count = poll_wevents(events, COUNT_OF(events));
-
-	memcpy(prev_key_states,    key_states,    sizeof(key_states));
-	memcpy(prev_button_states, button_states, sizeof(button_states));
-
-	for (wevent_t* ev = events, *end = ev + event_count; ev < end; ++ev) {
-		switch (ev->type) {
-		case WEV_MOTION:
-			break;
-
-		case WEV_BUTTON_PRESS:
-			button_states[ev->button.code] = 1;
-			break;
-
-		case WEV_BUTTON_RELEASE:
-			button_states[ev->button.code] = 0;
-			break;
-
-		case WEV_KEY_PRESS:
-			key_states[ev->key.code] = 1;
-			break;
-
-		case WEV_KEY_RELEASE:
-			key_states[ev->key.code] = 0;
-			break;
-
-		case WEV_QUIT:
-			llogf(NULL, LOG_INFO, "quit");
-			exit(0);
-			break;
-
-		case WEV_RESIZE:
-			llogf(NULL, LOG_INFO, "resize");
-			break;
-		}
-	}
+	usz event_count;
+	do {
+		event_count = poll_wevents(events, COUNT_OF(events));
+		for (wevent_t* ev = events, *end = ev + event_count; ev < end; ++ev)
+			on_input_event(ev);
+	} while (event_count == COUNT_OF(events));
 }
 
 // ----- stat
@@ -200,8 +221,8 @@ species_t species[] = {
 			[S_INT]    = { .avg = 20,  .dev = 10 },
 			[S_WIS]    = { .avg = 20,  .dev = 10 },
 			[S_CHA]    = { .avg = 20,  .dev = 10, .sex = +1  },
-			[S_LIFE]   = { .avg = 90,  .dev = 10, .sex = +5 },
-			[S_HEIGHT] = { .avg = 178, .dev = 30, .sex = -8 },
+			[S_LIFE]   = { .avg = 90,  .dev = 10, .sex = +5  },
+			[S_HEIGHT] = { .avg = 178, .dev = 30, .sex = -8  },
 			[S_WEIGHT] = { .avg = 70,  .dev = 15, .sex = -4  },
 			[S_MORAL]  = { .avg = 20,  .dev = 15, .sex = +1  },
 		},
@@ -243,7 +264,7 @@ species_t species[] = {
 			[S_WIS]    = { .avg = 22,  .dev = 10 },
 			[S_CHA]    = { .avg = 24,  .dev = 10 },
 			[S_LIFE]   = { .avg = 300, .dev = 50, .sex = +15 },
-			[S_HEIGHT] = { .avg = 173, .dev = 25, .sex = -7 },
+			[S_HEIGHT] = { .avg = 173, .dev = 25, .sex = -7  },
 			[S_WEIGHT] = { .avg = 65,  .dev = 10, .sex = -7  },
 			[S_MORAL]  = { .avg = 20,  .dev = 13 },
 		},
@@ -264,7 +285,7 @@ species_t species[] = {
 			[S_WIS]    = { .avg = 16,  .dev = 10 },
 			[S_CHA]    = { .avg = 17,  .dev = 10 },
 			[S_LIFE]   = { .avg = 65,  .dev = 6,  .sex = +8  },
-			[S_HEIGHT] = { .avg = 130, .dev = 25, .sex = -6 },
+			[S_HEIGHT] = { .avg = 130, .dev = 25, .sex = -6  },
 			[S_WEIGHT] = { .avg = 35,  .dev = 7,  .sex = -2  },
 			[S_MORAL]  = { .avg = 10,  .dev = 10 },
 		},
@@ -341,6 +362,7 @@ typedef struct dialogue_state {
 	task t;
 } dialogue_state;
 
+
 void speak_1(dialogue_state* state) {
 	co_reenter(&state->t);
 
@@ -367,10 +389,6 @@ void speak_1(dialogue_state* state) {
 creature_t player;
 
 void on_frame() {
-	sleep_us(1000);
-
-	fill_rect(0, 0, window_width, window_height, 0xFF1a1a1a);
-
 	poll_input();
 
 	if (key_pressed('R')) {
@@ -378,22 +396,36 @@ void on_frame() {
 		print_creature_info(&player);
 	}
 
-	static u64 prev_time_ns;
-	f64 cur_time_ns = time_ns();
+	if (key_pressed('F'))
+		set_fullscreen(!get_fullscreen());
 
-	f64 delta = (f64)(cur_time_ns - prev_time_ns) * (1.0 / 1000000000.0);
+	fill_rect(0, 0, window_width, window_height, 0xFF1A1A1A);
+
+	static u64 prev_time_ns;
+	u64 cur_time_ns = time_ns();
+	u64 delta_ns = cur_time_ns - prev_time_ns;
+	f64 delta = (f64)delta_ns * (1.0 / 1000000000.0);
 	(void)delta;
 	prev_time_ns = cur_time_ns;
 
+	static usz frames = 0;
+	if (++frames % 100 == 0)
+		lprintf("frametime: {u64}us, fps: {u64}\n", delta_ns / 1000, (u64)(1/delta));
 
-	static f32 px = 200;
-	static f32 py = 200;
+	static f32 px = 200.0;
+	static f32 py = 200.0;
 
-	px += (key_states['D'] - key_states['A']) * delta * 200.0;
-	py += (key_states['S'] - key_states['W']) * delta * 200.0;
+	i32 xdir = key_held('D') - key_held('A');
+	i32 ydir = key_held('S') - key_held('W');
+
+	f32 movespeed = 200.0;
+	if (xdir && ydir)
+		movespeed *= 0.707;
+
+	px += xdir * delta * movespeed;
+	py += ydir * delta * movespeed;
 
 	put_pixbuf(px, py, &player_image);
-
 
 #define BAR_HEIGHT 13
 #define BAR_WIDTH  200
@@ -425,15 +457,23 @@ void on_frame() {
 }
 
 int main(int argc, char** argv) {
+#ifndef ON_WASI
 	default_log_sink->file.color = 1;
 
 	set_root_frame();
 	add_debug_hooks(err_warn);
+#endif
 
-	window_init(err_warn);
+	window_init(&(window_info_t) {
+		.width  = 800,
+		.height = 600,
+		.title  = ls("A window title"),
+	}, err_warn);
 
+#ifndef ON_WASI
 	for (;;)
 		on_frame();
+#endif
 	return 0;
 }
 

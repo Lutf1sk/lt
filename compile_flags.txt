@@ -1,3 +1,5 @@
 -I./include
 -std=gnu2x
 -DWAYLAND=1
+-DON_WASI=1
+-DON_WASM=1

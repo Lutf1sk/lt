@@ -6,7 +6,7 @@ i32 window_width;
 f64 mouse_x;
 f64 mouse_y;
 
-#define MAX_EVENTS 32
+#define MAX_EVENTS 64
 #define EVENT_MASK (MAX_EVENTS - 1)
 
 static wevent_t wev_queue[MAX_EVENTS];

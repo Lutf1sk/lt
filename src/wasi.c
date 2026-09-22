@@ -36,6 +36,10 @@ usz strnlen(const char* str, usz max) {
 	return it - str;
 }
 
+void* malloc(usz size) {
+	return NULL;
+}
+
 NORETURN
 void exit(int code) {
 	__wasi_proc_exit(code);

@@ -62,9 +62,38 @@ void measure_text(ls str) {
 }
 
 
-void window_init(err* err) {
+void window_init(const window_info_t info[static 1], err* err) {
 	window_width  = js_get_canvas_width();
 	window_height = js_get_canvas_height();
+}
+
+WASM_IMPORT("lt", "resize")
+void js_resize(i32 width, i32 height);
+
+void window_resize(i32 width, i32 height) {
+	js_resize(width, height);
+}
+
+WASM_IMPORT("lt", "set_fullscreen")
+void js_set_fullscreen(i32 fullscreen);
+
+void set_fullscreen(b8 fullscreen) {
+	js_set_fullscreen(fullscreen);
+}
+
+WASM_IMPORT("lt", "get_fullscreen")
+b8 js_get_fullscreen(void);
+
+b8 get_fullscreen(void) {
+	return js_get_fullscreen();
+}
+
+void set_maximized(b8 fullscreen) {
+	// noop
+}
+
+b8 get_maximized(void) {
+	return 0; // noop
 }
 
 void platform_poll_wevents() {
@@ -73,6 +102,17 @@ void platform_poll_wevents() {
 
 void window_present() {
 	// --
+}
+
+WASM_IMPORT("lt", "put_image_data")
+void js_put_image_data(i32 x, i32 y, i32 width, i32 height, const u32* data);
+
+void put_entire_pixbuf(i32 x, i32 y, const pixbuf_t other[static 1]) {
+	js_put_image_data(x, y, other->width, other->height, other->data);
+}
+
+void put_pixbuf(i32 x, i32 y, const pixbuf_t other[static 1]) {
+	js_put_image_data(x, y, other->width, other->height, other->data);
 }
 
 

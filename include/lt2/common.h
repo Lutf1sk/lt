@@ -40,6 +40,12 @@
 #	define ON_ARM32 1
 #elif defined(__aarch64__)
 #	define ON_ARM64 1
+#elif defined(__wasm32__)
+#	define ON_WASM32 1
+#	define ON_WASM 1
+#elif defined(__wasm64__)
+#	define ON_WASM64 1
+#	define ON_WASM 1
 #else
 #	warn unsupported architecture
 #endif
