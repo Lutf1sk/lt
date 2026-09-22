@@ -73,11 +73,9 @@ i32 vlogf(log_sink* sink, u8 info, const char* fmt, va_list args) {
 		if (sink->type == LOGSINK_FILE) {
 			if (sink->file.color)
 				lprintf_fn(write_out, &sink->file.fd, "{ls}{dt64} {ls} {ls}{ls}\n", colored_prefixes[severity], unix_time, colored_severities[severity], msg, colored_suffix);
-			else {
+			else
 				lprintf_fn(write_out, &sink->file.fd, "{dt64} {ls} {ls}\n", unix_time, severities[severity], msg);
-				}
 		}
-
 		else if (sink->type == LOGSINK_NET_SYSLOG) {
 			throw(err_fail, ERR_NOT_IMPLEMENTED, "syslog sink not implemented");
 		}
