@@ -37,10 +37,11 @@ RUN = bin/run.wasm
 RUNCMD = python -m http.server
 
 CC = clang
-CFLAGS  += --target=wasm32
+CFLAGS  += --target=wasm32 -msimd128
 LDFLAGS += -nostdlib -Wl,--export-all -v
 else
-LDFLAGS = -lm
+CFLAGS += -march=native
+LDFLAGS += -lm
 endif
 
 ifdef wayland

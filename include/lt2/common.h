@@ -32,6 +32,10 @@
 #	define HAS_AVX  1
 #endif
 
+#ifdef __wasm_simd128__
+#	define HAS_WASM_SIMD128
+#endif
+
 #if defined(__x86_64__) || defined(_M_64)
 #	define ON_AMD64 1
 #elif defined(i386) || defined(__i386__) || defined(__i386) || defined(M_IX86)
@@ -351,6 +355,10 @@ extern usz strnlen(const char* str, usz max);
 
 NORETURN
 extern void exit(int code);
+
+// ----- memory
+
+void* memset32(void* data, u32 v, usz count);
 
 // ----- async
 

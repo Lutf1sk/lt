@@ -1,4 +1,5 @@
 #include <lt2/pixbuf.h>
+#include <lt2/bits.h>
 
 FLATTEN
 void pb_draw_rect(pixbuf_t buf[static 1], i32 x, i32 y, i32 w, i32 h, u32 color) {
@@ -35,10 +36,11 @@ void pb_fill_rect(pixbuf_t buf[static 1], i32 x, i32 y, i32 w, i32 h, u32 color)
 	if (y2 > buf->height)
 		y2 = buf->height;
 
+	u32* dst = buf->data + y * buf->width + x;
+	usz width = x2 - x;
 	for (i32 row = y; row < y2; ++row) {
-		for (i32 col = x; col < x2; ++col) {
-			buf->data[row * buf->width + col] = color;
-		}
+		memset32(dst, color, width);
+		dst += buf->width;
 	}
 }
 
@@ -144,8 +146,7 @@ void pb_draw_hline(pixbuf_t buf[static 1], i32 x, i32 y, i32 x2, u32 color) {
 	if (x2 > buf->width)
 		x2 = buf->width;
 
-	for (i32 i = x; i < x2; ++i)
-		buf->data[y * buf->width + i] = color;
+	memset32(buf->data + y * buf->width + x, color, x2 - x);
 }
 
 void pb_draw_vline(pixbuf_t buf[static 1], i32 x, i32 y, i32 y2, u32 color) {
@@ -168,8 +169,16 @@ void pb_draw_vline(pixbuf_t buf[static 1], i32 x, i32 y, i32 y2, u32 color) {
 }
 
 void pb_blit_entire(pixbuf_t buf[static 1], i32 x, i32 y, const pixbuf_t other[static 1]) {
-	for (usz i = 0; i < other->height; ++i)
-		memcpy(&buf->data[(y + i) * buf->width + x], &other->data[i * other->width], other->width * sizeof(u32));
+	u32* dst = buf->data + y * buf->width + x;
+	u32* src = other->data;
+	u32* dst_end = buf->data + (y + other->height) * buf->width;
+	usz w_size = other->width * sizeof(u32);
+
+	while (dst < dst_end) {
+		memcpy(dst, src, w_size);
+		dst += buf->width;
+		src += other->width;
+	}
 }
 
 void pb_blit(pixbuf_t buf[static 1], i32 x, i32 y, const pixbuf_t other[static 1]) {
@@ -199,9 +208,16 @@ void pb_blit(pixbuf_t buf[static 1], i32 x, i32 y, const pixbuf_t other[static 1
 		y = 0;
 	}
 
+	u32* dst = buf->data + y * buf->width + x;
+	u32* src = other->data + sy * other->width + sx;
+	u32* dst_end = buf->data + (y + sh) * buf->width;
+	usz sw_size = sw * sizeof(u32);
 
-	for (i32 i = 0; i < sh; ++i)
-		memcpy(&buf->data[(y + i) * buf->width + x], &other->data[(sy + i) * other->width + sx], sw * sizeof(u32));
+	while (dst < dst_end) {
+		memcpy(dst, src, sw_size);
+		dst += buf->width;
+		src += other->width;
+	}
 }
 
 #ifndef ON_WASI
@@ -228,8 +244,7 @@ void pb_fill_circle(pixbuf_t buf[static 1], i32 x, i32 y, i32 r, i32 color) {
 		if (max_x > buf->width)
 			max_x = buf->width;
 
-		for (i32 ix = min_x; ix < max_x; ++ix)
-			buf->data[iy * buf->width + ix] = color;
+		memset32(buf->data + iy * buf->width + min_x, color, max_x - min_x);
 	}
 }
 #endif

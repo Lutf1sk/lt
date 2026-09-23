@@ -87,6 +87,15 @@ int main(int argc, char** argv) {
 
 		memset(cmp_data, 0, size);
 		memset(pb.data, 0, size);
+		cmp_data[1 * pb.width + 1] = 0xFFFFFFFF;
+		cmp_data[1 * pb.width + 2] = 0xFFFFFFFF;
+		cmp_data[2 * pb.width + 1] = 0xFFFFFFFF;
+		cmp_data[2 * pb.width + 2] = 0xFFFFFFFF;
+		pb_fill_rect(&pb, 1,  1,  2, 2, 0xFFFFFFFF);
+		tassert(memcmp(pb.data, cmp_data, size) == 0);
+
+		memset(cmp_data, 0, size);
+		memset(pb.data, 0, size);
 		for (usz y = 10; y < pb.height - 10; ++y)
 			for (usz x = 10; x < pb.width - 10; ++x)
 				cmp_data[y * pb.width + x] = 0xFFFFFFFF;

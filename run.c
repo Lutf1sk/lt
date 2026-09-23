@@ -8,6 +8,8 @@
 
 #include <lt2/hash.h>
 
+#include <stdlib.h>
+
 #define rand() (pcg_hash(time_ns()))
 
 #undef X
@@ -399,7 +401,8 @@ void on_frame() {
 	if (key_pressed('F'))
 		set_fullscreen(!get_fullscreen());
 
-	fill_rect(0, 0, window_width, window_height, 0xFF1A1A1A);
+	for (usz i = 0; i < 1000; ++i)
+		fill_rect(0, 0, window_width, window_height, 0xFF1A1A1A);
 
 	static u64 prev_time_ns;
 	u64 cur_time_ns = time_ns();
@@ -409,8 +412,16 @@ void on_frame() {
 	prev_time_ns = cur_time_ns;
 
 	static usz frames = 0;
-	if (++frames % 100 == 0)
-		lprintf("frametime: {u64}us, fps: {u64}\n", delta_ns / 1000, (u64)(1/delta));
+	static u64 total_frametime_ns = 0;
+
+	total_frametime_ns += delta_ns;
+
+	if (++frames == 10) {
+		lprintf("frametime: {u64}us, fps: {u64}\n", total_frametime_ns / frames / 1000, (u64)(1/delta));
+
+		total_frametime_ns = 0;
+		frames = 0;
+	}
 
 	static f32 px = 200.0;
 	static f32 py = 200.0;
@@ -456,6 +467,75 @@ void on_frame() {
 	window_present();
 }
 
+#define _GNU_SOURCE
+#define __USE_GNU
+#include <sched.h>
+#include <unistd.h>
+#include <sys/resource.h>
+
+typedef struct trpool {
+	u32 cpu_count;
+	u32 thread_count;
+	u32 unallocated_core_id;
+} trpool_t;
+
+void trpool_worker(u32 cpu_count, u32 id) {
+	cpu_set_t* cpus = CPU_ALLOC(cpu_count);
+	CPU_ZERO_S(cpu_count, cpus);
+	CPU_SET_S(id, cpu_count, cpus);
+	if (sched_setaffinity(0, cpu_count, cpus))
+		throw_errno(err_fail);
+	CPU_FREE(cpus);
+}
+
+b8 trpool_spawn(trpool_t pool[static 1], u32 id) {
+	++pool->thread_count;
+	lprintf("spawned thread on core {usz}\n", id);
+
+	return 1;
+}
+
+trpool_t trpool_create(u32 max_threads) {
+	trpool_t pool = {0};
+
+	// find current core
+	unsigned int current_cpu, current_node;
+	if (getcpu(&current_cpu, &current_node))
+		throw_errno(err_fail);
+	pool.unallocated_core_id = current_cpu;
+
+	// find total core count
+	long cpu_count = sysconf(_SC_NPROCESSORS_CONF);
+	// should manually set errno to 0 to differentiate indeterminate limits as per man sysconf(3)
+	if (cpu_count < 0)
+		throw_errno(err_fail);
+	pool.cpu_count = cpu_count;
+
+	// get cores available for pinning
+	cpu_set_t* cpus = CPU_ALLOC(cpu_count);
+	if (!cpus)
+		throw(err_fail, ERR_NO_MEMORY, "failed to allocate cpu set");
+	if (sched_getaffinity(0, cpu_count, cpus))
+		throw_errno(err_fail);
+
+	if (setpriority(PRIO_PROCESS, 0, -10))
+		throw_errno(err_warn);
+
+	// spawn threads
+	usz thread_count = 0;
+	for (u32 i = 0; i < cpu_count && thread_count < max_threads; ++i) {
+		if (i == pool.unallocated_core_id)
+			continue;
+		if (!CPU_ISSET_S(i, cpu_count, cpus))
+			continue;
+		// TODO: also allocate only physical cores, and only P-cores on hybrid devices
+		trpool_spawn(&pool, i);
+	}
+	CPU_FREE(cpus);
+
+	return pool;
+}
+
 int main(int argc, char** argv) {
 #ifndef ON_WASI
 	default_log_sink->file.color = 1;
@@ -463,6 +543,10 @@ int main(int argc, char** argv) {
 	set_root_frame();
 	add_debug_hooks(err_warn);
 #endif
+
+	trpool_t pool = trpool_create(64);
+
+	trpool_spawn(&pool, pool.unallocated_core_id);
 
 	window_init(&(window_info_t) {
 		.width  = 800,

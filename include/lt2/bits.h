@@ -41,3 +41,6 @@ usz align_bwd(usz val, usz align) {
 	return val & ~(align - 1);
 }
 
+#define alignptr(v, a) (void*)align((usz)(v), (a))
+#define alignptr_bwd(v, a) (void*)align_bwd((usz)(v), (a))
+

@@ -3,3 +3,4 @@
 -DWAYLAND=1
 -DON_WASI=1
 -DON_WASM=1
+-march=native

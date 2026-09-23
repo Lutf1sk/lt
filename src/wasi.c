@@ -6,7 +6,7 @@
 int memcmp(const void* p1, const void* p2, usz size) {
 	const u8* it1 = p1;
 	const u8* it2 = p2;
-	const u8* end1 = p1 + size;
+	const u8* end1 = it1 + size;
 	while (it1 < end1) {
 		ptrdiff_t diff = *it1 - *it2;
 		if LIKELY (!diff) {
