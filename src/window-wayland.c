@@ -296,7 +296,6 @@ static u32 keymap[256] = {
 	[12] = '-',
 	[13] = '=',
 	[14] = '\b',
-
 	[15] = '\t',
 	[16] = 'Q',
 	[17] = 'W',
@@ -326,7 +325,6 @@ static u32 keymap[256] = {
 	[41] = '`',
 	[42] = KEY_LSHIFT,
 	[43] = '\\',
-
 	[44] = 'Z',
 	[45] = 'X',
 	[46] = 'C',
@@ -337,16 +335,41 @@ static u32 keymap[256] = {
 	[51] = ',',
 	[52] = '.',
 	[53] = '/',
+	[54] = KEY_RSHIFT,
 
 	[56] = KEY_LALT,
 	[57] = ' ',
 
+	[59] = KEY_F1,
+	[60] = KEY_F2,
+	[61] = KEY_F3,
+	[62] = KEY_F4,
+	[63] = KEY_F5,
+	[64] = KEY_F6,
+	[65] = KEY_F7,
+	[66] = KEY_F8,
+	[67] = KEY_F9,
+	[68] = KEY_F10,
+
+	[87] = KEY_F11,
+	[88] = KEY_F12,
+
+	[97] = KEY_RCTRL,
 	[100] = KEY_RALT,
 
+	[102] = KEY_HOME,
 	[103] = KEY_UP,
+	[104] = KEY_PGUP,
 	[105] = KEY_LEFT,
 	[106] = KEY_RIGHT,
+	[107] = KEY_END,
 	[108] = KEY_DOWN,
+	[109] = KEY_PGDOWN,
+	[110] = KEY_INSERT,
+	[111] = KEY_CAPSLOCK,
+
+	[125] = KEY_LMETA,
+	[126] = KEY_RMETA,
 };
 
 static
