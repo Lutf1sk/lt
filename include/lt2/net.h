@@ -32,7 +32,7 @@ void socket_close_tls(tls_handle* tls);
 
 tls_context* tls_load_certificates(ls cert_path, ls key_path, ls cert_chain_path, err* err);
 
-b8 socket_connect_tcp(socket_handle sock, socket_addr* addr, u16 port, err* err);
+b8 socket_connect(socket_handle sock, socket_addr* addr, u16 port, err* err);
 tls_handle* socket_connect_tls(socket_handle sock, socket_addr* addr, u16 port, ls hostname, err* err);
 
 b8 socket_bind(socket_handle sock, u16 port, err* err);

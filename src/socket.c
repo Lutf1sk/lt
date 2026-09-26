@@ -70,7 +70,7 @@ void socket_close(socket_handle sock, err* err) {
 		throw_errno(err);
 }
 
-b8 socket_connect_tcp(socket_handle sock, socket_addr* addr, u16 port, err* err) {
+b8 socket_connect(socket_handle sock, socket_addr* addr, u16 port, err* err) {
 	struct sockaddr_in ipv4;
 	struct sockaddr_in6 ipv6;
 	struct sockaddr* posix_addr;
