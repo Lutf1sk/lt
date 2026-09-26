@@ -244,7 +244,7 @@ ini_t ini_load(ls path, err* err) {
 	ls file_data = fmapall(path, R, err);
 	ini_t ini = ini_parse(file_data, err);
 	if (file_data.ptr)
-		free(file_data.ptr);
+		funmap(file_data, err_warn);
 	return ini;
 }
 
