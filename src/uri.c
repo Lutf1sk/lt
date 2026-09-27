@@ -106,7 +106,14 @@ parsed_uri parse_uri(ls uri_str, err* error) {
 	if (hostname_end) {
 		u8* host_end = uri.host.ptr + uri.host.size;
 		uri.host = lsrange(uri.host.ptr, hostname_end);
-		uri.port = lstou(lsrange(hostname_end + 1, host_end), err_warn);
+
+		err tmp_err = err(0);
+		u64 port = lstou(lsrange(hostname_end + 1, host_end), &tmp_err);
+		if (tmp_err.code || port > UINT16_MAX) {
+			throw(error, ERR_BAD_SYNTAX, "invalid port number");
+			return (parsed_uri){0};
+		}
+		uri.port = port;
 	}
 
 	return uri;
