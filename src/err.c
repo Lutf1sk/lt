@@ -1,6 +1,7 @@
 #include <lt2/common.h>
 #include <lt2/log.h>
 #include <lt2/debug.h>
+#include <lt2/str.h>
 
 #define err_store ((struct err*)3)
 
@@ -56,7 +57,13 @@ void throw(err* err, u8 code, const char* fmt, ...) {
 		return;
 
 	if (err >= err_store) {
-		*err = err(code);
+		err->code = code;
+		if (err->message.size) {
+			va_list args;
+			va_start(args);
+			err->message = vlsprintf(err->message, fmt, args);
+			va_end(args);
+		}
 		return;
 	}
 
