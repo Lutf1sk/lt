@@ -54,14 +54,14 @@ void memset32_avx2(void* dst_, u32 v32, usz count) {
 // should only be used if count>64
 static
 void memset32_rep_stosd(void* dst_, u32 v, usz count) {
-	constexpr usz align = 64 / sizeof(u32);
+	constexpr usz align = 64;
 	constexpr usz align_lomask = align - 1;
 
 	u32* it = dst_;
 
 	usz misaligned_by = (usz)it & align_lomask;
 	if (misaligned_by) {
-		misaligned_by = align - misaligned_by;
+		misaligned_by = (align - misaligned_by) / sizeof(u32);
 		for (u32* end = it + misaligned_by; it < end; ++it)
 			*it = v;
 		count -= misaligned_by;
