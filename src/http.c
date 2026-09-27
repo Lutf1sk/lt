@@ -257,6 +257,11 @@ http_headers_t* http_recv_headers(task* t, http_connection_t* conn, http_headers
 	b8 chunked = 0;
 	usz content_length = 0;
 
+	if (conn->strbuf_it + len > conn->strbuf_end) {
+		throw(error, ERR_NO_MEMORY, "not enough buffer space available for header strings");
+		return NULL;
+	}
+
 	memcpy(conn->strbuf_it, conn->rb.first, len);
 	ls str = lls(conn->strbuf_it, len);
 	conn->strbuf_it += len;
@@ -294,11 +299,6 @@ http_headers_t* http_recv_headers(task* t, http_connection_t* conn, http_headers
 			chunked = 1;
 
 		rem = lsdrop(rem, line.size + 2);
-	}
-
-	if (conn->strbuf_it + len > conn->strbuf_end) {
-		throw(error, ERR_NO_MEMORY, "not enough buffer space available for header strings");
-		return NULL;
 	}
 
 	out->str = str;
