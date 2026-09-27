@@ -141,6 +141,9 @@ void pb_draw_hline(pixbuf_t buf[static 1], i32 x, i32 y, i32 x2, u32 color) {
 		x = tmp;
 	}
 
+	if (x2 < 0 || x >= buf->width)
+		return;
+
 	if (x < 0)
 		x = 0;
 	if (x2 > buf->width)
@@ -158,6 +161,9 @@ void pb_draw_vline(pixbuf_t buf[static 1], i32 x, i32 y, i32 y2, u32 color) {
 		y2 = y;
 		y = tmp;
 	}
+
+	if (y2 < 0 || y >= buf->height)
+		return;
 
 	if (y < 0)
 		y = 0;
