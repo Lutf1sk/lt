@@ -1,7 +1,7 @@
 #include <lt2/common.h>
 
 task* co_next(task* t) {
-	if (t >= t->stack_end) {
+	if (t + 1 >= t->stack_end) {
 		throw(err_fail, ERR_LIMIT_EXCEEDED, "no subtasks available");
 		return NULL; // unreachable
 	}
