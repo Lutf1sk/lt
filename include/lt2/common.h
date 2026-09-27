@@ -205,8 +205,6 @@ void throw_errno_val(err* err, int code);
 
 void throw(err* err, u8 code, const char* fmt, ...);
 
-#define propagate(err, ...) do { if ((err)->code) return __VA_ARGS__; } while (0)
-
 // ----- io
 
 #define R   0b001
