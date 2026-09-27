@@ -75,7 +75,7 @@ void memset32_rep_stosd(void* dst_, u32 v, usz count) {
 
 FLATTEN
 void* memset32(void* dst_, u32 v, usz count) {
-	if (count < 64 / sizeof(v)) {
+	if (count <= 64 / sizeof(v)) {
 		for (u32* it = dst_, *end = it + count; it < end; ++it)
 			*it = v;
 		return dst_;
