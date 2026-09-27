@@ -26,7 +26,7 @@ usz echo_attributes(html_template* t, char* fmt, ...);
 
 #define $title(...)  $elem("title",  __VA_ARGS__)
 #define $script(...) $elem("script", __VA_ARGS__)
-#define $style(...)  $elem("script", __VA_ARGS__)
+#define $style(...)  $elem("style",  __VA_ARGS__)
 #define $link(...)   $begin_elem("link", __VA_ARGS__)
 #define $meta(...)   $begin_elem("meta", __VA_ARGS__)
 
@@ -90,7 +90,7 @@ usz echo_attributes(html_template* t, char* fmt, ...);
 #define $svg(...)      $elem("svg",      __VA_ARGS__)
 #define $rect(...)     $elem("rect",     __VA_ARGS__)
 #define $circle(...)   $elem("circle",   __VA_ARGS__)
-#define $ellipse(...)  $elem("elllipse", __VA_ARGS__)
+#define $ellipse(...)  $elem("ellipse",  __VA_ARGS__)
 #define $stop(...)     $elem("stop",     __VA_ARGS__)
 #define $line(...)     $elem("line",     __VA_ARGS__)
 #define $polygon(...)  $elem("polygon",  __VA_ARGS__)
