@@ -191,7 +191,7 @@ cli_process_t cli_run(ls cmd, err* error) {
 	pid_t child_pid = fork();
 	if (child_pid < 0) {
 		throw_errno(error);
-		goto err2;
+		goto err3;
 	}
 
 	if (!child_pid) {
@@ -229,6 +229,9 @@ cli_process_t cli_run(ls cmd, err* error) {
 		.pid = child_pid,
 	};
 
+err3:
+	close(err_fds[0]);
+	close(err_fds[1]);
 err2:
 	close(in_fds[0]);
 	close(in_fds[1]);
