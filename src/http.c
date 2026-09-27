@@ -257,7 +257,12 @@ http_headers_t* http_recv_headers(task* t, http_connection_t* conn, http_headers
 	b8 chunked = 0;
 	usz content_length = 0;
 
-	ls rem = lls(conn->rb.first, len);
+	memcpy(conn->strbuf_it, conn->rb.first, len);
+	ls str = lls(conn->strbuf_it, len);
+	conn->strbuf_it += len;
+	rb_skip(&conn->rb, len + 2);
+
+	ls rem = str;
 	while (rem.size) {
 		u8* line_end = lssubstr(rem, ls("\r\n"));
 		if (!line_end) {
@@ -296,12 +301,7 @@ http_headers_t* http_recv_headers(task* t, http_connection_t* conn, http_headers
 		return NULL;
 	}
 
-	memcpy(conn->strbuf_it, conn->rb.first, len);
-	ls str = lls(conn->strbuf_it, len);
-	conn->strbuf_it += len;
-	rb_skip(&conn->rb, len + 2);
 	out->str = str;
-
 	out->count = count;
 	out->keys  = conn->header_keys;
 	out->vals  = conn->header_vals;
