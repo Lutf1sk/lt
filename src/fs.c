@@ -169,6 +169,7 @@ b8 ldnext(dir_handle dir, dir_entry ent[static 1], err* err) {
 
 	usz name_size = strlen(de->d_name);
 	if (name_size > FILENAME_BUF_SIZE) {
+		// !! really should add a better way to do this
 		throw(err, ERR_LIMIT_EXCEEDED, "name of directory entry exceeds maximum length");
 		name_size = FILENAME_BUF_SIZE;
 	}
