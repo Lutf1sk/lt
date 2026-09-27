@@ -20,6 +20,7 @@ typedef int socket_handle;
 typedef enum socket_type {
 	SOCKET_TCP   = 0x01,
 	SOCKET_UDP   = 0x02,
+	SOCKET_IPV6  = 0x40,
 	SOCKET_ASYNC = 0x80,
 } socket_type;
 

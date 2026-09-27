@@ -48,6 +48,12 @@ socket_handle socket_open(socket_type type, err* err) {
 		type &= ~SOCKET_ASYNC;
 	}
 
+	int ver = AF_INET;
+	if (type & SOCKET_IPV6) {
+		ver = AF_INET6;
+		type &= ~SOCKET_IPV6;
+	}
+
 	if (type == SOCKET_TCP)
 		posix_type |= SOCK_STREAM;
 	else if (type == SOCKET_UDP)
@@ -57,7 +63,7 @@ socket_handle socket_open(socket_type type, err* err) {
 		return -1;
 	}
 
-	int sock = socket(AF_INET, posix_type, 0);
+	int sock = socket(ver, posix_type, 0);
 	if (sock < 0) {
 		throw_errno(err);
 		return -1;
@@ -84,7 +90,7 @@ b8 socket_connect(socket_handle sock, socket_addr* addr, u16 port, err* err) {
 		socklen = sizeof(ipv4);
 	}
 	else if (addr->type == SOCKADDR_IPV6) {
-		ipv6.sin6_family = AF_INET;
+		ipv6.sin6_family = AF_INET6;
 		ipv6.sin6_port = htons(port);
 		ipv6.sin6_flowinfo = 0;
 		memcpy(&ipv6.sin6_addr, addr->ip_addr, 16);
