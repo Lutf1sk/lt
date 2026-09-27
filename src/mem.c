@@ -51,23 +51,23 @@ void memset32_avx2(void* dst_, u32 v32, usz count) {
 }
 
 static
-void memset32_rep_stosd(void* dst_, u32 v, usz size) {
-	constexpr usz align = 64;
+void memset32_rep_stosd(void* dst_, u32 v, usz count) {
+	constexpr usz align = 64 / sizeof(u32);
 	constexpr usz align_lomask = align - 1;
 
 	u32* it = dst_;
 
 	usz misaligned_by = (usz)it & align_lomask;
 	if (misaligned_by) {
-		misaligned_by = (align - misaligned_by) / sizeof(v);
+		misaligned_by = align - misaligned_by;
 		for (u32* it = dst_, *end = it + misaligned_by; it < end; ++it)
 			*it = v;
-		size -= misaligned_by;
+		count -= misaligned_by;
 	}
 
 	__asm__ volatile ("rep stosl"
 		:
-		: "a"(v), "c"(size / sizeof(u32)), "D"(it)
+		: "a"(v), "c"(count), "D"(it)
 		: "memory", "cc");
 }
 
