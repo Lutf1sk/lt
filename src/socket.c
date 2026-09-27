@@ -32,17 +32,18 @@ socket_addr resolve_host(ls host, err* err) {
 		if (it->ai_addr->sa_family == AF_INET) {
 			struct socket_addr addr = { SOCKADDR_IPV4 };
 			memcpy(addr.ip_addr, &((struct sockaddr_in*)it->ai_addr)->sin_addr, 4);
+			freeaddrinfo(res);
 			return addr;
 		}
 		if (it->ai_addr->sa_family == AF_INET6) {
 			struct socket_addr addr = { SOCKADDR_IPV6 };
 			memcpy(addr.ip_addr, &((struct sockaddr_in6*)it->ai_addr)->sin6_addr, 16);
+			freeaddrinfo(res);
 			return addr;
 		}
 	}
 
 	freeaddrinfo(res);
-
 	throw(err, ERR_NOT_FOUND, "name resolution failed"); // !!
 	return (struct socket_addr){0};
 }
