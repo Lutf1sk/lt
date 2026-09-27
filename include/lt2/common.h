@@ -361,7 +361,7 @@ void* memset32(void* data, u32 v, usz count);
 
 // ----- async
 
-b8 poll_handle(file_handle fd, u8 mode, u64 timeout_ms);
+u8 poll_handle(file_handle fd, u8 mode, u64 timeout_ms);
 
 typedef struct task {
 	union {
