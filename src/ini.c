@@ -12,7 +12,7 @@ u32 write_string(ini_t ini[static 1], ls str) {
 	if ((new_size ^ ini->strtab_size) & ~(STRTAB_BLOCKSIZE-1)) {
 		usz new_capacity = align(new_size, STRTAB_BLOCKSIZE);
 		void* new_mem = realloc(ini->strtab, new_capacity);
-		if (!new_mem)
+		if UNLIKELY (!new_mem)
 			throw(err_fail, ERR_NO_MEMORY, "failed to reallocate ini string table");
 		ini->strtab = new_mem;
 	}
@@ -62,10 +62,13 @@ isz ini_find_value_line(const ini_t ini[static 1], isz section_i, ls key) {
 #define SECTION_BLOCKSIZE 256
 
 usz ini_add_section(ini_t ini[static 1], ls name) {
+	if (name.size > UINT16_MAX)
+		throw(err_fail, ERR_LIMIT_EXCEEDED, "section name length exceeds maximum of 65535");
+
 	if ((ini->section_count & (SECTION_BLOCKSIZE-1)) == 0) {
 		usz new_capacity = (usz)ini->section_count + SECTION_BLOCKSIZE;
 		void* new_mem = realloc(ini->sections, new_capacity * sizeof(ini_section_t));
-		if (!new_mem)
+		if UNLIKELY (!new_mem)
 			throw(err_fail, ERR_NO_MEMORY, "failed to reallocate ini section table");
 		ini->sections = new_mem;
 	}
@@ -80,14 +83,14 @@ usz ini_add_section(ini_t ini[static 1], ls name) {
 #define ENTRY_BLOCKSIZE 128
 
 isz ini_add_line(ini_t ini[static 1], isz section_i, ini_line_t line[static 1]) {
-	if (section_i < 0)
+	if UNLIKELY (section_i < 0)
 		return -1;
 
 	ini_section_t* section = &ini->sections[section_i];
 	if ((section->line_count & (ENTRY_BLOCKSIZE-1)) == 0) {
 		usz new_capacity = section->line_count + ENTRY_BLOCKSIZE;
 		void* new_mem = realloc(section->lines, new_capacity * sizeof(ini_line_t));
-		if (!new_mem)
+		if UNLIKELY (!new_mem)
 			throw(err_fail, ERR_NO_MEMORY, "failed to reallocate ini section entry table");
 		section->lines = new_mem;
 	}
@@ -97,6 +100,11 @@ isz ini_add_line(ini_t ini[static 1], isz section_i, ini_line_t line[static 1]) 
 }
 
 isz ini_add_value(ini_t ini[static 1], isz section_i, ls key, ls value) {
+	if UNLIKELY (key.size > UINT8_MAX)
+		throw(err_fail, ERR_BAD_SYNTAX, "key length exceeds maximum of 256");
+	if UNLIKELY (value.size > UINT16_MAX)
+		throw(err_fail, ERR_BAD_SYNTAX, "value length exceeds maximum of 65535");
+
 	return ini_add_line(ini, section_i, &(ini_line_t) {
 		.type = INI_LINE_VALUE,
 		.key_offset = write_string(ini, key),
@@ -120,7 +128,7 @@ isz ini_set_value(ini_t ini[static 1], isz section_i, ls key, ls value) {
 // ----- removal
 
 void ini_remove_line(ini_t ini[static 1], isz section_i, isz line_i) {
-	if (section_i < 0 || line_i < 0)
+	if UNLIKELY (section_i < 0 || line_i < 0)
 		return;
 	ini_section_t* section = &ini->sections[section_i];
 	memmove(section->lines + line_i, section->lines + line_i + 1, (section->line_count - line_i - 1) * sizeof(ini_line_t));
@@ -179,6 +187,11 @@ ini_t ini_parse(ls str, err* err) {
 			it = skip_line(it, end);
 			ls text = lstrim_right(lsrange(start, it));
 
+			if UNLIKELY (text.size > UINT16_MAX) {
+				throw(err, ERR_BAD_SYNTAX, "comment length exceeds maximum of 65535");
+				goto err;
+			}
+
 			ini_add_line(&ini, section_i, &(ini_line_t) {
 				.type   = INI_LINE_COMMENT,
 				.offset = write_string(&ini, text),
@@ -190,7 +203,7 @@ ini_t ini_parse(ls str, err* err) {
 		if (*it == '[') {
 			u8* start = ++it;
 			for (;;) {
-				if (it >= end || *it == '\n') {
+				if UNLIKELY (it >= end || *it == '\n') {
 					throw(err, ERR_BAD_SYNTAX, "expected ']' before end of line");
 					goto err;
 				}
@@ -210,7 +223,7 @@ ini_t ini_parse(ls str, err* err) {
 
 		u8* start = it;
 		for (;;) {
-			if (it >= end || *it == '\n') {
+			if UNLIKELY (it >= end || *it == '\n') {
 				throw(err, ERR_BAD_SYNTAX, "expected '=' before end of file");
 				goto err;
 			}
@@ -218,19 +231,14 @@ ini_t ini_parse(ls str, err* err) {
 				break;
 			++it;
 		}
+
 		ls key = lstrim(lsrange(start, it));
 
 		start = ++it;
 		it = skip_line(it, end);
 		ls value = lstrim_right(lsrange(start, it));
 
-		ini_add_line(&ini, section_i, &(ini_line_t) {
-			.type       = INI_LINE_VALUE,
-			.offset     = write_string(&ini, value),
-			.length     = value.size,
-			.key_offset = write_string(&ini, key),
-			.key_length = key.size,
-		});
+		ini_add_value(&ini, section_i, key, value);
 	}
 
 	return ini;
@@ -259,7 +267,7 @@ void ini_free(ini_t ini[static 1]) {
 		free(ini->strtab);
 }
 
-
+// !! should also write keys in unnamed section
 void ini_write(const ini_t ini[static 1], file_handle file) {
 	for (usz section_i = 0; section_i < ini->section_count; ++section_i) {
 		ini_section_t* section = &ini->sections[section_i];
