@@ -2,6 +2,7 @@
 
 #ifdef WAYLAND
 #	include <wayland-client-protocol.h>
+#	include <wayland-client-core.h>
 
 #	include <lt2/window.h>
 #	include <lt2/time.h>
@@ -117,6 +118,10 @@ void recreate_buffer(i32 width, i32 height) {
 	}
 
 	struct wl_shm_pool* pool = wl_shm_create_pool(shm, fd, pool_size);
+	if (!pool) {
+		throw(err_fail, ERR_UNKNOWN, "wl_shm_create_pool() failed");
+		return;
+	}
 	win.buffers[0] = wl_shm_pool_create_buffer(pool, 0,        window_width, window_height, window_width * sizeof(u32), WL_SHM_FORMAT_XRGB8888);
 	win.buffers[1] = wl_shm_pool_create_buffer(pool, buf_size, window_width, window_height, window_width * sizeof(u32), WL_SHM_FORMAT_XRGB8888);
 	win.buffer_data = data;
@@ -535,17 +540,43 @@ struct wl_registry_listener listener = {
 
 void window_init(const window_info_t info[static 1], err* err) {
 	display = wl_display_connect(NULL);
+	if (!display) {
+		throw(err, ERR_UNKNOWN, "wl_display_connect() failed");
+		return;
+	}
 
 	registry = wl_display_get_registry(display);
+	if (!registry) {
+		throw(err, ERR_UNKNOWN, "wl_display_get_registry() failed");
+		goto err0;
+	}
 	wl_registry_add_listener(registry, &listener, NULL);
 
 	wl_display_roundtrip(display);
 
+	if (!compositor || !xdg_wm_base) {
+		throw(err, ERR_UNKNOWN, "missing required wayland global(s)");
+		goto err1;
+	}
+
 	win.wl_surface = wl_compositor_create_surface(compositor);
+	if (!win.wl_surface) {
+		throw(err, ERR_UNKNOWN, "wl_compositor_create_surface() failed");
+		goto err1;
+	}
+
 	win.xdg_surface = xdg_wm_base_get_xdg_surface(xdg_wm_base, win.wl_surface);
+	if (!win.xdg_surface) {
+		throw(err, ERR_UNKNOWN, "xdg_wm_base_get_xdg_surface() failed");
+		goto err2;
+	}
 	xdg_surface_add_listener(win.xdg_surface, &xdg_surface_listener, &win);
 
 	win.xdg_toplevel = xdg_surface_get_toplevel(win.xdg_surface);
+	if (!win.xdg_toplevel) {
+		throw(err, ERR_UNKNOWN, "xdg_surface_get_toplevel() failed");
+		goto err3;
+	}
 	char* title_cstr = lstos(info->title, err);
 	if (title_cstr) {
 		xdg_toplevel_set_title(win.xdg_toplevel, title_cstr);
@@ -563,6 +594,16 @@ void window_init(const window_info_t info[static 1], err* err) {
 	wl_display_roundtrip(display);
 
 	recreate_buffer(info->width, info->height);
+	return;
+
+err3:
+	xdg_surface_destroy(win.xdg_surface);
+err2:
+	wl_surface_destroy(win.wl_surface);
+err1:
+	wl_registry_destroy(registry);
+err0:
+	wl_display_disconnect(display);
 }
 
 void window_resize(i32 width, i32 height) {
