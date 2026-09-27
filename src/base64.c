@@ -113,6 +113,9 @@ usz b64_decode(void* dst_, void* src_, usz src_size, err* error) {
 		   c3 = b64_dec_tab[data[2]],
 		   c4 = b64_dec_tab[data[3]];
 
+		if UNLIKELY (c1 == 64 || c2 == 64 || c3 == 64 || c4 == 64)
+			goto invalid_char;
+
 		*oit++ = (c1 << 2) | (c2 >> 4);
 		*oit++ = (c2 << 4) | (c3 >> 2);
 		*oit++ = (c3 << 6) | (c4);
@@ -123,6 +126,9 @@ usz b64_decode(void* dst_, void* src_, usz src_size, err* error) {
 		u8 c1 = b64_dec_tab[pad_data[0]],
 		   c2 = b64_dec_tab[pad_data[1]];
 
+		if UNLIKELY (c1 == 64 || c2 == 64)
+			goto invalid_char;
+
 		*oit++ = (c1 << 2) | (c2 >> 4);
 	}
 	else if (pad == 1) {
@@ -130,10 +136,17 @@ usz b64_decode(void* dst_, void* src_, usz src_size, err* error) {
 		   c2 = b64_dec_tab[pad_data[1]],
 		   c3 = b64_dec_tab[pad_data[2]];
 
+		if UNLIKELY (c1 == 64 || c2 == 64 || c3 == 64)
+			goto invalid_char;
+
 		*oit++ = (c1 << 2) | (c2 >> 4);
 		*oit++ = (c2 << 4) | (c3 >> 2);
 	}
 
 	return oit - dst;
+
+invalid_char:
+	throw(error, ERR_BAD_FORMAT, "invalid base64 character");
+	return 0;
 }
 
