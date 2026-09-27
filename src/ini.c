@@ -275,13 +275,13 @@ void ini_write(const ini_t ini[static 1], file_handle file) {
 		if (!name.size)
 			continue;
 
-		lfprintf(file, "[%S]\n", name);
+		lfprintf(file, "[{ls}]\n", name);
 
 		for (ini_line_t* line_it = section->lines, *line_end = line_it + section->line_count; line_it < line_end; ++line_it) {
 			switch (line_it->type) {
 			case INI_LINE_EMPTY:   lfprintf(file, "\n"); break;
-			case INI_LINE_COMMENT: lfprintf(file, ";%S\n",   ini_line_value(ini, line_it)); break;
-			case INI_LINE_VALUE:   lfprintf(file, "%S=%S\n", ini_line_key(ini, line_it), ini_line_value(ini, line_it)); break;
+			case INI_LINE_COMMENT: lfprintf(file, ";{ls}\n",   ini_line_value(ini, line_it)); break;
+			case INI_LINE_VALUE:   lfprintf(file, "{ls}={ls}\n", ini_line_key(ini, line_it), ini_line_value(ini, line_it)); break;
 			}
 		}
 	}
