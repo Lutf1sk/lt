@@ -145,7 +145,7 @@ u64 lstou(ls str, err* err) {
 		}
 
 		u8 digit = c - '0';
-		if UNLIKELY (val > UINT64_MAX/10 || (val == UINT64_MAX && digit > 5)) {
+		if UNLIKELY (val > UINT64_MAX/10 || (val == UINT64_MAX/10 && digit > 5)) {
 			throw(err, ERR_OVERFLOW, "value exceeds 64 bit unsigned integer limit");
 			return 0;
 		}
