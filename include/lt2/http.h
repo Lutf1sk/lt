@@ -52,7 +52,7 @@ typedef struct http_connection {
 	b8 keep_alive;
 	b8 chunked;
 
-	usz remain;
+	u64 remain;
 } http_connection_t;
 
 ls  http_get_header (http_headers_t* headers, ls key, err* error);

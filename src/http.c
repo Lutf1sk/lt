@@ -258,7 +258,7 @@ http_headers_t* http_recv_headers(task* t, http_connection_t* conn, http_headers
 	usz count = 0;
 
 	b8 chunked = 0;
-	usz content_length = 0;
+	u64 content_length = 0;
 
 	if (conn->strbuf_it + len > conn->strbuf_end) {
 		throw(error, ERR_NO_MEMORY, "not enough buffer space available for header strings");
@@ -296,8 +296,14 @@ http_headers_t* http_recv_headers(task* t, http_connection_t* conn, http_headers
 		conn->header_keys[count] = key;
 		++count;
 
-		if (lseq_nocase(key, ls("Content-Length")))
-			content_length = lstou(val, err_ignore); // !!
+		if (lseq_nocase(key, ls("Content-Length"))) {
+			err e = err(0);
+			content_length = lstou(val, &e);
+			if (e.code) {
+				throw(error, e.code, "invalid Content-Length in request");
+				return NULL;
+			}
+		}
 		else if (lseq_nocase(key, ls("Transfer-Encoding")) && lseq_nocase(val, ls("chunked")))
 			chunked = 1;
 
