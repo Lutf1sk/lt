@@ -440,6 +440,15 @@ static
 void seat_capabilities(void* userdata, struct wl_seat* seat, u32 capabilities) {
 	llogf(NULL, LOG_DEBUG, "got seat capabilities '{u32}'", capabilities);
 
+	if (pointer) {
+		wl_pointer_destroy(pointer);
+		pointer = NULL;
+	}
+	if (keyboard) {
+		wl_keyboard_destroy(keyboard);
+		keyboard = NULL;
+	}
+
 	if (capabilities & WL_SEAT_CAPABILITY_POINTER) {
 		pointer = wl_seat_get_pointer(seat);
 		wl_pointer_add_listener(pointer, &pointer_listener, NULL);
