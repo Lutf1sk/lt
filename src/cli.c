@@ -171,27 +171,31 @@ void print_cli_help(cli_options cli[static 1]) {
 
 
 cli_process_t cli_run(ls cmd, err* error) {
+	char* cstr = lstos(cmd, error);
+	if (!cstr)
+		goto err0;
+
 	int out_fds[2] = {0};
 	int in_fds [2] = {0};
 	int err_fds[2] = {0};
 
 	if UNLIKELY (pipe(out_fds) < 0) {
 		throw_errno(error);
-		goto err0;
+		goto err1;
 	}
 	if UNLIKELY (pipe(in_fds) < 0) {
 		throw_errno(error);
-		goto err1;
+		goto err2;
 	}
 	if UNLIKELY (pipe(err_fds) < 0) {
 		throw_errno(error);
-		goto err2;
+		goto err3;
 	}
 
 	pid_t child_pid = fork();
 	if (child_pid < 0) {
 		throw_errno(error);
-		goto err3;
+		goto err4;
 	}
 
 	if (!child_pid) {
@@ -210,10 +214,6 @@ cli_process_t cli_run(ls cmd, err* error) {
 		close(in_fds [0]);
 		close(err_fds[1]);
 
-		char* cstr = malloc(cmd.size + 1);
-		memcpy(cstr, cmd.ptr, cmd.size);
-		cstr[cmd.size] = 0;
-
 		execl("/bin/sh", "/bin/sh", "-c", cstr, NULL);
 		exit(1); // execl should never return if successful
 	}
@@ -222,6 +222,8 @@ cli_process_t cli_run(ls cmd, err* error) {
 	close(in_fds [0]);
 	close(err_fds[1]);
 
+	free(cstr);
+
 	return (cli_process_t) {
 		.out = out_fds[0],
 		.in  = in_fds [1],
@@ -229,15 +231,17 @@ cli_process_t cli_run(ls cmd, err* error) {
 		.pid = child_pid,
 	};
 
-err3:
+err4:
 	close(err_fds[0]);
 	close(err_fds[1]);
-err2:
+err3:
 	close(in_fds[0]);
 	close(in_fds[1]);
-err1:
+err2:
 	close(out_fds[0]);
 	close(out_fds[1]);
+err1:
+	free(cstr);
 err0:
 	return (cli_process_t) {
 		.out = -1,
