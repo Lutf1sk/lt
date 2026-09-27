@@ -45,10 +45,13 @@ tls_handle* socket_connect_tls(socket_handle sock, socket_addr* addr, u16 port, 
 
 	SSL* ssl = SSL_new(ssl_client_ctx);
 	if (!ssl) {
-		throw(err, ERR_ANY, "SSL_new() failed");
+		throw(err, ERR_ANY, "failed to create tls socket");
 		return NULL;
 	}
-	SSL_set_fd(ssl, sock);
+	if (!SSL_set_fd(ssl, sock)) {
+		throw(err, ERR_ANY, "failed to set tls socket descriptor");
+		goto err0;
+	}
 
 	if (sni_host.size) {
 		memcpy(cstr_host, sni_host.ptr, sni_host.size);
@@ -119,12 +122,24 @@ err0:
 
 tls_handle* socket_accept_tls(socket_handle sock, tls_context* cx, err* err) {
 	SSL* ssl = SSL_new((void*)cx);
-	SSL_set_fd(ssl, sock);
+	if (!ssl) {
+		throw(err, ERR_ANY, "failed to create tls socket");
+		return NULL;
+	}
+	if (!SSL_set_fd(ssl, sock)) {
+		throw(err, ERR_ANY, "failed to set tls socket descriptor");
+		goto err0;
+	}
 
 	int ret = SSL_accept(ssl);
-	if (ret > 0)
-		return (void*)ssl;
-	throw(err, ERR_ANY, "failed to accept tls connection");
+	if (ret <= 0) {
+		throw(err, ERR_ANY, "failed to accept tls connection");
+		goto err0;
+	}
+
+	return (void*)ssl;
+
+err0:
 	SSL_free(ssl);
 	return NULL;
 }
@@ -132,11 +147,19 @@ tls_handle* socket_accept_tls(socket_handle sock, tls_context* cx, err* err) {
 tls_handle* socket_accept_tls_async(task* t, tls_handshake_state* state, err* err) {
 	co_reenter(t);
 
+	state->handle = (void*)SSL_new((void*)state->context);
+	if (!state->handle) {
+		throw(err, ERR_ANY, "failed to create tls socket");
+		return NULL;
+	}
+
+	if (!SSL_set_fd((void*)state->handle, state->socket)) {
+		throw(err, ERR_ANY, "failed to set tls socket descriptor");
+		goto err0;
+	}
+
 	if (!state->timeout_at_ms)
 		state->timeout_at_ms = time_ms() + S_TO_MS(60);
-
-	state->handle = (void*)SSL_new((void*)state->context);
-	SSL_set_fd((void*)state->handle, state->socket);
 
 	for (;;) {
 		int ret = SSL_accept((void*)state->handle);
@@ -146,16 +169,18 @@ tls_handle* socket_accept_tls_async(task* t, tls_handshake_state* state, err* er
 		int ssl_error = SSL_get_error((void*)state->handle, ret);
 		if (ssl_error != SSL_ERROR_WANT_READ && ssl_error != SSL_ERROR_WANT_WRITE) {
 			throw(err, ERR_ANY, "failed to accept tls connection");
-			SSL_free((void*)state->handle);
-			return NULL;
+			goto err0;
 		}
 		if (time_ms() >= state->timeout_at_ms) {
 			throw(err, ERR_TIMED_OUT, "tls handshake timed out");
-			SSL_free((void*)state->handle);
-			return NULL;
+			goto err0;
 		}
 		co_yield(NULL);
 	}
+
+err0:
+	SSL_free((void*)state->handle);
+	return NULL;
 }
 
 usz socket_send_tls(tls_handle* ssl, const void* data, usz size, err* err) {
