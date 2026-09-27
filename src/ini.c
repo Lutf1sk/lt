@@ -267,23 +267,24 @@ void ini_free(ini_t ini[static 1]) {
 		free(ini->strtab);
 }
 
-// !! should also write keys in unnamed section
+static
+void ini_write_line(const ini_t ini[static 1], ini_line_t line[static 1], file_handle file) {
+	switch (line->type) {
+	case INI_LINE_EMPTY:   lfprintf(file, "\n"); break;
+	case INI_LINE_COMMENT: lfprintf(file, ";{ls}\n",   ini_line_value(ini, line)); break;
+	case INI_LINE_VALUE:   lfprintf(file, "{ls}={ls}\n", ini_line_key(ini, line), ini_line_value(ini, line)); break;
+	}
+}
+
 void ini_write(const ini_t ini[static 1], file_handle file) {
 	for (usz section_i = 0; section_i < ini->section_count; ++section_i) {
 		ini_section_t* section = &ini->sections[section_i];
 		ls name = ini_section_name(ini, section_i);
-		if (!name.size)
-			continue;
+		if (name.size || section_i)
+			lfprintf(file, "[{ls}]\n", name);
 
-		lfprintf(file, "[{ls}]\n", name);
-
-		for (ini_line_t* line_it = section->lines, *line_end = line_it + section->line_count; line_it < line_end; ++line_it) {
-			switch (line_it->type) {
-			case INI_LINE_EMPTY:   lfprintf(file, "\n"); break;
-			case INI_LINE_COMMENT: lfprintf(file, ";{ls}\n",   ini_line_value(ini, line_it)); break;
-			case INI_LINE_VALUE:   lfprintf(file, "{ls}={ls}\n", ini_line_key(ini, line_it), ini_line_value(ini, line_it)); break;
-			}
-		}
+		for (ini_line_t* line_it = section->lines, *line_end = line_it + section->line_count; line_it < line_end; ++line_it)
+			ini_write_line(ini, line_it, file);
 	}
 }
 
