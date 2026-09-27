@@ -101,7 +101,7 @@ isz ini_add_line(ini_t ini[static 1], isz section_i, ini_line_t line[static 1]) 
 
 isz ini_add_value(ini_t ini[static 1], isz section_i, ls key, ls value) {
 	if UNLIKELY (key.size > UINT8_MAX)
-		throw(err_fail, ERR_BAD_SYNTAX, "key length exceeds maximum of 256");
+		throw(err_fail, ERR_BAD_SYNTAX, "key length exceeds maximum of 255");
 	if UNLIKELY (value.size > UINT16_MAX)
 		throw(err_fail, ERR_BAD_SYNTAX, "value length exceeds maximum of 65535");
 
@@ -224,7 +224,7 @@ ini_t ini_parse(ls str, err* err) {
 		u8* start = it;
 		for (;;) {
 			if UNLIKELY (it >= end || *it == '\n') {
-				throw(err, ERR_BAD_SYNTAX, "expected '=' before end of file");
+				throw(err, ERR_BAD_SYNTAX, "expected '=' before end of line");
 				goto err;
 			}
 			if (*it == '=')
