@@ -57,6 +57,9 @@ ls fmapall(ls path, u8 mode, err* err) {
 	}
 
 	int posix_flags = MAP_PRIVATE;
+	if (mode & W)
+		posix_flags = MAP_SHARED;
+
 	int posix_prot  = posix_prot_tab[mode];
 	void* block = mmap(NULL, st.st_size, posix_prot, posix_flags, file, 0);
 	close(file);
