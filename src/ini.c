@@ -115,6 +115,12 @@ isz ini_add_value(ini_t ini[static 1], isz section_i, ls key, ls value) {
 }
 
 isz ini_set_value(ini_t ini[static 1], isz section_i, ls key, ls value) {
+	if UNLIKELY (value.size > UINT16_MAX)
+		throw(err_fail, ERR_LIMIT_EXCEEDED, "value length exceeds maximum of 65535");
+
+	if UNLIKELY (section_i < 0)
+		return -1;
+
 	isz existing_line = ini_find_value_line(ini, section_i, key);
 	if (existing_line < 0)
 		return ini_add_value(ini, section_i, key, value);
