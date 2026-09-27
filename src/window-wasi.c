@@ -12,7 +12,7 @@ i32 js_get_canvas_height();
 
 
 WASM_IMPORT("lt", "get_text_height")
-void js_get_text_height();
+i32 js_get_text_height();
 
 
 WASM_IMPORT("lt", "draw_rect")
