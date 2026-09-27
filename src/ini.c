@@ -191,7 +191,7 @@ ini_t ini_parse(ls str, err* err) {
 			u8* start = ++it;
 			for (;;) {
 				if (it >= end || *it == '\n') {
-					throw(err, ERR_BAD_SYNTAX, "expected '[' before end of line");
+					throw(err, ERR_BAD_SYNTAX, "expected ']' before end of line");
 					goto err;
 				}
 				if (*it == ']')
