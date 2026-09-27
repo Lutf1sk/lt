@@ -216,6 +216,8 @@ void pointer_motion(void* userdata, struct wl_pointer* pointer, u32 time, wl_fix
 	});
 }
 
+#include <linux/input-event-codes.h>
+
 static
 void pointer_button(void* userdata, struct wl_pointer* pointer, u32 serial, u32 time, u32 button, u32 state) {
 	u8 type;
@@ -227,10 +229,21 @@ void pointer_button(void* userdata, struct wl_pointer* pointer, u32 serial, u32 
 		return;
 	}
 
+	u8 mapped_button = 0;
+	switch (button) {
+	case BTN_LEFT:    mapped_button = 1; break;
+	case BTN_RIGHT:   mapped_button = 2; break;
+	case BTN_MIDDLE:  mapped_button = 3; break;
+	case BTN_SIDE:    mapped_button = 4; break;
+	case BTN_EXTRA:   mapped_button = 5; break;
+	case BTN_FORWARD: mapped_button = 6; break;
+	case BTN_BACK:    mapped_button = 7; break;
+	}
+
 	queue_wevent((wevent_t) {
 		.type        = type,
 
-		.button.code = button
+		.button.code = mapped_button
 	});
 }
 
@@ -551,6 +564,7 @@ void window_init(const window_info_t info[static 1], err* err) {
 }
 
 void window_resize(i32 width, i32 height) {
+	// !! from testing, it seems to accept this NULL without issues, but unsure if it is entirely safe
 	xdg_toplevel_configure(&win, win.xdg_toplevel, width, height, NULL);
 }
 
