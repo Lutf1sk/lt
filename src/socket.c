@@ -9,7 +9,11 @@
 #	include <fcntl.h>
 
 socket_addr resolve_host(ls host, err* err) {
-	char cstr[512];
+	char cstr[1024];
+	if (host.size >= sizeof(cstr)) {
+		throw(err, ERR_LIMIT_EXCEEDED, "host length exceeds maximum length of 1023 bytes");
+		return (struct socket_addr){0};
+	}
 	memcpy(cstr, host.ptr, host.size);
 	cstr[host.size] = 0;
 
