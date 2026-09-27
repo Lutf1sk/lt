@@ -7,7 +7,7 @@ INLINE
 usz printu64(write_fn fn, void* usr, u64 n) {
 	char buf[NUM_MAX], *end = buf + sizeof(buf), *it = end - 1;
 
-	// Fill buffer backwards with the remainder of n/10
+	// fill buffer backwards with the remainder of n/10
 	while (n >= 10) {
 		*it-- = n % 10 + '0';
 		n /= 10;
@@ -22,14 +22,16 @@ INLINE
 usz printi64(write_fn fn, void* usr, i64 n) {
 	char buf[NUM_MAX], *end = buf + sizeof(buf), *it = end - 1;
 
-	// Handle signed values
+	if UNLIKELY (n == INT64_MIN)
+		return fn(usr, "-9223372036854775808", 20);
+
 	b8 sign = 0;
 	if (n < 0) {
 		n = -n;
 		sign = 1;
 	}
 
-	// Fill buffer backwards with the remainder of n/10
+	// fill buffer backwards with the remainder of n/10
 	while (n >= 10) {
 		*it-- = n % 10 + '0';
 		n /= 10;
@@ -49,7 +51,7 @@ INLINE
 usz printh64(write_fn fn, void* usr, u64 n) {
 	char buf[NUM_MAX], *end = buf + sizeof(buf), *it = end - 1;
 
-	// Fill buffer backwards with the remainder of n/16
+	// fill buffer backwards with the remainder of n/16
 	while (n >= 16) {
 		*it-- = hextab[n & 0xF];
 		n /= 16;
@@ -74,7 +76,7 @@ usz printdt64(write_fn fn, void* usr, time_t n) {
 usz printdt64(write_fn fn, void* usr, u64 n) {
 	char buf[NUM_MAX], *end = buf + sizeof(buf), *it = end - 1;
 
-	// Fill buffer backwards with the remainder of n/10
+	// fill buffer backwards with the remainder of n/10
 	while (n >= 10) {
 		*it-- = n % 10 + '0';
 		n /= 10;

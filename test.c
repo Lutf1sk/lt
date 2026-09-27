@@ -375,6 +375,8 @@ int main(int argc, char** argv) {
 		tassert(lseq(lsprintf(buf_str, "a{i32}b", (i32)-12345), ls("a-12345b")));
 		tassert(lseq(lsprintf(buf_str, "a{i64}b", (i64)-123456), ls("a-123456b")));
 
+		tassert(lseq(lsprintf(buf_str, "a{i64}b", (i64)INT64_MIN), ls("a-9223372036854775808b")));
+
 		tassert(lseq(lsprintf(buf_str, "a{ls}b", ls("asdf")), ls("aasdfb")));
 		tassert(lseq(lsprintf(buf_str, "a{ls}b", ls("")), ls("ab")));
 
