@@ -148,6 +148,11 @@ isz vlprintf_fn(write_fn fn, void* usr, const char* fmt, va_list args) {
 
 		else if (lseq(spec, ls("char*"))) {
 			char* cstr = va_arg(args, char*);
+			if (!cstr) {
+				written += fn(usr, "<null>", 6);
+				continue;
+			}
+
 			usz len = strlen(cstr);
 			if (len)
 				written += fn(usr, cstr, len);
