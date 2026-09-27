@@ -74,7 +74,7 @@ usz b64_decoded_len(void* src_, usz size, err* error) {
 	u8* src = src_;
 
 	usz pad = 0;
-	while (pad < 3 && src[size - pad - 1] == '=')
+	while (pad < size && pad < 3 && src[size - pad - 1] == '=')
 		++pad;
 
 	if (pad > 2) {
@@ -95,11 +95,13 @@ usz b64_decode(void* dst_, void* src_, usz src_size, err* error) {
 	u8* src = src_;
 
 	usz pad = 0;
-	while (pad < 3 && src[src_size - pad - 1] == '=')
+	while (pad < src_size && pad < 3 && src[src_size - pad - 1] == '=')
 		++pad;
 
-	if (pad > 2)
+	if (pad > 2) {
+		throw(error, ERR_BAD_FORMAT, "invalid base64 padding length");
 		return 0;
+	}
 
 	usz pass4_count = (src_size - pad) & ~0b11;
 	u8* oit = dst;
