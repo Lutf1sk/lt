@@ -234,11 +234,11 @@ u32 fwatch_once(ls path, u32 events, err* err) {
 	while (it < end) {
 		if (it->mask & IN_MODIFY)
 			out_events |= WATCH_MODIFIED;
-		else if (it->mask & IN_CLOSE_WRITE)
+		if (it->mask & IN_CLOSE_WRITE)
 			out_events |= WATCH_SAVED;
-		else if (it->mask & IN_DELETE_SELF)
+		if (it->mask & IN_DELETE_SELF)
 			out_events |= WATCH_DELETED;
-		else if (it->mask & IN_MOVE_SELF)
+		if (it->mask & IN_MOVE_SELF)
 			out_events |= WATCH_MOVED;
 		it = (void*)((u8*)(it + 1) + it->len);
 	}
