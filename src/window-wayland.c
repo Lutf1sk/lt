@@ -97,7 +97,7 @@ void recreate_buffer(i32 width, i32 height) {
 	for (usz i = 0; i < max_attempts; ++i) {
 		lsprintf(lls(path, sizeof(path)), "/lt2-wl-shm-{u64}{char}", t * 10 + i, 0); // !! should be randomized
 
-		fd = shm_open(path, O_RDWR | O_CREAT | O_EXCL, 0x0600);
+		fd = shm_open(path, O_RDWR | O_CREAT | O_EXCL, 0600);
 		if (fd >= 0)
 			break;
 		if (errno == EEXIST && i != max_attempts - 1)
