@@ -245,7 +245,7 @@ ini_t ini_parse(ls str, err* err) {
 
 err:
 	ini_free(&ini);
-	return ini;
+	return (ini_t) { 0 };
 }
 
 ini_t ini_load(ls path, err* err) {
