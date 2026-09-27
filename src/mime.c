@@ -48,9 +48,9 @@ ls mime_type_or_default(ls path, ls default_) {
 	map_mime(".mp4", "video/mp4");
 	map_mime(".mpeg", "video/mpeg");
 	map_mime(".mpkg", "application/vnd.apple.installer+xml");
-	map_mime(".odp", "aplication/vnd.oasis.opendocument.presentation");
-	map_mime(".ods", "aplication/vnd.oasis.opendocument.spreadsheet");
-	map_mime(".odt", "aplication/vnd.oasis.opendocument.text");
+	map_mime(".odp", "application/vnd.oasis.opendocument.presentation");
+	map_mime(".ods", "application/vnd.oasis.opendocument.spreadsheet");
+	map_mime(".odt", "application/vnd.oasis.opendocument.text");
 	map_mime(".oga", "audio/ogg");
 	map_mime(".ogg", "audio/ogg");
 	map_mime(".ogv", "video/ogg");
