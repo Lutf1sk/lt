@@ -207,6 +207,9 @@ u64 hexlstou(ls str, err* err) {
 
 
 u8* lssubstr(ls str, ls substr) {
+	if (str.size < substr.size)
+		return NULL;
+
 	u8* end = str.ptr + str.size - substr.size;
 	for (u8* it = str.ptr; it <= end; ++it) {
 		if (memcmp(it, substr.ptr, substr.size) == 0) {
