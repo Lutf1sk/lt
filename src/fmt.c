@@ -111,7 +111,7 @@ isz vlprintf_fn(write_fn fn, void* usr, const char* fmt, va_list args) {
 			written += fn(usr, start, size);
 
 		if (*++fmt == '{') {
-			written += fn(usr, fmt, 1);
+			written += fn(usr, fmt++, 1);
 			continue;
 		}
 
@@ -157,6 +157,10 @@ isz vlprintf_fn(write_fn fn, void* usr, const char* fmt, va_list args) {
 			ls str = va_arg(args, ls);
 			if (str.size)
 				written += fn(usr, str.ptr, str.size);
+		}
+
+		else {
+			throw(err_fail, ERR_BAD_SYNTAX, "invalid format specifier");
 		}
 	}
 
