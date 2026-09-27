@@ -87,7 +87,7 @@
 #include <stddef.h>
 
 typedef size_t usz;
-typedef long long int isz;
+typedef intptr_t isz;
 
 typedef uint8_t  u8;
 typedef uint16_t u16;
