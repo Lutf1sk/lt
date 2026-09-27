@@ -19,7 +19,7 @@ void* arena_alloc(arena_t* arena, usz size) {
 INLINE
 void* arena_alloc_unsafe(arena_t* arena, usz size) {
     u8* top = arena->top;
-    arena->top = top + ((size + 31) & -32)
+    arena->top = top + ((size + 31) & -32);
     return top;
 }
 
