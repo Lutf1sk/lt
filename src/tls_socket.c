@@ -34,7 +34,7 @@ tls_handle* socket_connect_tls(socket_handle sock, socket_addr* addr, u16 port, 
 	if (!ssl_client_ctx)
 		return NULL;
 
-	if (!socket_connect_tcp(sock, addr, port, err))
+	if (!socket_connect(sock, addr, port, err))
 		return NULL;
 
 	char cstr_host[512];
