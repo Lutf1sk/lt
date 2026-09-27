@@ -46,7 +46,7 @@ int EXCAT(CTYPE_PREFIX, isspace)(int c) {
 
 INLINE
 int EXCAT(CTYPE_PREFIX, toupper)(int c) {
-	if (EXCAT(CTYPE_PREFIX, islower(c)))
+	if (EXCAT(CTYPE_PREFIX, islower)(c))
 		return c - ('a' - 'A');
 	return c;
 }
