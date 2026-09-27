@@ -127,7 +127,7 @@ extern thread_local char path_buf[PATH_BUF_SIZE];
 
 // ----- utility macros
 
-#define CONTAINER_OF(type, member, ptr) ((type*)(ptr) - offsetof(type, member))
+#define CONTAINER_OF(type, member, ptr) ((type*)((usz)(ptr) - offsetof(type, member)))
 #define COUNT_OF(arr) (sizeof(arr) / sizeof(*arr))
 
 #define KB(n) ((n) * 1024L)
