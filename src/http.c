@@ -93,7 +93,7 @@ http_response_t* http_recv_response_preamble(task* t, http_connection_t* conn, h
 	preamble = lstrim_left(lsdrop(preamble, proto.size));
 
 	ls code_str = lssplit(preamble, ' ');
-	u16 code = lstou(code_str, error);
+	u64 code = lstou(code_str, error);
 	if (!code || code > 999) {
 		throw(error, ERR_BAD_SYNTAX, "invalid status code");
 		return NULL;
@@ -222,6 +222,8 @@ http_headers_t* http_recv_headers(task* t, http_connection_t* conn, http_headers
 		u8* end   = start + conn->rb.used;
 		ls avail = lsrange(start, end);
 
+		// !! this is a dumb way of doing it, checks way more than it should
+		// and doesn't allow requests with no headers
 		u8* headers_end = lssubstr(avail, ls("\r\n\r\n"));
 
 		if (headers_end) {
