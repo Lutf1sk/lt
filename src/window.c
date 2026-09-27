@@ -14,9 +14,12 @@ static usz wev_first;
 static usz wev_count;
 
 void queue_wevent(wevent_t event) {
+	wev_queue[(wev_first + wev_count) & EVENT_MASK] = event;
+
 	if (wev_count >= MAX_EVENTS)
 		wev_first = (wev_first + 1) & EVENT_MASK;
-	wev_queue[(wev_first + wev_count++) & EVENT_MASK] = event;
+	else
+		wev_count++;
 }
 
 void platform_poll_wevents();
@@ -30,7 +33,7 @@ usz poll_wevents(wevent_t* out, usz max_events) {
 
 	for (usz i = 0; i < count; ++i) {
 		*out++ = wev_queue[wev_first];
-		wev_first = (wev_first + 1) & (MAX_EVENTS - 1);
+		wev_first = (wev_first + 1) & EVENT_MASK;
 
 		--max_events;
 		--wev_count;
