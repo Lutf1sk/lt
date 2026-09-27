@@ -24,7 +24,7 @@ void co_reset(task* t, usz count) {
 #	include <poll.h>
 #	include <unistd.h>
 
-b8 poll_handle(file_handle fd, u8 mode, u64 timeout_ms) {
+u8 poll_handle(file_handle fd, u8 mode, u64 timeout_ms) {
 	i16 poll_mode = POLLERR;
 	if (mode & R)
 		poll_mode |= POLLIN;
@@ -36,10 +36,20 @@ b8 poll_handle(file_handle fd, u8 mode, u64 timeout_ms) {
 		.events = poll_mode
 	};
 
+	if (timeout_ms > INT32_MAX)
+		timeout_ms = INT32_MAX;
+
 	if (poll(&pfd, 1, timeout_ms) < 0)
 		return 1;
 
-	return !!(pfd.revents & poll_mode);
+	u8 res = 0;
+	if (pfd.revents & POLLERR)
+		res |= E;
+	if (pfd.revents & POLLIN)
+		res |= R;
+	if (pfd.revents & POLLOUT)
+		res |= W;
+	return res & mode;
 }
 
 b8 poll_callable(task* t, u64 timeout_ms) {

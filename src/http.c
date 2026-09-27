@@ -63,11 +63,12 @@ http_response_t* http_recv_response_preamble(task* t, http_connection_t* conn, h
 		}
 
 		for (;;) {
-			if (time_ms() > conn->timeout_at_ms) {
+			u64 current_ms = time_ms();
+			if (current_ms > conn->timeout_at_ms) {
 				throw(error, ERR_TIMED_OUT, "http request timed out while receiving preamble");
 				return NULL;
 			}
-			if (poll_handle(conn->socket, R, conn->timeout_at_ms))
+			if (poll_handle(conn->socket, R|E, conn->timeout_at_ms - current_ms))
 				break;
 			co_yield(NULL);
 		}
@@ -151,11 +152,12 @@ http_request_t* http_recv_request_preamble(task* t, http_connection_t* conn, htt
 		}
 
 		for (;;) {
-			if (time_ms() > conn->timeout_at_ms) {
+			u64 current_ms = time_ms();
+			if (current_ms > conn->timeout_at_ms) {
 				throw(error, ERR_TIMED_OUT, "http request timed out while receiving preamble");
 				return NULL;
 			}
-			if (poll_handle(conn->socket, R, conn->timeout_at_ms))
+			if (poll_handle(conn->socket, R|E, conn->timeout_at_ms - current_ms))
 				break;
 			co_yield(NULL);
 		}
@@ -233,11 +235,12 @@ http_headers_t* http_recv_headers(task* t, http_connection_t* conn, http_headers
 		}
 
 		for (;;) {
-			if (time_ms() > conn->timeout_at_ms) {
+			u64 current_ms = time_ms();
+			if (current_ms > conn->timeout_at_ms) {
 				throw(error, ERR_TIMED_OUT, "http request timed out while receiving headers");
 				return NULL;
 			}
-			if (poll_handle(conn->socket, R, conn->timeout_at_ms))
+			if (poll_handle(conn->socket, R|E, conn->timeout_at_ms - current_ms))
 				break;
 			co_yield(NULL);
 		}
@@ -324,12 +327,13 @@ usz http_recv_content_chunk(task* t, http_connection_t* conn, void* data, usz si
 		if (size > conn->remain)
 			size = conn->remain;
 
-		if (time_ms() > conn->timeout_at_ms) {
+		u64 current_ms = time_ms();
+		if (current_ms > conn->timeout_at_ms) {
 			throw(error, ERR_TIMED_OUT, "http request timed out while receiving content");
 			return 0;
 		}
 
-		if (conn->rb.used < conn->rb.size && conn->remain > conn->rb.used && poll_handle(conn->socket, R, conn->timeout_at_ms)) {
+		if (conn->rb.used < conn->rb.size && conn->remain > conn->rb.used && poll_handle(conn->socket, R|E, conn->timeout_at_ms - current_ms)) {
 			u8* avail_from = rb_free_from(&conn->rb);
 			usz avail_size = rb_free_space(&conn->rb);
 

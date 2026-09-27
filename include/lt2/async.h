@@ -7,7 +7,7 @@
 task* co_next(task* t);
 void co_reset(task* t, usz count);
 
-b8 poll_callable(task* t, u64 timeout_ms);
+u8 poll_callable(task* t, u64 timeout_ms);
 
 #define co_reenter(t) \
 	task* __task = (t); \

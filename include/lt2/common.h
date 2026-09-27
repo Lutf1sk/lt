@@ -216,6 +216,7 @@ void throw(err* err, u8 code, const char* fmt, ...);
 #define RX  0b101
 #define WX  0b110
 #define RWX 0b111
+#define E   0b1000
 
 typedef isz(*write_fn)(void*, const void*, usz);
 typedef isz(*read_fn) (void*, void*, usz);
