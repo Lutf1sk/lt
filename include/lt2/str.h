@@ -31,9 +31,14 @@ INLINE
 b8 lssuffix(ls str, ls substr) {
 	if (str.size < substr.size)
 		return 0;
+	return memcmp(str.ptr + str.size - substr.size, substr.ptr, substr.size) == 0;
+}
 
-	u8* end = str.ptr + str.size;
-	return memcmp(end - substr.size, substr.ptr, substr.size) == 0;
+INLINE
+b8 lssuffix_upper(ls str, ls substr) {
+	if (str.size < substr.size)
+		return 0;
+	return lseq_upper(lls(str.ptr + str.size - substr.size, substr.size), substr);
 }
 
 INLINE
