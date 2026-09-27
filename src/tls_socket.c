@@ -122,7 +122,7 @@ tls_handle* socket_accept_tls(socket_handle sock, tls_context* cx, err* err) {
 	SSL_set_fd(ssl, sock);
 
 	int ret = SSL_accept(ssl);
-	if (ret >= 0)
+	if (ret > 0)
 		return (void*)ssl;
 	throw(err, ERR_ANY, "failed to accept tls connection");
 	SSL_free(ssl);
@@ -140,7 +140,7 @@ tls_handle* socket_accept_tls_async(task* t, tls_handshake_state* state, err* er
 
 	for (;;) {
 		int ret = SSL_accept((void*)state->handle);
-		if (ret >= 0)
+		if (ret > 0)
 			return state->handle;
 
 		int ssl_error = SSL_get_error((void*)state->handle, ret);

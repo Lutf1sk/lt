@@ -1,4 +1,5 @@
 -I./include
 -std=gnu2x
 -DWAYLAND=1
+-DLT_OPENSSL=1
 -march=native
