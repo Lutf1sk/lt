@@ -5,6 +5,7 @@
 
 #include <immintrin.h>
 
+// should only be used if count>32
 static
 void memset32_avx2(void* dst_, u32 v32, usz count) {
 	__m256i v256 = _mm256_set1_epi32(v32);
@@ -50,6 +51,7 @@ void memset32_avx2(void* dst_, u32 v32, usz count) {
 	}
 }
 
+// should only be used if count>64
 static
 void memset32_rep_stosd(void* dst_, u32 v, usz count) {
 	constexpr usz align = 64 / sizeof(u32);

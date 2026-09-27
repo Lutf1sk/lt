@@ -87,16 +87,18 @@ void recreate_buffer(i32 width, i32 height) {
 	const usz buf_size = window_width * window_height * sizeof(u32);
 	const usz pool_size = buf_size * 2;
 
+	constexpr usz max_attempts = 10;
+
 	int fd;
 	char path[512];
 	u64 t = time(NULL);
-	for (usz i = 0; i < 10; ++i) {
+	for (usz i = 0; i < max_attempts; ++i) {
 		lsprintf(lls(path, sizeof(path)), "/lt2-wl-shm-{u64}{char}", t * 10 + i, 0); // !! should be randomized
 
 		fd = shm_open(path, O_RDWR | O_CREAT | O_EXCL, 0x0600);
 		if (fd >= 0)
 			break;
-		if (errno == EEXIST)
+		if (errno == EEXIST && i != max_attempts - 1)
 			continue;
 		throw_errno(err_fail);
 		return;
