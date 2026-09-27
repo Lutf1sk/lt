@@ -45,7 +45,15 @@ ls fmapall(ls path, u8 mode, err* err) {
 		return ls("");
 
 	struct stat st;
-	fstat(file, &st);
+	if (fstat(file, &st) < 0) {
+		throw_errno(err);
+		return ls("");
+	}
+
+	if (!st.st_size) { // mmap does not accept a size of 0
+		close(file);
+		return ls("");
+	}
 
 	int posix_flags = MAP_PRIVATE;
 	int posix_prot  = posix_prot_tab[mode];
@@ -60,6 +68,8 @@ ls fmapall(ls path, u8 mode, err* err) {
 }
 
 void funmap(ls mapping, err* err) {
+	if (!mapping.size)
+		return;
 	if (munmap(mapping.ptr, mapping.size) < 0)
 		throw_errno(err);
 }
