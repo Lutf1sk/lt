@@ -58,6 +58,9 @@ usz echo_attributes(html_template* t, char* fmt, ...) {
 	va_start(argl, fmt);
 
 	for (char* it = fmt; *it; ++it) {
+		if (t->it >= t->end)
+			break;
+
 		char c = *it;
 		if (c != '{') {
 			*t->it++ = c;
