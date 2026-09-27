@@ -6,7 +6,6 @@
 #	include <netinet/in.h>
 #	include <unistd.h>
 #	include <netdb.h>
-#	include <errno.h>
 #	include <fcntl.h>
 
 socket_addr resolve_host(ls host, err* err) {
@@ -20,7 +19,7 @@ socket_addr resolve_host(ls host, err* err) {
 	};
 
 	struct addrinfo* res;
-	if (getaddrinfo(cstr, NULL, &hints, &res) < 0) {
+	if (getaddrinfo(cstr, NULL, &hints, &res)) {
 		throw(err, ERR_NOT_FOUND, "name resolution failed"); // !!
 		return (struct socket_addr){0};
 	}
@@ -37,6 +36,9 @@ socket_addr resolve_host(ls host, err* err) {
 			return addr;
 		}
 	}
+
+	freeaddrinfo(res);
+
 	throw(err, ERR_NOT_FOUND, "name resolution failed"); // !!
 	return (struct socket_addr){0};
 }
