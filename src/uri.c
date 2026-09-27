@@ -29,7 +29,7 @@ static parsed_uri parse_uri_pass1(ls uri, err* error) {
 		++it;
 	}
 
-	if (end - it < 2 || it[1] != '/' || it[2] != '/') {
+	if (end - it < 3 || it[1] != '/' || it[2] != '/') {
 		throw(error, ERR_BAD_SYNTAX, "expected '://' after url scheme");
 		return parsed;
 	}
