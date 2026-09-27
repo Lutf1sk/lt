@@ -77,8 +77,8 @@ void recreate_buffer(i32 width, i32 height) {
 	window_height = height;
 
 	if (!window_width || !window_height) {
-		win.pb.width = width;
-		win.pb.width = height;
+		win.pb.width  = width;
+		win.pb.height = height;
 		return;
 	}
 
