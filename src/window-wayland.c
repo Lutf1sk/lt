@@ -529,8 +529,10 @@ void global(void* userdata, struct wl_registry* registry, u32 name, const char* 
 		wl_seat_add_listener(seat, &seat_listener, NULL);
 	}
 	else if (strcmp(interface, wl_output_interface.name) == 0) {
-		output = wl_registry_bind(registry, name, &wl_output_interface, 4);
-		wl_output_add_listener(output, &output_listener, NULL);
+		//output = wl_registry_bind(registry, name, &wl_output_interface, 4);
+		//wl_output_add_listener(output, &output_listener, NULL);
+		(void)output_listener;
+		(void)output;
 	}
 	else {
 		llogf(NULL, LOG_DEBUG, "ignoring global interface of type '{char*}'", interface);
@@ -564,7 +566,7 @@ void window_init(const window_info_t info[static 1], err* err) {
 
 	wl_display_roundtrip(display);
 
-	if (!compositor || !xdg_wm_base) {
+	if (!shm || !compositor || !xdg_wm_base) {
 		throw(err, ERR_UNKNOWN, "missing required wayland global(s)");
 		goto err1;
 	}
@@ -587,12 +589,13 @@ void window_init(const window_info_t info[static 1], err* err) {
 		throw(err, ERR_UNKNOWN, "xdg_surface_get_toplevel() failed");
 		goto err3;
 	}
-	char* title_cstr = lstos(info->title, err);
+
+	char* title_cstr = lstos(info->title, err_ignore);
 	if (title_cstr) {
 		xdg_toplevel_set_title(win.xdg_toplevel, title_cstr);
 		free(title_cstr);
 	}
-	char* app_id_cstr = lstos(info->app_id, err);
+	char* app_id_cstr = lstos(info->app_id, err_ignore);
 	if (app_id_cstr) {
 		xdg_toplevel_set_app_id(win.xdg_toplevel, app_id_cstr);
 		free(app_id_cstr);
@@ -611,6 +614,22 @@ err3:
 err2:
 	wl_surface_destroy(win.wl_surface);
 err1:
+	if (shm) {
+		wl_shm_destroy(shm);
+		shm = NULL;
+	}
+	if (compositor) {
+		wl_compositor_destroy(compositor);
+		compositor = NULL;
+	}
+	if (xdg_wm_base) {
+		xdg_wm_base_destroy(xdg_wm_base);
+		xdg_wm_base = NULL;
+	}
+	if (seat) {
+		wl_seat_destroy(seat);
+		seat = NULL;
+	}
 	wl_registry_destroy(registry);
 err0:
 	wl_display_disconnect(display);
