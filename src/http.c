@@ -93,8 +93,9 @@ http_response_t* http_recv_response_preamble(task* t, http_connection_t* conn, h
 	preamble = lstrim_left(lsdrop(preamble, proto.size));
 
 	ls code_str = lssplit(preamble, ' ');
-	u64 code = lstou(code_str, error);
-	if (!code || code > 999) {
+	err status_err = err(0);
+	u64 code = lstou(code_str, &status_err);
+	if (status_err.code || code > 999) {
 		throw(error, ERR_BAD_SYNTAX, "invalid status code");
 		return NULL;
 	}
