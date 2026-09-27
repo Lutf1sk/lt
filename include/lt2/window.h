@@ -94,7 +94,7 @@ void window_resize(i32 width, i32 height);
 void set_fullscreen(b8 fullscreen);
 b8 get_fullscreen(void);
 
-void set_maximized(b8 fullscreen);
+void set_maximized(b8 maximized);
 b8 get_maximized(void);
 
 void queue_wevent(wevent_t event);
