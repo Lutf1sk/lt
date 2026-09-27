@@ -352,6 +352,7 @@ static u32 keymap[256] = {
 
 	[56] = KEY_LALT,
 	[57] = ' ',
+	[58] = KEY_CAPSLOCK,
 
 	[59] = KEY_F1,
 	[60] = KEY_F2,
@@ -379,7 +380,6 @@ static u32 keymap[256] = {
 	[108] = KEY_DOWN,
 	[109] = KEY_PGDOWN,
 	[110] = KEY_INSERT,
-	[111] = KEY_CAPSLOCK,
 
 	[125] = KEY_LMETA,
 	[126] = KEY_RMETA,
