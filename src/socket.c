@@ -141,7 +141,7 @@ b8 socket_bind(socket_handle sock, u16 port, err* err) {
 }
 
 socket_handle socket_accept(socket_handle sock, socket_addr* out_addr, socket_type flags, err* err) {
-	struct sockaddr posix_addr;
+	struct sockaddr_storage posix_addr;
 	socklen_t addrsize = sizeof(posix_addr);
 
 	socket_handle new_fd = accept(sock, (struct sockaddr*)&posix_addr, (socklen_t*)&addrsize);
@@ -161,14 +161,13 @@ socket_handle socket_accept(socket_handle sock, socket_addr* out_addr, socket_ty
 	if (!out_addr)
 		return new_fd;
 
-	if (posix_addr.sa_family == AF_INET) {
+	if (posix_addr.ss_family == AF_INET) {
 		out_addr->type = SOCKADDR_IPV4;
 		memcpy(out_addr->ip_addr, &((struct sockaddr_in*)&posix_addr)->sin_addr, 4);
 	}
-	else if (posix_addr.sa_family == AF_INET6) {
-		// TODO
-		//out_addr->type = SOCKADDR_IPV6;
-		//memcpy(out_addr->ip_addr, &((struct sockaddr_in6*)&posix_addr)->sin6_addr, 16);
+	else if (posix_addr.ss_family == AF_INET6) {
+		out_addr->type = SOCKADDR_IPV6;
+		memcpy(out_addr->ip_addr, &((struct sockaddr_in6*)&posix_addr)->sin6_addr, 16);
 	}
 	return new_fd;
 
