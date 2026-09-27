@@ -268,7 +268,7 @@ struct wl_pointer_listener pointer_listener = {
 
 static
 void keyboard_keymap(void* userdata, struct wl_keyboard* keyboard, u32 format, i32 fd, u32 size) {
-
+	close(fd);
 }
 
 static
