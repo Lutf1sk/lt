@@ -48,7 +48,7 @@ ls lstrim(ls str) {
 char* lstos(ls str, err* err) {
 	char* cstr = malloc(str.size + 1);
 	if UNLIKELY (!cstr) {
-		throw(NULL, ERR_NO_MEMORY, "failed to allocate null terminated string");
+		throw(err, ERR_NO_MEMORY, "failed to allocate null terminated string");
 		return NULL;
 	}
 	memcpy(cstr, str.ptr, str.size);
