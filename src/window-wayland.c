@@ -1,4 +1,5 @@
 #include <lt2/common.h>
+#include <wayland-util.h>
 
 #ifdef WAYLAND
 #	include <wayland-client-protocol.h>
@@ -607,8 +608,22 @@ err0:
 }
 
 void window_resize(i32 width, i32 height) {
-	// !! from testing, it seems to accept this NULL without issues, but unsure if it is entirely safe
-	xdg_toplevel_configure(&win, win.xdg_toplevel, width, height, NULL);
+	struct wl_array states;
+	wl_array_init(&states);
+
+	if (win.fullscreen) {
+		u32* p = wl_array_add(&states, sizeof(u32));
+		if (p) *p = XDG_TOPLEVEL_STATE_FULLSCREEN;
+	}
+
+	if (win.maximized) {
+		u32* p = wl_array_add(&states, sizeof(u32));
+		if (p) *p = XDG_TOPLEVEL_STATE_MAXIMIZED;
+	}
+
+	xdg_toplevel_configure(&win, win.xdg_toplevel, width, height, &states);
+
+	wl_array_release(&states);
 }
 
 void set_fullscreen(b8 fullscreen) {
@@ -677,10 +692,6 @@ void draw_text(ls str, i32 x, i32 y, u32 color) {
 
 void measure_text(ls str) {
 
-}
-
-void put_entire_pixbuf(i32 x, i32 y, const pixbuf_t other[static 1]) {
-	pb_blit_entire(&win.pb, x, y, other);
 }
 
 void put_pixbuf(i32 x, i32 y, const pixbuf_t other[static 1]) {

@@ -168,19 +168,6 @@ void pb_draw_vline(pixbuf_t buf[static 1], i32 x, i32 y, i32 y2, u32 color) {
 		buf->data[i * buf->width + x] = color;
 }
 
-void pb_blit_entire(pixbuf_t buf[static 1], i32 x, i32 y, const pixbuf_t other[static 1]) {
-	u32* dst = buf->data + y * buf->width + x;
-	u32* src = other->data;
-	u32* dst_end = buf->data + (y + other->height) * buf->width;
-	usz w_size = other->width * sizeof(u32);
-
-	while (dst < dst_end) {
-		memcpy(dst, src, w_size);
-		dst += buf->width;
-		src += other->width;
-	}
-}
-
 void pb_blit(pixbuf_t buf[static 1], i32 x, i32 y, const pixbuf_t other[static 1]) {
 	if (x + other->width < 0 || x >= buf->width)
 		return;
