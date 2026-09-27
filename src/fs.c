@@ -46,6 +46,7 @@ ls fmapall(ls path, u8 mode, err* err) {
 
 	struct stat st;
 	if (fstat(file, &st) < 0) {
+		close(file);
 		throw_errno(err);
 		return ls("");
 	}
