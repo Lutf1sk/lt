@@ -60,7 +60,7 @@ void throw(err* err, u8 code, const char* fmt, ...) {
 		err->code = code;
 		if (err->message.size) {
 			va_list args;
-			va_start(args);
+			va_start(args, fmt);
 			err->message = vlsprintf(err->message, fmt, args);
 			va_end(args);
 		}
