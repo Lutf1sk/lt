@@ -67,5 +67,4 @@ ini_t ini_load(ls path, err* err);
 void ini_free(ini_t ini[static 1]);
 
 void ini_write(const ini_t ini[static 1], file_handle file);
-void ini_remove_value(ini_t ini[static 1], isz section_i, ls key);
 
