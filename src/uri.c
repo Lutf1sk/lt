@@ -61,25 +61,47 @@ host:
 		}
 
 		u8 c = *it;
-		if (c == '?' || c == '#') {
+		if (c == '?') {
 			parsed.path = lsrange(start, it);
+			break;
+		}
+		if (c == '#') {
+			parsed.path = lsrange(start, it);
+			goto fragment;
+		}
+		++it;
+	}
+	start = it;
+
+	// ----- query
+	for (;;) {
+		if (it >= end) {
+			parsed.query = lsrange(start, end);
+			return parsed;
+		}
+
+		u8 c = *it;
+		if (c == '#') {
+			parsed.query = lsrange(start, it);
 			break;
 		}
 		++it;
 	}
 
-	// ----- query
-	parsed.query = lsrange(it, end);
+	// ----- fragment
+fragment:
+	parsed.fragment = lsrange(it, end);
 	return parsed;
 }
 
 parsed_uri parse_uri(ls uri_str, err* error) {
 	parsed_uri uri = parse_uri_pass1(uri_str, error);
-	if (lseq(uri.scheme, ls("http")))
+	if (lseq_upper(uri.scheme, ls("HTTP")))
 		uri.port = 80;
-	if (lseq(uri.scheme, ls("https")))
+	if (lseq_upper(uri.scheme, ls("HTTPS")))
 		uri.port = 443;
 
+	// !! does not support IPv6 literals
 	u8* hostname_end = lssubstr(uri.host, ls(":"));
 	if (hostname_end) {
 		u8* host_end = uri.host.ptr + uri.host.size;

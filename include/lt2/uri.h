@@ -7,6 +7,7 @@ typedef struct parsed_uri {
 	ls host;
 	ls path;
 	ls query;
+	ls fragment;
 	u16 port;
 	u16 pad[3];
 } parsed_uri;

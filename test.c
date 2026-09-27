@@ -443,67 +443,92 @@ int main(int argc, char** argv) {
 		parsed_uri parsed;
 
 		parsed = parse_uri(ls(""), err_warn);
-		tassert(lseq(parsed.scheme, ls("")));
-		tassert(lseq(parsed.host,   ls("")));
-		tassert(lseq(parsed.path,   ls("")));
-		tassert(lseq(parsed.query,  ls("")));
+		tassert(lseq(parsed.scheme,   ls("")));
+		tassert(lseq(parsed.host,     ls("")));
+		tassert(lseq(parsed.path,     ls("")));
+		tassert(lseq(parsed.query,    ls("")));
+		tassert(lseq(parsed.fragment, ls("")));
 		tassert(parsed.port == 0);
 
 		parsed = parse_uri(ls("http://asdf.net/fdsa?q=v"), err_warn);
-		tassert(lseq(parsed.scheme, ls("http")));
-		tassert(lseq(parsed.host,   ls("asdf.net")));
-		tassert(lseq(parsed.path,   ls("/fdsa")));
-		tassert(lseq(parsed.query,  ls("?q=v")));
+		tassert(lseq(parsed.scheme,   ls("http")));
+		tassert(lseq(parsed.host,     ls("asdf.net")));
+		tassert(lseq(parsed.path,     ls("/fdsa")));
+		tassert(lseq(parsed.query,    ls("?q=v")));
+		tassert(lseq(parsed.fragment, ls("")));
 		tassert(parsed.port == 80);
 
 		parsed = parse_uri(ls("https://asdf:44300/fdsa/?q=v"), err_warn);
-		tassert(lseq(parsed.scheme, ls("https")));
-		tassert(lseq(parsed.host,   ls("asdf")));
-		tassert(lseq(parsed.path,   ls("/fdsa/")));
-		tassert(lseq(parsed.query,  ls("?q=v")));
+		tassert(lseq(parsed.scheme,   ls("https")));
+		tassert(lseq(parsed.host,     ls("asdf")));
+		tassert(lseq(parsed.path,     ls("/fdsa/")));
+		tassert(lseq(parsed.query,    ls("?q=v")));
+		tassert(lseq(parsed.fragment, ls("")));
 		tassert(parsed.port == 44300);
 
 		parsed = parse_uri(ls("asdf.net/fdsa/?"), err_warn);
-		tassert(lseq(parsed.scheme, ls("")));
-		tassert(lseq(parsed.host,   ls("asdf.net")));
-		tassert(lseq(parsed.path,   ls("/fdsa/")));
-		tassert(lseq(parsed.query,  ls("?")));
+		tassert(lseq(parsed.scheme,   ls("")));
+		tassert(lseq(parsed.host,     ls("asdf.net")));
+		tassert(lseq(parsed.path,     ls("/fdsa/")));
+		tassert(lseq(parsed.query,    ls("?")));
+		tassert(lseq(parsed.fragment, ls("")));
 		tassert(parsed.port == 0);
 
 		parsed = parse_uri(ls("asdf.net"), err_warn);
-		tassert(lseq(parsed.scheme, ls("")));
-		tassert(lseq(parsed.host,   ls("asdf.net")));
-		tassert(lseq(parsed.path,   ls("")));
-		tassert(lseq(parsed.query,  ls("")));
+		tassert(lseq(parsed.scheme,   ls("")));
+		tassert(lseq(parsed.host,     ls("asdf.net")));
+		tassert(lseq(parsed.path,     ls("")));
+		tassert(lseq(parsed.query,    ls("")));
+		tassert(lseq(parsed.fragment, ls("")));
 		tassert(parsed.port == 0);
 
 		parsed = parse_uri(ls("/fdsa"), err_warn);
-		tassert(lseq(parsed.scheme, ls("")));
-		tassert(lseq(parsed.host,   ls("")));
-		tassert(lseq(parsed.path,   ls("/fdsa")));
-		tassert(lseq(parsed.query,  ls("")));
+		tassert(lseq(parsed.scheme,   ls("")));
+		tassert(lseq(parsed.host,     ls("")));
+		tassert(lseq(parsed.path,     ls("/fdsa")));
+		tassert(lseq(parsed.query,    ls("")));
+		tassert(lseq(parsed.fragment, ls("")));
 		tassert(parsed.port == 0);
 
 		parsed = parse_uri(ls("?q"), err_warn);
-		tassert(lseq(parsed.scheme, ls("")));
-		tassert(lseq(parsed.host,   ls("")));
-		tassert(lseq(parsed.path,   ls("")));
-		tassert(lseq(parsed.query,  ls("?q")));
+		tassert(lseq(parsed.scheme,   ls("")));
+		tassert(lseq(parsed.host,     ls("")));
+		tassert(lseq(parsed.path,     ls("")));
+		tassert(lseq(parsed.query,    ls("?q")));
+		tassert(lseq(parsed.fragment, ls("")));
 		tassert(parsed.port == 0);
 
 		parsed = parse_uri(ls(""), err_warn);
-		tassert(lseq(parsed.scheme, ls("")));
-		tassert(lseq(parsed.host,   ls("")));
-		tassert(lseq(parsed.path,   ls("")));
-		tassert(lseq(parsed.query,  ls("")));
+		tassert(lseq(parsed.scheme,   ls("")));
+		tassert(lseq(parsed.host,     ls("")));
+		tassert(lseq(parsed.path,     ls("")));
+		tassert(lseq(parsed.query,    ls("")));
+		tassert(lseq(parsed.fragment, ls("")));
 		tassert(parsed.port == 0);
 
 		parsed = parse_uri(ls("file:///root/file"), err_warn);
-		tassert(lseq(parsed.scheme, ls("file")));
-		tassert(lseq(parsed.host,   ls("")));
-		tassert(lseq(parsed.path,   ls("/root/file")));
-		tassert(lseq(parsed.query,  ls("")));
+		tassert(lseq(parsed.scheme,   ls("file")));
+		tassert(lseq(parsed.host,     ls("")));
+		tassert(lseq(parsed.path,     ls("/root/file")));
+		tassert(lseq(parsed.query,    ls("")));
+		tassert(lseq(parsed.fragment, ls("")));
 		tassert(parsed.port == 0);
+
+		parsed = parse_uri(ls("https://host/path?query#frag"), err_warn);
+		tassert(lseq(parsed.scheme,   ls("https")));
+		tassert(lseq(parsed.host,     ls("host")));
+		tassert(lseq(parsed.path,     ls("/path")));
+		tassert(lseq(parsed.query,    ls("?query")));
+		tassert(lseq(parsed.fragment, ls("#frag")));
+		tassert(parsed.port == 443);
+
+		parsed = parse_uri(ls("https://host/path#frag?query"), err_warn);
+		tassert(lseq(parsed.scheme,   ls("https")));
+		tassert(lseq(parsed.host,     ls("host")));
+		tassert(lseq(parsed.path,     ls("/path")));
+		tassert(lseq(parsed.query,    ls("")));
+		tassert(lseq(parsed.fragment, ls("#frag?query")));
+		tassert(parsed.port == 443);
 	}
 
 	if (any_test_failed)
