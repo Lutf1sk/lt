@@ -1,9 +1,9 @@
 #include <lt2/common.h>
-#include <wayland-util.h>
 
 #ifdef WAYLAND
 #	include <wayland-client-protocol.h>
 #	include <wayland-client-core.h>
+#	include <wayland-util.h>
 
 #	include <lt2/window.h>
 #	include <lt2/time.h>

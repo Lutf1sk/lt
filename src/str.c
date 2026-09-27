@@ -118,8 +118,7 @@ i64 lstoi(ls str, err* err) {
 
 	u64 v = lstou(str, err);
 
-	// !! off by one for underflows
-	if (v > INT64_MAX) {
+	if UNLIKELY ((!sign && v > INT64_MAX) || (sign && v > -(u64)INT64_MIN)) {
 		throw(err, ERR_OVERFLOW, "value exceeds 64 bit signed integer limit");
 		return 0;
 	}
@@ -140,18 +139,19 @@ u64 lstou(ls str, err* err) {
 	u8* it = str.ptr, *end = it + str.size;
 	while (it < end) {
 		u8 c = *it++;
-
 		if UNLIKELY (!isdigit(c)) {
 			throw(err, ERR_BAD_SYNTAX, "invalid character in unsigned integer");
 			return 0;
 		}
-		if UNLIKELY (val > UINT64_MAX/10) {
+
+		u8 digit = c - '0';
+		if UNLIKELY (val > UINT64_MAX/10 || (val == UINT64_MAX && digit > 5)) {
 			throw(err, ERR_OVERFLOW, "value exceeds 64 bit unsigned integer limit");
 			return 0;
 		}
 
 		val *= 10;
-		val += c - '0';
+		val += digit;
 	}
 	return val;
 }

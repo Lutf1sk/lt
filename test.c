@@ -338,13 +338,16 @@ int main(int argc, char** argv) {
 
 		tassert(lstof(ls("123.321"), err_ignore) == 123.321);
 
-		tassert(lstoi(ls("-"),     err_ignore) == 0);
-		tassert(lstoi(ls("1234"),  err_ignore) == 1234);
-		tassert(lstoi(ls("-1234"), err_ignore) == -1234);
+		tassert(lstoi(ls("-"),                    err_ignore) == 0);
+		tassert(lstoi(ls("1234"),                 err_ignore) == 1234);
+		tassert(lstoi(ls("-1234"),                err_ignore) == -1234);
+		tassert(lstoi(ls("9223372036854775807"),  err_ignore) == INT64_MAX);
+		tassert(lstoi(ls("-9223372036854775808"), err_ignore) == INT64_MIN);
 
-		tassert(lstou(ls(""),         err_ignore) == 0);
-		tassert(lstou(ls("1234"),     err_ignore) == 1234);
-		tassert(lstou(ls("43214321"), err_ignore) == 43214321);
+		tassert(lstou(ls(""),                     err_ignore) == 0);
+		tassert(lstou(ls("1234"),                 err_ignore) == 1234);
+		tassert(lstou(ls("43214321"),             err_ignore) == 43214321);
+		tassert(lstou(ls("18446744073709551615"), err_ignore) == UINT64_MAX);
 
 		tassert(hexlstou(ls("abCDEF"), err_ignore) == 0xABCDEF);
 		tassert(hexlstou(ls("abcDEF"), err_ignore) == 0xABCDEF);
