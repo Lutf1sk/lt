@@ -60,7 +60,7 @@ void memset32_rep_stosd(void* dst_, u32 v, usz count) {
 	usz misaligned_by = (usz)it & align_lomask;
 	if (misaligned_by) {
 		misaligned_by = align - misaligned_by;
-		for (u32* it = dst_, *end = it + misaligned_by; it < end; ++it)
+		for (u32* end = it + misaligned_by; it < end; ++it)
 			*it = v;
 		count -= misaligned_by;
 	}
