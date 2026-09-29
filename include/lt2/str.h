@@ -9,12 +9,18 @@ b8 lseq(ls s1, ls s2) {
 
 INLINE
 i32 lscmp(ls s1, ls s2) {
-	isz dlen = s1.size - s2.size;
-	if (dlen < 0)
-		return -1;
-	if (dlen > 0)
-		return 1;
-	return memcmp(s1.ptr, s2.ptr, s1.size);
+	usz len = s1.size;
+	i32 sign = -1;
+	if (s2.size < len) {
+		len = s2.size;
+		sign = 1;
+	}
+	i32 cmp_res = memcmp(s1.ptr, s2.ptr, len);
+	if (cmp_res)
+		return cmp_res;
+	if (s1.size == s2.size)
+		return 0;
+	return sign;
 }
 
 b8 lseq_nocase(ls s1, ls s2);

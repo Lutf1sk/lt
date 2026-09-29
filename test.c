@@ -278,9 +278,9 @@ int main(int argc, char** argv) {
 
 		tassert(lscmp(ls("asdf"), ls("asdf")) == 0);
 		tassert(lscmp(ls("aaa"), ls("bbbb")) < 0);
-		tassert(lscmp(ls("aaaa"), ls("bbb")) > 0);
+		tassert(lscmp(ls("aaaa"), ls("bbb")) < 0);
 		tassert(lscmp(ls("bbbb"), ls("aaa")) > 0);
-		tassert(lscmp(ls("bbb"), ls("aaaa")) < 0);
+		tassert(lscmp(ls("bbb"), ls("aaaa")) > 0);
 		tassert(lscmp(ls("baa"), ls("abb")) > 0);
 		tassert(lscmp(ls("abb"), ls("baa")) < 0);
 
