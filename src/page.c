@@ -1,3 +1,4 @@
+#include "lt2/common.h"
 #include <lt2/page.h>
 #include <lt2/str.h>
 
@@ -80,6 +81,8 @@ usz echo_attributes(html_template* t, char* fmt, ...) {
 			echo_escaped(t, va_arg(argl, ls));
 		else if (lseq(type, ls("char*")))
 			echo_escaped(t, stols(va_arg(argl, char*)));
+		else
+			throw(err_fail, ERR_BAD_FORMAT, "unknown or invalid format specifier");
 	}
 
 	va_end(argl);
