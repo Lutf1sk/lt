@@ -44,7 +44,7 @@ ls mime_type_or_default(ls path, ls default_) {
 	map_mime(".MJS", "text/javascript");
 	map_mime(".MKV", "video/x-matroska");
 	map_mime(".MOV", "video/quicktime");
-	map_mime(".MP3", "audio/mp3");
+	map_mime(".MP3", "audio/mpeg");
 	map_mime(".MP4", "video/mp4");
 	map_mime(".MPEG", "video/mpeg");
 	map_mime(".MPKG", "application/vnd.apple.installer+xml");
