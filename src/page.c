@@ -68,7 +68,7 @@ usz echo_attributes(html_template* t, char* fmt, ...) {
 			continue;
 		}
 		if (it[1] == '{') {
-			*t->it++ = *++it;
+			*t->it++ = *it++;
 			continue;
 		}
 
