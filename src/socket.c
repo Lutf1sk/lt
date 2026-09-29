@@ -17,13 +17,8 @@ socket_addr resolve_host(ls host, err* err) {
 	memcpy(cstr, host.ptr, host.size);
 	cstr[host.size] = 0;
 
-	struct addrinfo hints = {
-		.ai_family = AF_UNSPEC,
-		.ai_flags  = AI_PASSIVE,
-	};
-
 	struct addrinfo* res;
-	if (getaddrinfo(cstr, NULL, &hints, &res)) {
+	if (getaddrinfo(cstr, NULL, NULL, &res)) {
 		throw(err, ERR_NOT_FOUND, "name resolution failed"); // !!
 		return (struct socket_addr){0};
 	}
