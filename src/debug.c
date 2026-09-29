@@ -16,7 +16,7 @@ void* get_ip(ucontext_t* uc) {
 #elifdef ON_AMD64
 	return (void*)uc->uc_mcontext.gregs[16];
 #elifdef ON_IA64
-	return (void*)uc->uc_mcontext.sc_ip
+	return (void*)uc->uc_mcontext.sc_ip;
 #else
 	return NULL;
 #endif
