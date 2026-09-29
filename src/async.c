@@ -43,7 +43,7 @@ u8 poll_handle(file_handle fd, u8 mode, u64 timeout_ms) {
 		return E;
 
 	u8 res = 0;
-	if (pfd.revents & POLLERR)
+	if (pfd.revents & (POLLERR|POLLHUP|POLLNVAL))
 		res |= E;
 	if (pfd.revents & POLLIN)
 		res |= R;
