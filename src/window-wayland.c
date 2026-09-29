@@ -636,22 +636,7 @@ err0:
 }
 
 void window_resize(i32 width, i32 height) {
-	struct wl_array states;
-	wl_array_init(&states);
-
-	if (win.fullscreen) {
-		u32* p = wl_array_add(&states, sizeof(u32));
-		if (p) *p = XDG_TOPLEVEL_STATE_FULLSCREEN;
-	}
-
-	if (win.maximized) {
-		u32* p = wl_array_add(&states, sizeof(u32));
-		if (p) *p = XDG_TOPLEVEL_STATE_MAXIMIZED;
-	}
-
-	xdg_toplevel_configure(&win, win.xdg_toplevel, width, height, &states);
-
-	wl_array_release(&states);
+	recreate_buffer(width, height);
 }
 
 void set_fullscreen(b8 fullscreen) {

@@ -404,6 +404,9 @@ void on_frame() {
 	for (usz i = 0; i < 1000; ++i)
 		fill_rect(0, 0, window_width, window_height, 0xFF1A1A1A);
 
+	if (key_pressed('R'))
+		window_resize(window_width + 10, window_height + 10);
+
 	static u64 prev_time_ns;
 	u64 cur_time_ns = time_ns();
 	u64 delta_ns = cur_time_ns - prev_time_ns;
