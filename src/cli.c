@@ -3,6 +3,7 @@
 
 #ifdef ON_UNIX
 #	include <unistd.h>
+#	include <sys/wait.h>
 #elifdef ON_WASI
 #	include <lt2/wasi.h>
 #endif
@@ -250,11 +251,18 @@ err0:
 	};
 }
 
-void cli_close(cli_process_t* p, err* error) {
-	// !! TODO: error handling
+
+i32 cli_close(cli_process_t p[static 1], err* error) {
 	close(p->out);
 	close(p->in);
 	close(p->err);
+
+	int status;
+	if (waitpid(p->pid, &status, 0) < 0) {
+		throw_errno(error);
+		return 0;
+	}
+	return status;
 }
 
 

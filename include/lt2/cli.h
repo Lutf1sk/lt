@@ -114,5 +114,5 @@ typedef struct cli_process {
 } cli_process_t;
 
 cli_process_t cli_run(ls cmd, err* error);
-void cli_close(cli_process_t* p, err* error);
+i32 cli_close(cli_process_t p[static 1], err* error);
 
