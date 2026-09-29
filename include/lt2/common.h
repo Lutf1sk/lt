@@ -196,8 +196,6 @@ typedef struct err {
 #define err_fail   ((struct err*)1)
 #define err_warn   ((struct err*)2)
 
-extern ls errcode_strtab[ERR_COUNT];
-
 #ifdef ON_LINUX
 void throw_errno(err* err);
 void throw_errno_val(err* err, int code);

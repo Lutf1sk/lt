@@ -56,6 +56,7 @@ void throw(err* err, u8 code, const char* fmt, ...) {
 	if (err == err_ignore)
 		return;
 
+	// !! technically UB
 	if (err >= err_store) {
 		err->code = code;
 		if (err->message.size) {
