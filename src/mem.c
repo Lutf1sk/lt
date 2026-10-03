@@ -68,9 +68,9 @@ void memset32_rep_stosd(void* dst_, u32 v, usz count) {
 	}
 
 	__asm__ volatile ("rep stosl"
-		:
-		: "a"(v), "c"(count), "D"(it)
-		: "memory", "cc");
+		: "+c"(count), "+D"(it)
+		:"a"(v)
+		: "memory", "cc" );
 }
 
 FLATTEN
