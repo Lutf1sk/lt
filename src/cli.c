@@ -1,5 +1,6 @@
 #include <lt2/cli.h>
 #include <lt2/str.h>
+#include <lt2/math.h>
 
 #ifdef ON_UNIX
 #	include <unistd.h>
@@ -45,12 +46,19 @@ b8 parse_cli_args(int argc, char** argv, cli_options cli[static 1], err* err) {
 				if (!lseq(key, param->long_key))
 					continue;
 
-				if (!param->arg_type) // should error if '=' is present
+				if (!param->arg_type) {
+					if (eq != arg.size) {
+						throw(err, ERR_BAD_ARGUMENT, "unexpected '=' after --{ls}", key);
+						return 0;
+					}
 					cli->callback(cli, j, ls(""));
-				else if (eq != arg.size)
+				}
+				else if (eq != arg.size) {
 					cli->callback(cli, j, lsdrop(arg, eq + 1));
-				else if (i < argc)
+				}
+				else if (i < argc) {
 					cli->callback(cli, j, stols(argv[i++]));
+				}
 				else {
 					throw(err, ERR_BAD_ARGUMENT, "expected an argument to option '--{ls}'", key);
 					return 0;
@@ -70,12 +78,15 @@ b8 parse_cli_args(int argc, char** argv, cli_options cli[static 1], err* err) {
 				if (param->short_key != c)
 					continue;
 
-				if (!param->arg_type)
+				if (!param->arg_type) {
 					cli->callback(cli, j, ls(""));
-				else if (arg.size > 2)
+				}
+				else if (arg.size > 2) {
 					cli->callback(cli, j, lsdrop(arg, 2));
-				else if (i < argc)
+				}
+				else if (i < argc) {
 					cli->callback(cli, j, stols(argv[i++]));
+				}
 				else {
 					throw(err, ERR_BAD_ARGUMENT, "expected an argument to option '-{char}'", c);
 					return 0;
@@ -147,7 +158,7 @@ void print_cli_help(cli_options cli[static 1]) {
 			lprintf("-{char}, --{ls}", it->short_key, it->long_key);
 			if (it->arg_type)
 				lprintf("=VAL");
-			lprintf("{ls}{ls}\n", lls(cmdline_buf, pad_to - len), it->description);
+			lprintf("{ls}{ls}\n", lls(cmdline_buf, clampz_isz(pad_to - len)), it->description);
 		}
 		else if (it->short_key) {
 			usz len = 2 + (!!it->arg_type * 4);
@@ -155,7 +166,7 @@ void print_cli_help(cli_options cli[static 1]) {
 			lprintf("-{char}", it->short_key);
 			if (it->arg_type)
 				lprintf(" VAL");
-			lprintf("{ls}{ls}\n", lls(cmdline_buf, pad_to - len), it->description);
+			lprintf("{ls}{ls}\n", lls(cmdline_buf, clampz_isz(pad_to - len)), it->description);
 		}
 		else {
 			usz len = 2 + it->long_key.size + (!!it->arg_type * 4);
@@ -165,7 +176,7 @@ void print_cli_help(cli_options cli[static 1]) {
 			lprintf("--{ls}", it->long_key);
 			if (it->arg_type)
 				lprintf("=VAL");
-			lprintf("{ls}{ls}\n", lls(cmdline_buf, pad_to - len), it->description);
+			lprintf("{ls}{ls}\n", lls(cmdline_buf, clampz_isz(pad_to - len)), it->description);
 		}
 	}
 }
