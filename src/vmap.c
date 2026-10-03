@@ -5,6 +5,19 @@
 
 #	include <sys/mman.h>
 
+static
+void zero_outputs(vmap_t vm[static 1]) {
+	if (vm->out)
+		*vm->out = NULL;
+	if (vm->out_size)
+		*vm->out_size = 0;
+	vm->size       = 0;
+	vm->base       = NULL;
+	vm->guard_size = 0;
+	vm->guard_base = NULL;
+	vm->guard_end  = NULL;
+}
+
 b8 vmap(vmap_t* mappings, usz count, u32 flags, err* err) {
 	int posix_flags = MAP_PRIVATE | MAP_ANONYMOUS; // MAP_NORESERVE ?
 
@@ -28,8 +41,11 @@ b8 vmap(vmap_t* mappings, usz count, u32 flags, err* err) {
 		}
 	}
 
-	if (!total_size)
-		return 1; // !! should zero the outputs
+	if (!total_size) {
+		for (vmap_t* vm = mappings; vm < end; ++vm)
+			zero_outputs(vm);
+		return 1;
+	}
 
 	void* block = mmap(NULL, total_size, 0, posix_flags, -1, 0);
 	if (block == MAP_FAILED) {
