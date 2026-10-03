@@ -61,15 +61,19 @@ isz ini_find_value_line(const ini_t ini[static 1], isz section_i, ls key) {
 
 #define SECTION_BLOCKSIZE 256
 
-usz ini_add_section(ini_t ini[static 1], ls name) {
-	if (name.size > UINT16_MAX)
-		throw(err_fail, ERR_LIMIT_EXCEEDED, "section name length exceeds maximum of 65535");
+isz ini_add_section(ini_t ini[static 1], ls name, err* err) {
+	if (name.size > UINT16_MAX) {
+		throw(err, ERR_LIMIT_EXCEEDED, "section name length exceeds maximum of 65535");
+		return -1;
+	}
 
 	if ((ini->section_count & (SECTION_BLOCKSIZE-1)) == 0) {
 		usz new_capacity = (usz)ini->section_count + SECTION_BLOCKSIZE;
 		void* new_mem = realloc(ini->sections, new_capacity * sizeof(ini_section_t));
-		if UNLIKELY (!new_mem)
-			throw(err_fail, ERR_NO_MEMORY, "failed to reallocate ini section table");
+		if UNLIKELY (!new_mem) {
+			throw(err, ERR_NO_MEMORY, "failed to reallocate ini section table");
+			return -1;
+		}
 		ini->sections = new_mem;
 	}
 
@@ -82,14 +86,14 @@ usz ini_add_section(ini_t ini[static 1], ls name) {
 
 #define ENTRY_BLOCKSIZE 128
 
-isz ini_add_line(ini_t ini[static 1], isz section_i, ini_line_t line[static 1]) {
+isz ini_add_line(ini_t ini[static 1], isz section_i, ini_line_t line[static 1], err* err) {
 	if UNLIKELY (section_i < 0)
 		return -1;
 
 	ini_section_t* section = &ini->sections[section_i];
 
 	if UNLIKELY (section->line_count >= UINT16_MAX) {
-		throw(err_fail, ERR_OVERFLOW, "section->line_count overflows u16");
+		throw(err, ERR_OVERFLOW, "section->line_count overflows u16");
 		return -1;
 	}
 
@@ -97,7 +101,7 @@ isz ini_add_line(ini_t ini[static 1], isz section_i, ini_line_t line[static 1]) 
 		usz new_capacity = section->line_count + ENTRY_BLOCKSIZE;
 		void* new_mem = realloc(section->lines, new_capacity * sizeof(ini_line_t));
 		if UNLIKELY (!new_mem)
-			throw(err_fail, ERR_NO_MEMORY, "failed to reallocate ini section entry table");
+			throw(err, ERR_NO_MEMORY, "failed to reallocate ini section entry table");
 		section->lines = new_mem;
 	}
 
@@ -105,11 +109,15 @@ isz ini_add_line(ini_t ini[static 1], isz section_i, ini_line_t line[static 1]) 
 	return section->line_count++;
 }
 
-isz ini_add_value(ini_t ini[static 1], isz section_i, ls key, ls value) {
-	if UNLIKELY (key.size > UINT8_MAX)
+isz ini_add_value(ini_t ini[static 1], isz section_i, ls key, ls value, err* err) {
+	if UNLIKELY (key.size > UINT8_MAX) {
 		throw(err_fail, ERR_LIMIT_EXCEEDED, "key length exceeds maximum of 255");
-	if UNLIKELY (value.size > UINT16_MAX)
+		return -1;
+	}
+	if UNLIKELY (value.size > UINT16_MAX) {
 		throw(err_fail, ERR_LIMIT_EXCEEDED, "value length exceeds maximum of 65535");
+		return -1;
+	}
 
 	return ini_add_line(ini, section_i, &(ini_line_t) {
 		.type = INI_LINE_VALUE,
@@ -117,19 +125,21 @@ isz ini_add_value(ini_t ini[static 1], isz section_i, ls key, ls value) {
 		.key_length = key.size,
 		.offset = write_string(ini, value),
 		.length = value.size,
-	});
+	}, err);
 }
 
-isz ini_set_value(ini_t ini[static 1], isz section_i, ls key, ls value) {
-	if UNLIKELY (value.size > UINT16_MAX)
+isz ini_set_value(ini_t ini[static 1], isz section_i, ls key, ls value, err* err) {
+	if UNLIKELY (value.size > UINT16_MAX) {
 		throw(err_fail, ERR_LIMIT_EXCEEDED, "value length exceeds maximum of 65535");
+		return -1;
+	}
 
 	if UNLIKELY (section_i < 0)
 		return -1;
 
 	isz existing_line = ini_find_value_line(ini, section_i, key);
 	if (existing_line < 0)
-		return ini_add_value(ini, section_i, key, value);
+		return ini_add_value(ini, section_i, key, value, err);
 
 	ini_line_t* line = &ini->sections[section_i].lines[existing_line];
 	line->offset = write_string(ini, value);
@@ -175,7 +185,9 @@ u8* skip_line(u8* it, u8* end) {
 
 ini_t ini_parse(ls str, err* err) {
 	ini_t ini = { 0 };
-	u32 section_i = ini_add_section(&ini, lls(NULL, 0));
+	isz section_i = ini_add_section(&ini, lls(NULL, 0), err);
+	if (section_i < 0)
+		goto err;
 
 	u8* it = str.ptr, *end = it + str.size;
 	while (it < end) {
@@ -183,9 +195,11 @@ ini_t ini_parse(ls str, err* err) {
 
 		if (it >= end || *it == '\n') {
 			++it;
-			ini_add_line(&ini, section_i, &(ini_line_t) {
+			isz res = ini_add_line(&ini, section_i, &(ini_line_t) {
 				.type = INI_LINE_EMPTY,
-			});
+			}, err);
+			if UNLIKELY (res < 0)
+				goto err;
 			continue;
 		}
 
@@ -199,11 +213,14 @@ ini_t ini_parse(ls str, err* err) {
 				goto err;
 			}
 
-			ini_add_line(&ini, section_i, &(ini_line_t) {
+			isz res = ini_add_line(&ini, section_i, &(ini_line_t) {
 				.type   = INI_LINE_COMMENT,
 				.offset = write_string(&ini, text),
 				.length = text.size,
-			});
+			}, err);
+			if UNLIKELY (res < 0)
+				goto err;
+
 			continue;
 		}
 
@@ -224,7 +241,9 @@ ini_t ini_parse(ls str, err* err) {
 			if (it < end && *it == '\n')
 				++it;
 
-			section_i = ini_add_section(&ini, name);
+			section_i = ini_add_section(&ini, name, err);
+			if UNLIKELY (section_i < 0)
+				goto err;
 			continue;
 		}
 
@@ -245,7 +264,8 @@ ini_t ini_parse(ls str, err* err) {
 		it = skip_line(it, end);
 		ls value = lstrim_right(lsrange(start, it));
 
-		ini_add_value(&ini, section_i, key, value);
+		if UNLIKELY (ini_add_value(&ini, section_i, key, value, err) < 0)
+			goto err;
 	}
 
 	return ini;

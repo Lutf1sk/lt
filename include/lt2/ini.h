@@ -50,10 +50,10 @@ isz ini_find_section(const ini_t ini[static 1], ls name);
 ls ini_find_value(const ini_t ini[static 1], isz section_i, ls key);
 isz ini_find_value_line(const ini_t ini[static 1], isz section_i, ls key);
 
-usz ini_add_section(ini_t ini[static 1], ls name);
-isz ini_add_line(ini_t ini[static 1], isz section_i, ini_line_t line[static 1]);
-isz ini_add_value(ini_t ini[static 1], isz section_i, ls key, ls value);
-isz ini_set_value(ini_t ini[static 1], isz section_i, ls key, ls value);
+isz ini_add_section(ini_t ini[static 1], ls name, err* err);
+isz ini_add_line(ini_t ini[static 1], isz section_i, ini_line_t line[static 1], err* err);
+isz ini_add_value(ini_t ini[static 1], isz section_i, ls key, ls value, err* err);
+isz ini_set_value(ini_t ini[static 1], isz section_i, ls key, ls value, err* err);
 
 void ini_remove_line(ini_t ini[static 1], isz section_i, isz line_i);
 
