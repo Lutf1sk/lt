@@ -106,8 +106,10 @@ isz ini_add_line(ini_t ini[static 1], isz section_i, ini_line_t line[static 1], 
 	if ((section->line_count & (ENTRY_BLOCKSIZE-1)) == 0) {
 		usz new_capacity = section->line_count + ENTRY_BLOCKSIZE;
 		void* new_mem = realloc(section->lines, new_capacity * sizeof(ini_line_t));
-		if UNLIKELY (!new_mem)
+		if UNLIKELY (!new_mem) {
 			throw(err, ERR_NO_MEMORY, "failed to reallocate ini section entry table");
+			return -1;
+		}
 		section->lines = new_mem;
 	}
 
