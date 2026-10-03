@@ -77,7 +77,7 @@ void socket_close_tls(tls_handle* tls) {
 }
 
 tls_context* tls_load_certificates(ls cert_path, ls key_path, ls cert_chain_path, err* err) {
-	if (cert_path.size > PATH_MAX || key_path.size > PATH_MAX || cert_chain_path.size > PATH_MAX) {
+	if (cert_path.size >= PATH_MAX || key_path.size >= PATH_MAX || cert_chain_path.size >= PATH_MAX) {
 		throw(err, ERR_ANY, "tls certificate/key/chain path is too long");
 		return NULL;
 	}
@@ -88,7 +88,7 @@ tls_context* tls_load_certificates(ls cert_path, ls key_path, ls cert_chain_path
 		return NULL;
 	}
 
-	char cpath[PATH_MAX + 1];
+	char cpath[PATH_MAX];
 
 	memcpy(cpath, cert_path.ptr, cert_path.size);
 	cpath[cert_path.size] = 0;
