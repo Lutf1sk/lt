@@ -65,13 +65,13 @@ void log_ip(log_sink* logger, void* ip) {
 
 	if (info.dli_sname && info.dli_fname) {
 		usz offset = ip - info.dli_saddr;
-		llogf(NULL, LOG_INFO, "in <0x{void*}> ('{char*}'+{usz}) in '{char*}'", ip, info.dli_sname, offset, info.dli_fname);
+		llogf(logger, LOG_INFO, "in <0x{void*}> ('{char*}'+{usz}) in '{char*}'", ip, info.dli_sname, offset, info.dli_fname);
 	}
 	else if (info.dli_fname) {
-		llogf(NULL, LOG_INFO, "in <0x{void*}> in '{char*}'", ip, info.dli_fname);
+		llogf(logger, LOG_INFO, "in <0x{void*}> in '{char*}'", ip, info.dli_fname);
 	}
 	else {
-		llogf(NULL, LOG_INFO, "in <0x{void*}>", ip);
+		llogf(logger, LOG_INFO, "in <0x{void*}>", ip);
 	}
 }
 
@@ -82,13 +82,13 @@ void stack_trace_ip(log_sink* logger, void* ip) {
 
 	if (info.dli_sname && info.dli_fname) {
 		usz offset = ip - info.dli_saddr;
-		llogf(NULL, LOG_INFO, "called from <0x{void*}> ('{char*}'+{usz}) in '{char*}'", ip, info.dli_sname, offset, info.dli_fname);
+		llogf(logger, LOG_INFO, "called from <0x{void*}> ('{char*}'+{usz}) in '{char*}'", ip, info.dli_sname, offset, info.dli_fname);
 	}
 	else if (info.dli_fname) {
-		llogf(NULL, LOG_INFO, "called from <0x{void*}> in '{char*}'", ip, info.dli_fname);
+		llogf(logger, LOG_INFO, "called from <0x{void*}> in '{char*}'", ip, info.dli_fname);
 	}
 	else {
-		llogf(NULL, LOG_INFO, "called from <0x{void*}>", ip);
+		llogf(logger, LOG_INFO, "called from <0x{void*}>", ip);
 	}
 }
 
