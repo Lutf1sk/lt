@@ -66,6 +66,9 @@
 #	define NONNULL      ATTRIB(nonnull)
 #	define LIKELY(x)    (__builtin_expect(!!(x), 1))
 #	define UNLIKELY(x)  (__builtin_expect(!!(x), 0))
+
+#	define ADD_OVERFLOW(a, b, r) nodiscard_b8(__builtin_add_overflow(a, b, r))
+#	define MUL_OVERFLOW(a, b, r) nodiscard_b8(__builtin_mul_overflow(a, b, r))
 #endif
 
 #define WASM_IMPORT(module, name) \
@@ -372,4 +375,12 @@ typedef struct task {
 	struct task* stack_end;
 	void* userdata;
 } task;
+
+// ----- wrapper for overflow check
+
+INLINE
+b8 NODISCARD nodiscard_b8(b8 v) {
+	return v;
+}
+
 

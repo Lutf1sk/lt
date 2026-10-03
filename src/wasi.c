@@ -40,6 +40,14 @@ void* malloc(usz size) {
 	return NULL;
 }
 
+void* realloc(void* p, usz size) {
+	return NULL;
+}
+
+void free(void* p) {
+
+}
+
 NORETURN
 void exit(int code) {
 	__wasi_proc_exit(code);

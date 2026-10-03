@@ -86,8 +86,15 @@ void recreate_buffer(i32 width, i32 height) {
 
 	llogf(NULL, LOG_INFO, "resizing to {u32}x{u32}\n", width, height);
 
-	const usz buf_size = window_width * window_height * sizeof(u32);
-	const usz pool_size = buf_size * 2;
+	usz buf_size;
+	usz pool_size;
+	if (MUL_OVERFLOW(window_width, window_height, &buf_size) ||
+		MUL_OVERFLOW(buf_size,     sizeof(u32),   &buf_size) ||
+		MUL_OVERFLOW(buf_size,     2,             &pool_size))
+	{
+		throw(err_fail, ERR_OVERFLOW, "window buffer size overflowed");
+		return;
+	}
 
 	constexpr usz max_attempts = 10;
 
