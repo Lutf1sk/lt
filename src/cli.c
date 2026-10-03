@@ -262,7 +262,7 @@ i32 cli_close(cli_process_t p[static 1], err* error) {
 	close(p->out);
 	close(p->in);
 	close(p->err);
-	return status;
+	return WEXITSTATUS(status);
 }
 
 
