@@ -85,6 +85,7 @@ b8 socket_connect(socket_handle sock, socket_addr* addr, u16 port, err* err) {
 	socklen_t socklen;
 
 	if (addr->type == SOCKADDR_IPV4) {
+		ipv4 = (struct sockaddr_in) {0};
 		ipv4.sin_family = AF_INET;
 		ipv4.sin_port = htons(port);
 		memcpy(&ipv4.sin_addr, addr->ip_addr, 4);
@@ -92,6 +93,7 @@ b8 socket_connect(socket_handle sock, socket_addr* addr, u16 port, err* err) {
 		socklen = sizeof(ipv4);
 	}
 	else if (addr->type == SOCKADDR_IPV6) {
+		ipv6 = (struct sockaddr_in6) {0};
 		ipv6.sin6_family = AF_INET6;
 		ipv6.sin6_port = htons(port);
 		ipv6.sin6_flowinfo = 0;
