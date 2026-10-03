@@ -67,6 +67,9 @@ usz printh64(write_fn fn, void* usr, u64 n) {
 
 usz printdt64(write_fn fn, void* usr, time_t n) {
 	struct tm* plocal = localtime(&n);
+	if (!plocal)
+		return printu64(fn, usr, n);
+
 	u8 buf[128];
 	strftime((char*)buf, sizeof(buf), "%x %X", plocal);
 	return fn(usr, buf, strnlen((char*)buf, sizeof(buf)));
