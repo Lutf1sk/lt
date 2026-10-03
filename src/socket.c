@@ -119,7 +119,7 @@ b8 socket_bind(socket_handle sock, u16 port, err* err) {
 		return 0;
 	}
 
-	struct sockaddr_in server_addr;
+	struct sockaddr_in server_addr = {0};
 	server_addr.sin_family = AF_INET;
 	server_addr.sin_addr.s_addr = INADDR_ANY;
 	server_addr.sin_port = htons(port);
