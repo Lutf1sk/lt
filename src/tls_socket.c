@@ -175,6 +175,8 @@ tls_handle* socket_accept_tls_async(task* t, tls_handshake_state* state, err* er
 			throw(err, ERR_TIMED_OUT, "tls handshake timed out");
 			goto err0;
 		}
+
+		co_set_awaiting(state->socket, R);
 		co_yield(NULL);
 	}
 
