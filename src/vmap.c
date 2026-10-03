@@ -19,16 +19,22 @@ b8 vmap(vmap_t* mappings, usz count, u32 flags, err* err) {
 	for (vmap_t* vm = mappings; vm < end; ++vm) {
 		vm->size       = align(vm->size,       page_size);
 		vm->guard_size = align(vm->guard_size, page_size);
-		total_size += vm->size + vm->guard_size; // can overflow
+
+		if (ADD_OVERFLOW(total_size, vm->size,       &total_size) ||
+			ADD_OVERFLOW(total_size, vm->guard_size, &total_size))
+		{
+			throw(err, ERR_OVERFLOW, "total size of memory mappings overflows usz");
+			return 0;
+		}
 	}
 
 	if (!total_size)
-		return 0; // !! should zero the outputs
+		return 1; // !! should zero the outputs
 
 	void* block = mmap(NULL, total_size, 0, posix_flags, -1, 0);
 	if (block == MAP_FAILED) {
 		throw_errno(err);
-		return 1;
+		return 0;
 	}
 
 	u8* it = block;
@@ -37,7 +43,7 @@ b8 vmap(vmap_t* mappings, usz count, u32 flags, err* err) {
 		if (mprotect(it, vm->size, posix_prot_tab[vm->permit & 7]) < 0) {
 			throw_errno(err);
 			munmap(block, total_size);
-			return 1;
+			return 0;
 		}
 
 		if (vm->out)
@@ -49,7 +55,7 @@ b8 vmap(vmap_t* mappings, usz count, u32 flags, err* err) {
 		vm->guard_base = it += vm->size;
 		vm->guard_end  = it += vm->guard_size;
 	}
-	return 0;
+	return 1;
 }
 
 void vunmap(vmap_t* mappings, usz count, err* err) {
