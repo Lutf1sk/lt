@@ -7,13 +7,15 @@
 #define STRTAB_BLOCKSIZE 8192
 
 static
-u32 write_string(ini_t ini[static 1], ls str) {
+u32 write_string(ini_t ini[static 1], ls str, err* err) {
 	usz new_size = ini->strtab_size + str.size;
 	if (!ini->strtab_size || ((new_size ^ ini->strtab_size) & ~(STRTAB_BLOCKSIZE-1))) {
 		usz new_capacity = align(new_size, STRTAB_BLOCKSIZE);
 		void* new_mem = realloc(ini->strtab, new_capacity);
-		if UNLIKELY (!new_mem)
-			throw(err_fail, ERR_NO_MEMORY, "failed to reallocate ini string table");
+		if UNLIKELY (!new_mem) {
+			throw(err, ERR_NO_MEMORY, "failed to reallocate ini string table");
+			return UINT32_MAX;
+		}
 		ini->strtab = new_mem;
 	}
 
@@ -77,8 +79,12 @@ isz ini_add_section(ini_t ini[static 1], ls name, err* err) {
 		ini->sections = new_mem;
 	}
 
+	u32 name_offs = write_string(ini, name, err);
+	if (name_offs == UINT32_MAX)
+		return -1;
+
 	ini->sections[ini->section_count] = (ini_section_t) {
-		.name_offset = write_string(ini, name),
+		.name_offset = name_offs,
 		.name_length = name.size,
 	};
 	return ini->section_count++;
@@ -111,26 +117,36 @@ isz ini_add_line(ini_t ini[static 1], isz section_i, ini_line_t line[static 1], 
 
 isz ini_add_value(ini_t ini[static 1], isz section_i, ls key, ls value, err* err) {
 	if UNLIKELY (key.size > UINT8_MAX) {
-		throw(err_fail, ERR_LIMIT_EXCEEDED, "key length exceeds maximum of 255");
+		throw(err, ERR_LIMIT_EXCEEDED, "key length exceeds maximum of 255");
 		return -1;
 	}
 	if UNLIKELY (value.size > UINT16_MAX) {
-		throw(err_fail, ERR_LIMIT_EXCEEDED, "value length exceeds maximum of 65535");
+		throw(err, ERR_LIMIT_EXCEEDED, "value length exceeds maximum of 65535");
+		return -1;
+	}
+
+	u32 key_offs = write_string(ini, key, err);
+	if (key_offs == UINT32_MAX)
+		return -1;
+
+	u32 val_offs = write_string(ini, value, err);
+	if (val_offs == UINT32_MAX) {
+		ini->strtab_size = key_offs;
 		return -1;
 	}
 
 	return ini_add_line(ini, section_i, &(ini_line_t) {
 		.type = INI_LINE_VALUE,
-		.key_offset = write_string(ini, key),
+		.key_offset = key_offs,
 		.key_length = key.size,
-		.offset = write_string(ini, value),
+		.offset = val_offs,
 		.length = value.size,
 	}, err);
 }
 
 isz ini_set_value(ini_t ini[static 1], isz section_i, ls key, ls value, err* err) {
 	if UNLIKELY (value.size > UINT16_MAX) {
-		throw(err_fail, ERR_LIMIT_EXCEEDED, "value length exceeds maximum of 65535");
+		throw(err, ERR_LIMIT_EXCEEDED, "value length exceeds maximum of 65535");
 		return -1;
 	}
 
@@ -141,8 +157,12 @@ isz ini_set_value(ini_t ini[static 1], isz section_i, ls key, ls value, err* err
 	if (existing_line < 0)
 		return ini_add_value(ini, section_i, key, value, err);
 
+	u32 val_offs = write_string(ini, value, err);
+	if (val_offs == UINT32_MAX)
+		return -1;
+
 	ini_line_t* line = &ini->sections[section_i].lines[existing_line];
-	line->offset = write_string(ini, value);
+	line->offset = val_offs;
 	line->length = value.size;
 	return existing_line;
 }
@@ -168,7 +188,7 @@ u8* skip_space(u8* it, u8* end) {
 
 INLINE
 u8* skip_nonlf_space(u8* it, u8* end) {
-	while (it < end && (*it == ' ' || *it == '\t' || *it == '\v'))
+	while (it < end && (*it == ' ' || *it == '\t' || *it == '\v' || *it == '\r'))
 		++it;
 	return it;
 }
@@ -213,9 +233,13 @@ ini_t ini_parse(ls str, err* err) {
 				goto err;
 			}
 
+			u32 offs = write_string(&ini, text, err);
+			if (offs == UINT32_MAX)
+				goto err;
+
 			isz res = ini_add_line(&ini, section_i, &(ini_line_t) {
 				.type   = INI_LINE_COMMENT,
-				.offset = write_string(&ini, text),
+				.offset = offs,
 				.length = text.size,
 			}, err);
 			if UNLIKELY (res < 0)
