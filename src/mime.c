@@ -61,7 +61,7 @@ ls mime_type_or_default(ls path, ls default_) {
 	map_mime(".PDF", "application/pdf");
 	map_mime(".PHP", "application/x-httpd-php");
 	map_mime(".PPT", "application/vnd.ms-powerpoint");
-	map_mime(".PPTX", "application/vnd.openxmlformats-officedocuments.presentationml.presentation");
+	map_mime(".PPTX", "application/vnd.openxmlformats-officedocument.presentationml.presentation");
 	map_mime(".RAR", "application/vnd.rar");
 	map_mime(".RTF", "application/rtf");
 	map_mime(".SH", "application/x-sh");
@@ -81,7 +81,7 @@ ls mime_type_or_default(ls path, ls default_) {
 	map_mime(".WOFF2", "font/woff2");
 	map_mime(".XHTML", "application/xhtml+xml");
 	map_mime(".XLS", "application/vnd.ms-excel");
-	map_mime(".XLSX", "application/vnd.openxmlformats-officedocuments.spreadsheetml.sheet");
+	map_mime(".XLSX", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
 	map_mime(".XML", "application/xml");
 	map_mime(".XUL", "application/vnd.mozilla.xul+xml");
 	map_mime(".ZIP", "application/zip");
