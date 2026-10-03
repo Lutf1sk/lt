@@ -9,7 +9,7 @@
 static
 u32 write_string(ini_t ini[static 1], ls str) {
 	usz new_size = ini->strtab_size + str.size;
-	if ((new_size ^ ini->strtab_size) & ~(STRTAB_BLOCKSIZE-1)) {
+	if (!ini->strtab_size || ((new_size ^ ini->strtab_size) & ~(STRTAB_BLOCKSIZE-1))) {
 		usz new_capacity = align(new_size, STRTAB_BLOCKSIZE);
 		void* new_mem = realloc(ini->strtab, new_capacity);
 		if UNLIKELY (!new_mem)
@@ -175,11 +175,6 @@ u8* skip_line(u8* it, u8* end) {
 
 ini_t ini_parse(ls str, err* err) {
 	ini_t ini = { 0 };
-	ini.strtab = malloc(STRTAB_BLOCKSIZE);
-	if (!ini.strtab) {
-		throw(err, ERR_NO_MEMORY, "failed to allocate ini string table");
-		return ini;
-	}
 	u32 section_i = ini_add_section(&ini, lls(NULL, 0));
 
 	u8* it = str.ptr, *end = it + str.size;
