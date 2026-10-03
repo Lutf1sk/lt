@@ -147,9 +147,6 @@ static
 void xdg_toplevel_configure(void* userdata, struct xdg_toplevel* toplevel, i32 width, i32 height, struct wl_array* states) {
 	llogf(NULL, LOG_DEBUG, "got configure event for toplevel {void*}", toplevel);
 
-	if (width == window_width && height == window_height)
-		return;
-
 	win.fullscreen = 0;
 	win.maximized  = 0;
 	u32* state;
@@ -159,6 +156,9 @@ void xdg_toplevel_configure(void* userdata, struct xdg_toplevel* toplevel, i32 w
 		else if (*state == XDG_TOPLEVEL_STATE_MAXIMIZED)
 			win.maximized = 1;
 	}
+
+	if (width == window_width && height == window_height)
+		return;
 
 	recreate_buffer(width, height);
 
