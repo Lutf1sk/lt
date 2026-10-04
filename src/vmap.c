@@ -33,11 +33,12 @@ b8 vmap(vmap_t* mappings, usz count, u32 flags, err* err) {
 		vm->size       = align(vm->size,       page_size);
 		vm->guard_size = align(vm->guard_size, page_size);
 
-		if (ADD_OVERFLOW(total_size, vm->size,       &total_size) ||
-			ADD_OVERFLOW(total_size, vm->guard_size, &total_size))
+		if UNLIKELY
+			(ADD_OVERFLOW(total_size, vm->size,       &total_size) ||
+			 ADD_OVERFLOW(total_size, vm->guard_size, &total_size))
 		{
 			throw(err, ERR_OVERFLOW, "total size of memory mappings overflows usz");
-			return 0;
+			goto err0;
 		}
 	}
 
@@ -48,18 +49,17 @@ b8 vmap(vmap_t* mappings, usz count, u32 flags, err* err) {
 	}
 
 	void* block = mmap(NULL, total_size, 0, posix_flags, -1, 0);
-	if (block == MAP_FAILED) {
+	if UNLIKELY (block == MAP_FAILED) {
 		throw_errno(err);
-		return 0;
+		goto err0;
 	}
 
 	u8* it = block;
 	for (vmap_t* vm = mappings; vm < end; ++vm) {
 		// !! if all mappings have the same permissions, this should really not need mprotect, it should be done in the mmap call
-		if (mprotect(it, vm->size, posix_prot_tab[vm->permit & 7]) < 0) {
+		if UNLIKELY (mprotect(it, vm->size, posix_prot_tab[vm->permit & 7]) < 0) {
 			throw_errno(err);
-			munmap(block, total_size);
-			return 0;
+			goto err1;
 		}
 
 		if (vm->out)
@@ -72,6 +72,13 @@ b8 vmap(vmap_t* mappings, usz count, u32 flags, err* err) {
 		vm->guard_end  = it += vm->guard_size;
 	}
 	return 1;
+
+err1:
+	munmap(block, total_size);
+err0:
+	for (vmap_t* vm = mappings; vm < end; ++vm)
+		zero_outputs(vm);
+	return 0;
 }
 
 void vunmap(vmap_t* mappings, usz count, err* err) {
