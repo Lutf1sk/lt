@@ -91,6 +91,8 @@ DEF_MAX(i8)
 DEF_MAX(f64)
 DEF_MAX(f32)
 
+// undefined for INTXX_MIN, same as in libc
+
 #define DEF_ABS(T) \
 	INLINE \
 	T abs_##T(T n) { \

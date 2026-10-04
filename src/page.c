@@ -73,8 +73,11 @@ usz echo_attributes(html_template* t, char* fmt, ...) {
 		}
 
 		char* type_start = ++it;
-		while (*it && *it != '}')
+		while (*it != '}') {
+			if (!*it)
+				throw(err_fail, ERR_BAD_SYNTAX, "unterminated format specfier '{{{ls}'", lsrange(type_start, it));
 			++it;
+		}
 		ls type = lsrange(type_start, it);
 
 		if (lseq(type, ls("ls")))
@@ -82,7 +85,7 @@ usz echo_attributes(html_template* t, char* fmt, ...) {
 		else if (lseq(type, ls("char*")))
 			echo_escaped(t, stols(va_arg(argl, char*)));
 		else
-			throw(err_fail, ERR_BAD_FORMAT, "unknown or invalid format specifier");
+			throw(err_fail, ERR_BAD_SYNTAX, "unknown or invalid format specifier '{{{ls}}'", type);
 	}
 
 	va_end(argl);

@@ -121,7 +121,7 @@ isz vlprintf_fn(write_fn fn, void* usr, const char* fmt, va_list args) {
 		const char* start = fmt;
 		while (*fmt != '}') {
 			if (!*fmt)
-				goto end;
+				throw(err_fail, ERR_BAD_SYNTAX, "unterminated format specifier '{{{ls}'", lsrange(start, fmt));
 			++fmt;
 		}
 		ls spec = lsrange(start, fmt++);
@@ -168,7 +168,7 @@ isz vlprintf_fn(write_fn fn, void* usr, const char* fmt, va_list args) {
 		}
 
 		else {
-			throw(err_fail, ERR_BAD_SYNTAX, "invalid format specifier");
+			throw(err_fail, ERR_BAD_SYNTAX, "invalid format specifier '{{{ls}}'", spec);
 		}
 	}
 
