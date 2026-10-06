@@ -84,12 +84,11 @@ file_handle fcreate_or_append(ls path, u8 prot, err* err) {
 	if (convert_path(path, err))
 		return -1;
 	int posix_prot = posix_file_prot_tab[prot & 0b111];
-	int fd = open(path_buf, O_WRONLY | O_CREAT, posix_prot);
+	int fd = open(path_buf, O_WRONLY | O_CREAT | O_APPEND, posix_prot);
 	if (fd < 0) {
 		throw_errno(err);
 		return -1;
 	}
-	lseek(fd, 0, SEEK_END);
 	return fd;
 }
 
