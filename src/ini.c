@@ -8,7 +8,12 @@
 
 static
 u32 write_string(ini_t ini[static 1], ls str, err* err) {
-	usz new_size = ini->strtab_size + str.size;
+	usz new_size;
+	if UNLIKELY (ADD_OVERFLOW(ini->strtab_size, str.size, &new_size) || ini->strtab_size >= UINT32_MAX) {
+		throw(err, ERR_LIMIT_EXCEEDED, "cannot grow ini string table to the requested size");
+		return UINT32_MAX;
+	}
+
 	if (!ini->strtab_size || ((new_size ^ ini->strtab_size) & ~(STRTAB_BLOCKSIZE-1))) {
 		usz new_capacity = align(new_size, STRTAB_BLOCKSIZE);
 		void* new_mem = realloc(ini->strtab, new_capacity);
