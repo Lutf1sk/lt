@@ -15,10 +15,19 @@ b8 is_nzpow2(usz n) {
 }
 
 INLINE
+usz clz_usz(usz n) {
+#if SIZE_WIDTH > 32
+	return __builtin_clzl(n);
+#else
+	return __builtin_clz(n);
+#endif
+}
+
+INLINE
 usz next_pow2(usz n) {
 	if (n <= 1)
 		return 1;
-	return 1u << (sizeof(n)*8 - __builtin_clz(n - 1));
+	return (usz)1 << (sizeof(n)*8 - clz_usz(n - 1));
 }
 
 INLINE
