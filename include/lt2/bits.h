@@ -15,6 +15,13 @@ b8 is_nzpow2(usz n) {
 }
 
 INLINE
+usz next_pow2(usz n) {
+	if (n <= 1)
+		return 1;
+	return 1u << (sizeof(n)*8 - __builtin_clz(n - 1));
+}
+
+INLINE
 usz pad(usz size, usz align) {
 	usz align_mask = (align - 1);
 	return (align - (size & align_mask)) & align_mask;
