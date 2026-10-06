@@ -195,9 +195,9 @@ typedef struct err {
 
 #define err(code) ((struct err) { code })
 
-#define err_ignore ((struct err*)0)
-#define err_fail   ((struct err*)1)
-#define err_warn   ((struct err*)2)
+constexpr err* err_ignore = NULL;
+extern err* err_fail;
+extern err* err_warn;
 
 #ifdef ON_LINUX
 void throw_errno(err* err);

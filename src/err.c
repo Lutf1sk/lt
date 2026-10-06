@@ -3,7 +3,10 @@
 #include <lt2/debug.h>
 #include <lt2/str.h>
 
-#define err_store ((struct err*)3)
+// these just exist as a workaround to make sure that comparing the err_* pointers are not UB
+static err err_fail_mem, err_warn_mem;
+err* err_fail   = &err_fail_mem;
+err* err_warn   = &err_warn_mem;
 
 #ifndef ON_WASI
 #	include <stdlib.h>
@@ -56,18 +59,6 @@ void throw(err* err, u8 code, const char* fmt, ...) {
 	if (err == err_ignore)
 		return;
 
-	// !! technically UB
-	if (err >= err_store) {
-		err->code = code;
-		if (err->message.size) {
-			va_list args;
-			va_start(args, fmt);
-			err->message = vlsprintf(err->message, fmt, args);
-			va_end(args);
-		}
-		return;
-	}
-
 	if (err == err_fail) {
 		va_list args;
 		va_start(args, fmt);
@@ -77,11 +68,22 @@ void throw(err* err, u8 code, const char* fmt, ...) {
 #endif
 		va_end(args);
 		exit(1);
+		return;
 	}
-	else if (err == err_warn) {
+
+	if (err == err_warn) {
 		va_list args;
 		va_start(args, fmt);
 		vlogf(NULL, LOG_WARN, fmt, args);
+		va_end(args);
+		return;
+	}
+
+	err->code = code;
+	if (err->message.size) {
+		va_list args;
+		va_start(args, fmt);
+		err->message = vlsprintf(err->message, fmt, args);
 		va_end(args);
 	}
 }
