@@ -13,7 +13,7 @@
 #	include <sys/mman.h>
 
 ringbuf_t vmap_ringbuf(usz size, err* err) {
-	if UNLIKELY (!size || size > (u64)INT64_MAX + 1) {
+	if UNLIKELY (!size || size >= ((usz)1 << (sizeof(usz) * 8 - 2))) {
 		throw(err, ERR_BAD_ARGUMENT, "invalid ring buffer size");
 		goto err0;
 	}
