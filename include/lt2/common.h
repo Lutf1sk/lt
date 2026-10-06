@@ -319,6 +319,7 @@ struct ringbuf {
 	void* end;
 	usz size;
 	usz used;
+	usz mask;
 } ringbuf_t;
 
 ringbuf_t vmap_ringbuf(usz size, err* err);
