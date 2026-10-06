@@ -268,7 +268,9 @@ ini_t ini_parse(ls str, err* err) {
 			}
 			ls name = lstrim(lsrange(start, it));
 
-			++it;
+			++it; // skip ']'
+
+			it = skip_nonlf_space(it, end);
 			if (it < end && *it == '\n')
 				++it;
 
