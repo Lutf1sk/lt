@@ -1,6 +1,6 @@
 #include <lt2/common.h>
 
-#ifdef ON_UNIX
+#ifdef ON_LINUX
 #	include <lt2/posix.h>
 
 #	include <unistd.h>

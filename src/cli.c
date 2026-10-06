@@ -2,7 +2,7 @@
 #include <lt2/str.h>
 #include <lt2/math.h>
 
-#ifdef ON_UNIX
+#ifdef ON_LINUX
 #	include <unistd.h>
 #	include <sys/wait.h>
 #elifdef ON_WASI
