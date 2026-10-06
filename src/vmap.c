@@ -57,7 +57,7 @@ b8 vmap(vmap_t* mappings, usz count, u32 flags, err* err) {
 	u8* it = block;
 	for (vmap_t* vm = mappings; vm < end; ++vm) {
 		// !! if all mappings have the same permissions, this should really not need mprotect, it should be done in the mmap call
-		if UNLIKELY (mprotect(it, vm->size, posix_prot_tab[vm->permit & 7]) < 0) {
+		if UNLIKELY (vm->size && mprotect(it, vm->size, posix_prot_tab[vm->permit & 7]) < 0) {
 			throw_errno(err);
 			goto err1;
 		}
