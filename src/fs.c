@@ -57,8 +57,10 @@ ls fmapall(ls path, u8 mode, err* err) {
 	}
 
 	int posix_flags = MAP_PRIVATE;
-	if (mode & W)
+	if (mode & W) {
 		posix_flags = MAP_SHARED;
+		mode |= R; // mapped fds always need RW on linux
+	}
 
 	int posix_prot  = posix_prot_tab[mode & 7];
 	void* block = mmap(NULL, st.st_size, posix_prot, posix_flags, file, 0);
