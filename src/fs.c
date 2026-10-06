@@ -78,7 +78,7 @@ void funmap(ls mapping, err* err) {
 		throw_errno(err);
 }
 
-file_handle fcreate(ls path, u8 prot, err* err) {
+file_handle fcreate_or_append(ls path, u8 prot, err* err) {
 	if (convert_path(path, err))
 		return -1;
 	int posix_prot = posix_file_prot_tab[prot & 0b111];

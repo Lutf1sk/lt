@@ -240,7 +240,7 @@ b8 convert_path(ls path, err* err);
 ls fmapall(ls path, u8 mode, err* err);
 void funmap(ls mapping, err* err);
 
-file_handle fcreate(ls path, u8 prot, err* err);
+file_handle fcreate_or_append(ls path, u8 prot, err* err);
 file_handle lfopen(ls path, u8 mode, err* err);
 void lfclose(file_handle file, err* err);
 
