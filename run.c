@@ -559,8 +559,6 @@ int main(int argc, char** argv) {
 	socket_addr addr;
 	socket_accept(sock, &addr, 0, err_fail);
 
-	return 0;
-
 	window_init(&(window_info_t) {
 		.width  = 800,
 		.height = 600,

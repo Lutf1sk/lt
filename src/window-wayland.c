@@ -24,6 +24,7 @@
 #	include <fcntl.h>
 #	include <unistd.h>
 #	include <sys/mman.h>
+#	include <sys/random.h>
 
 
 typedef struct window_state {
@@ -99,10 +100,17 @@ void recreate_buffer(i32 width, i32 height) {
 	constexpr usz max_attempts = 10;
 
 	int fd;
-	char path[512];
-	u64 t = time(NULL);
+	char path[PATH_MAX_SIZE];
+	u64 t;
+
+	if UNLIKELY (getrandom(&t, sizeof(t), 0) != sizeof(t)) {
+		throw_errno(err_fail);
+		t = time(NULL);
+		return;
+	}
+
 	for (usz i = 0; i < max_attempts; ++i) {
-		lsprintf(lls(path, sizeof(path)), "/lt2-wl-shm-{u64}{char}", t * 10 + i, 0); // !! should be randomized
+		lsprintf(lls(path, sizeof(path)), "/lt2-wl-shm-{u64}{char}", t + i, 0);
 
 		fd = shm_open(path, O_RDWR | O_CREAT | O_EXCL, 0600);
 		if (fd >= 0)
