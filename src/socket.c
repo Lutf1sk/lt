@@ -121,8 +121,15 @@ b8 socket_bind(socket_handle sock, u16 port, err* err) {
 		return 0;
 	}
 
+	int domain;
+	socklen_t len = sizeof(domain);
+	if (getsockopt(sock, SOL_SOCKET, SO_DOMAIN, &domain, &len) != 0) {
+		throw_errno(err);
+		return 0;
+	}
+
 	struct sockaddr_in server_addr = {0};
-	server_addr.sin_family = AF_INET;
+	server_addr.sin_family = domain;
 	server_addr.sin_addr.s_addr = INADDR_ANY;
 	server_addr.sin_port = htons(port);
 
@@ -130,6 +137,7 @@ b8 socket_bind(socket_handle sock, u16 port, err* err) {
 		throw_errno(err);
 		return 0;
 	}
+
 	if (listen(sock, 16) < 0) {
 		throw_errno(err);
 		return 0;

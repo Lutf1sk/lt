@@ -522,7 +522,7 @@ trpool_t trpool_create(u32 max_threads) {
 		throw_errno(err_fail);
 
 	if (setpriority(PRIO_PROCESS, 0, -10))
-		throw_errno(err_warn);
+		throw_errno(err_ignore);
 
 	// spawn threads
 	usz thread_count = 0;
@@ -539,6 +539,8 @@ trpool_t trpool_create(u32 max_threads) {
 	return pool;
 }
 
+#include <lt2/net.h>
+
 int main(int argc, char** argv) {
 #ifndef ON_WASI
 	default_log_sink->file.color = 1;
@@ -550,6 +552,14 @@ int main(int argc, char** argv) {
 	trpool_t pool = trpool_create(64);
 
 	trpool_spawn(&pool, pool.unallocated_core_id);
+
+	socket_handle sock = socket_open(SOCKET_TCP, err_fail);
+	socket_bind(sock, 7734, err_fail);
+
+	socket_addr addr;
+	socket_accept(sock, &addr, 0, err_fail);
+
+	return 0;
 
 	window_init(&(window_info_t) {
 		.width  = 800,

@@ -23,6 +23,7 @@ usz clz_usz(usz n) {
 #endif
 }
 
+// Should only be used for values smaller than SIZE_MAX/2, UB otherwise
 INLINE
 usz next_pow2(usz n) {
 	if (n <= 1)
