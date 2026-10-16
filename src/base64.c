@@ -1,4 +1,5 @@
 #include <lt2/common.h>
+#include <lt2/log.h>
 
 static const u8 b64_enc_tab[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 static const u8 b64_dec_tab[256] = {
@@ -21,11 +22,17 @@ static const u8 b64_dec_tab[256] = {
 };
 
 usz b64_encoded_len(usz size) {
-	usz rem = size % 3;
-	usz enc = (size - rem) / 3 * 4; // !! can overflow
-	if (rem == 1 || rem == 2)
-		enc += 4;
-	return enc;
+	if UNLIKELY (ADD_OVERFLOW(size, 2, &size)) {
+		llogf(NULL, LOG_CRIT, "base64 source exceeds supported maximum length");
+		exit(1);
+	}
+
+	if UNLIKELY (MUL_OVERFLOW(size / 3 + (size % 3 != 0), 4, &size)) {
+		llogf(NULL, LOG_CRIT, "base64 source exceeds supported maximum length");
+		exit(1);
+	}
+
+	return size;
 }
 
 usz b64_encode(void* dst_, void* src_, usz src_size) {
