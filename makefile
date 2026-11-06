@@ -31,7 +31,6 @@ ifdef ubsan
 CFLAGS += -fsanitize=undefined
 endif
 
-
 ifdef wasi
 RUN = bin/run.wasm
 RUNCMD = python -m http.server
@@ -50,6 +49,12 @@ SRC     += src/wayland/xdg-shell.c
 CFLAGS  += -DWAYLAND `pkg-config --cflags wayland-client`
 LDFLAGS += `pkg-config --libs wayland-client`
 endif
+
+ifdef alsa
+CFLAGS  += -DALSA `pkg-config --cflags alsa`
+LDFLAGS += `pkg-config --libs alsa`
+endif
+
 
 ifdef ssl
 CFLAGS  += -DLT_OPENSSL `pkg-config --cflags openssl`

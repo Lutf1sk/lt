@@ -175,7 +175,7 @@ ls stat_names[S_COUNT] = {
 	[S_MORAL]  = ls("Moralistic"),
 };
 
-typedef struct stat {
+typedef struct {
 	i16 avg;
 	i16 dev;
 	i16 sex;
@@ -541,6 +541,81 @@ trpool_t trpool_create(u32 max_threads) {
 
 #include <lt2/net.h>
 
+#define SET_SIZE 3
+#define SET_COUNT 3
+#define VAR_COUNT 3
+
+#define NOT(n) (0x80 | n)
+
+b8 bsat_eval(b8 vals[VAR_COUNT], u8 conditions[SET_COUNT][SET_SIZE]) {
+	for (usz i = 0; i < SET_COUNT; ++i) {
+		u8 c0 = conditions[i][0];
+		u8 c1 = conditions[i][1];
+		u8 c2 = conditions[i][2];
+
+		u8 true0 = vals[c0 & ~NOT(0)] == !(c0 & NOT(0));
+		u8 true1 = vals[c1 & ~NOT(0)] == !(c1 & NOT(0));
+		u8 true2 = vals[c2 & ~NOT(0)] == !(c2 & NOT(0));
+
+		if (!true0 && !true1 && !true2)
+			return 0;
+	}
+	return 1;
+}
+
+#include <alsa/asoundlib.h>
+#include <lt2/math.h>
+#include <math.h>
+
+void sound_test() {
+	snd_pcm_t* pcm_handle;
+	snd_pcm_hw_params_t* hwparams;
+	u32 rate = 44100;
+	i32 dir = 0;
+	usz frame_count = 1024;
+
+	int ierr;
+	if ((ierr = snd_pcm_open(&pcm_handle, "default", SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
+		throw(err_fail, ERR_UNKNOWN, "failed to open audio stream");
+	}
+
+	snd_pcm_hw_params_alloca(&hwparams);
+	snd_pcm_hw_params_any(pcm_handle, hwparams);
+
+	snd_pcm_hw_params_set_access(pcm_handle, hwparams, SND_PCM_ACCESS_RW_INTERLEAVED);
+	snd_pcm_hw_params_set_format(pcm_handle, hwparams, SND_PCM_FORMAT_S32_LE);
+	snd_pcm_hw_params_set_channels(pcm_handle, hwparams, 1);
+	snd_pcm_hw_params_set_rate(pcm_handle, hwparams, rate, dir);
+	snd_pcm_hw_params_set_period_size(pcm_handle, hwparams, frame_count, dir);
+
+	if ((ierr = snd_pcm_hw_params(pcm_handle, hwparams))) {
+		throw(err_fail, ERR_UNKNOWN, "failed to set stream parameters");
+	}
+
+	snd_pcm_hw_params_get_period_size(hwparams, &frame_count, &dir);
+
+	i32* buffer = malloc(frame_count * sizeof(*buffer));
+	assert(buffer);
+
+	usz i = 0;
+	while (1) {
+		for (usz j = 0; j < frame_count; ++j) {
+			f64 t = (f64)(i + j) / (f64)rate;
+			f64 freq = 100.0 * ((f64)(i + j) / rate);
+			buffer[j] = (i32)((f64)INT32_MAX * sin(2.0 * PI * freq * t));
+		}
+
+		ierr = snd_pcm_writei(pcm_handle, buffer, frame_count);
+		if (ierr < 0)
+			lprintf("error {i32}\n", ierr);
+		else
+			i += ierr;
+	}
+
+	snd_pcm_drain(pcm_handle);
+	snd_pcm_close(pcm_handle);
+}
+
 int main(int argc, char** argv) {
 #ifndef ON_WASI
 	default_log_sink->file.color = 1;
@@ -548,6 +623,24 @@ int main(int argc, char** argv) {
 	set_root_frame();
 	add_debug_hooks(err_warn);
 #endif
+
+	sound_test();
+	return 0;
+
+	u8 conditions[SET_COUNT][SET_SIZE] = {
+		{ 0,      NOT(1), 2      },
+		{ 2,      0,      NOT(1) },
+		{ NOT(0), 1,      2      },
+	};
+
+	b8 vals[VAR_COUNT] = { 0, 1, 1 };
+
+	if (bsat_eval(vals, conditions))
+		lprintf("Succeeded\n");
+	else
+		lprintf("Failed\n");
+
+	return 0;
 
 	trpool_t pool = trpool_create(64);
 
